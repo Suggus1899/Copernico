@@ -1,18 +1,55 @@
-# React + Vite
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+# Copernico Academy (prototipo)
 
-Currently, two official plugins are available:
+Proyecto inicial: un CRUD desarrollado con el stack MERN (MongoDB, Express, React, Node). Este repositorio contiene la primera versión mínima funcional: API REST en Node/Express con persistencia en MongoDB y una UI en React creada con Vite. El objetivo a mediano plazo es evolucionar este CRUD en un sistema completo de tutorías y asesoramiento académico llamado "Copernico Academy" mediante parches y mejoras iterativas.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Estado actual
+- Implementado: CRUD básico para entidades principales (usuarios, perfiles, recursos académicos).
+- Frontend: React + Vite con rutas y formularios para crear/editar/listar recursos.
+- Backend: Node + Express con endpoints REST y conexión a MongoDB.
+- Autenticación: (marcar si hay autenticación actualmente; si no, pendiente de implementar).
 
-## React Compiler
+## Tech stack
+- MongoDB
+- Express
+- Node.js
+- React (Vite)
+- (Opcional) Mongoose para modelos, JWT para auth
 
-The React Compiler is enabled on this template. See [this documentation](https://react.dev/learn/react-compiler) for more information.
+## Estructura propuesta del repo
+- /server — código de la API (Express, modelos, controladores, rutas)
+- /client — aplicación React (Vite)
+- /README.md — este archivo
+- /docs — documentación y notas de diseño
 
-Note: This will impact Vite dev & build performances.
+## Arranque rápido (Windows)
+1. Clonar el repositorio:
+   - git clone <url-del-repo>
+2. Backend:
+   - cd "c:\Users\Gus\Documents\Proyectos uni\S.I-Copernico-Academy\server"
+   - npm install
+   - npm run dev   (o npm start según el script)
+3. Frontend:
+   - cd "..\client"
+   - npm install
+   - npm run dev
+4. Asegurarse de tener MongoDB corriendo (local o URI de MongoDB Atlas) y configurar la variable de entorno MONGODB_URI.
 
-## Expanding the ESLint configuration
+## Funcionalidades planeadas (roadmap)
+Fases de evolución hacia Copernico Academy:
+1. Autenticación y roles (estudiante, tutor, administrador).
+2. Perfiles de tutor con calificaciones y materias.
+3. Sistema de reservas/agenda (reserva de tutorías, calendarios).
+4. Mensajería interna y notificaciones por correo.
+5. Gestión de pagos y monetización (opcional).
+6. Panel administrativo, métricas y analítica educativa.
+7. Seguridad, tests automatizados e integración continua.
+8. Despliegue (Heroku/Vercel/Docker/Kubernetes) y documentación para producción.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## Contribuir
+- Abrir issues describiendo el problema o la mejora.
+- Crear ramas con prefijo feature/ o fix/ y enviar pull requests.
+- Seguir las guías de estilo y añadir tests para cambios críticos.
+
+## Licencia
+MIT
