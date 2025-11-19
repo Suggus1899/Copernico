@@ -1,7 +1,5 @@
 # **Copernico Academy — Guía técnica del proyecto**
 
-Propósito: referencia técnica para desarrolladores del equipo. Contiene arquitectura, procedimientos operativos, y la guía para aplicar cambios y parches de forma segura.
-
 ## **Resumen**
 - Proyecto: Copernico Academy (prototipo, objetivo: sistema de tutorías y asesoramiento académico).
 - Stack: MongoDB (Mongoose) • Express • Node.js • React (Vite).
