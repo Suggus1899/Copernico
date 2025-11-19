@@ -1,76 +1,115 @@
-import User from "../models/User.js";
-import { JWT_SECRET } from "../config.js";
-import bcrypt from "bcryptjs";
+import User from "../models/user.model.js";
 import jwt from "jsonwebtoken";
+import bcrypt from "bcryptjs";
+import { TOKEN_SECRET } from "../config.js";
+import { createAccessToken } from "../libs/jwt.js";
 
-export const signup = async (req, res, next) => {
-  const { fullname, email, password } = req.body;
-
+export const register = async (req, res) => {
   try {
-    // Check if user already exists
-    const userExists = await User.findOne({
+    const { username, email, password } = req.body;
+
+    const userFound = await User.findOne({ email });
+
+    if (userFound)
+      return res.status(400).json({
+        message: ["The email is already in use"],
+      });
+
+    // hashing the password
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    // creating the user
+    const newUser = new User({
+      username,
       email,
+      password: passwordHash,
     });
 
-    if (userExists)
-      return res.status(400).json({ error: "User already exists" });
+    // saving the user in the database
+    const userSaved = await newUser.save();
 
-    // Hash password
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-
-    // Create user
-    const user = new User({
-      fullname,
-      email,
-      password: hashedPassword,
+    // create access token
+    const token = await createAccessToken({
+      id: userSaved._id,
     });
 
-    const savedUser = await user.save();
-    console.log({
-      savedUser,
+    res.cookie("token", token, {
+      httpOnly: process.env.NODE_ENV !== "development",
+      secure: true,
+      sameSite: "none",
     });
 
-    const token = jwt.sign({ _id: savedUser._id }, JWT_SECRET);
-    res.header("auth-token", token).send(token);
-
-    res.json({ user: savedUser._id });
+    res.json({
+      id: userSaved._id,
+      username: userSaved.username,
+      email: userSaved.email,
+    });
   } catch (error) {
-    console.log(error.message);
-    if (error.code === 11000)
-      return res.status(400).json({ error: "Email already registered" });
-
-    console.log(error);
-    next(error);
+    res.status(500).json({ message: error.message });
   }
 };
 
-export const signin = async (req, res) => {
-  const { email, password } = req.body;
-
+export const login = async (req, res) => {
   try {
-    // Check if user exists
-    const user = await User.findOne({ email });
+    const { email, password } = req.body;
+    const userFound = await User.findOne({ email });
 
-    if (!user) return res.status(400).json({ error: "User does not exist" });
+    if (!userFound)
+      return res.status(400).json({
+        message: ["The email does not exist"],
+      });
 
-    // Check if password is correct
-    const validPassword = await bcrypt.compare(password, user.password);
-    if (!validPassword)
-      return res.status(400).json({ error: "Invalid credentials" });
+    const isMatch = await bcrypt.compare(password, userFound.password);
+    if (!isMatch) {
+      return res.status(400).json({
+        message: ["The password is incorrect"],
+      });
+    }
 
-    // Create and assign a token
-    const token = jwt.sign({ _id: user._id }, JWT_SECRET);
-    res.header("auth-token", token).send(token);
+    const token = await createAccessToken({
+      id: userFound._id,
+      username: userFound.username,
+    });
 
-    res.json({ user: user._id });
+    res.cookie("token", token, {
+      httpOnly: process.env.NODE_ENV !== "development",
+      secure: true,
+      sameSite: "none",
+    });
+
+    res.json({
+      id: userFound._id,
+      username: userFound.username,
+      email: userFound.email,
+    });
   } catch (error) {
-    console.log(error.message);
-    next(error);
+    return res.status(500).json({ message: error.message });
   }
 };
 
-export const profile = async (req, res) => {
-  const userFound = await User.findById(req.user._id).select("-password");
-  return res.json(userFound);
+export const verifyToken = async (req, res) => {
+  const { token } = req.cookies;
+  if (!token) return res.send(false);
+
+  jwt.verify(token, TOKEN_SECRET, async (error, user) => {
+    if (error) return res.sendStatus(401);
+
+    const userFound = await User.findById(user.id);
+    if (!userFound) return res.sendStatus(401);
+
+    return res.json({
+      id: userFound._id,
+      username: userFound.username,
+      email: userFound.email,
+    });
+  });
+};
+
+export const logout = async (req, res) => {
+  res.cookie("token", "", {
+    httpOnly: true,
+    secure: true,
+    expires: new Date(0),
+  });
+  return res.sendStatus(200);
 };

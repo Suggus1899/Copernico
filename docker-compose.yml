@@ -1,8 +1,30 @@
-version: "3.8"
 
 services:
-  db:
-    image: mongo
-    container_name: merndb
-    ports: 
-      - 27017:27017
+  tasksdb:
+    image: mongo:6
+    container_name: tasksdb
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - tasksdbdata:/data/db
+
+  api:
+    build: .
+    container_name: tasks_api
+    restart: on-failure
+    ports:
+      - "4000:4000"
+    environment:
+      - NODE_ENV=production
+      - PORT=4000
+      - MONGODB_URI=mongodb://tasksdb:27017/mern-tasks
+    depends_on:
+      - tasksdb
+
+volumes:
+  tasksdbdata:
+    
+  
+
+

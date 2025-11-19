@@ -1,24 +1,26 @@
 @api = http://localhost:4000/api/auth
 
-### Get Profile
-GET {{api}}/profile
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2M2MyZTBiNmZkMWUyODkyYmQxYzI2MmQiLCJpYXQiOjE2NzM3MTU4OTR9.HKKO4tmSPGGBzeYt_dNtFPap2bohSwLUxKYf0xUZjb0
-
-### Signup
-POST {{api}}/signup
+### post register
+POST {{api}}/register
 Content-Type: application/json
 
 {
-  "email": "user12@gmail.com",
-  "password": "user3password",
-  "fullname": "user 11"
+  "username": "ryan2",
+  "email": "ryan2@gmail.com",
+  "password": "ryanpsasword"
 }
 
-### Signin
-POST {{api}}/signin
+### post login
+POST {{api}}/login
 Content-Type: application/json
 
 {
-  "email": "user12@gmail.com",
-  "password": "user3password"
+  "email": "ryan2@gmail.com",
+  "password": "ryanpsasword"
 }
+
+### verified token
+GET {{api}}/verify
+
+### Logout
+POST {{api}}/logout
