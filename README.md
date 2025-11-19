@@ -1,18 +1,10 @@
 ### MERN Stack CRUD with JWT
-
-Proyecto MERN (React + Express + MongoDB) con autenticación JWT.
-
-Este README está pensado para un usuario que acaba de clonar el repositorio y quiere ejecutarlo. Incluye instrucciones rápidas (Docker recomendado) y pasos para desarrollo local.
-
------
-
 ## Requisitos
 
 - Node.js (v18+ recomendado) y npm — para ejecutar en modo desarrollo.
 - Docker Desktop — para ejecutar con Docker Compose (RECOMENDADO para pruebas integradas y producción).
 - git — para clonar el repositorio.
 
------
 
 ## Quick start — clona y ejecuta (usuario nuevo)
 
