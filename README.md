@@ -1,65 +1,58 @@
-### MERN Stack CRUD with JWT
-## Requisitos
+# Copernico Academy (prototipo)
 
-- Node.js (v18+ recomendado) y npm — para ejecutar en modo desarrollo.
-- Docker Desktop — para ejecutar con Docker Compose (RECOMENDADO para pruebas integradas y producción).
-- git — para clonar el repositorio.
+Copernico Academy es el nombre del proyecto en evolución. Actualmente este repositorio contiene un prototipo basado en un CRUD desarrollado con el stack MERN (MongoDB, Express, React, Node). La intención es iterar sobre esta base hasta convertirla en un sistema de tutorías y asesoramiento académico completo.
 
+**Estado actual (resumen)**
+- CRUD mínimo implementado para ejemplos de tareas/recursos.
+- Frontend: React + Vite (carpeta `client/`).
+- Backend: Node + Express (carpeta `src/`).
+- Autenticación: JWT (según implementación presente en `src/libs` y `src/middlewares`).
 
-## Quick start — clona y ejecuta (usuario nuevo)
+**Requisitos**
+- Node.js v16+ (recomendado v18+)
+- npm o pnpm
+- Docker Desktop (opcional, recomendado para pruebas integradas)
 
-1) Clona el repositorio y entra en la carpeta:
+**Arranque rápido (Windows - PowerShell)**
 
-```powershell
-git clone https://github.com/fazt/mern-crud-auth
-cd "mern-crud-auth"
-```
-
-2) Opción A — Ejecutar con Docker Compose (RECOMENDADO)
-
-Requisitos: Docker Desktop debe estar instalado y abierto.
+Opción A — Docker Compose (recomendado para pruebas integradas)
 
 ```powershell
-# Construye imágenes y levanta MongoDB + API (el Dockerfile hace build del cliente)
+# Desde la raíz del repositorio
 docker compose up -d --build
 
-# Comprueba estado y logs si hace falta
+# Ver estado y logs (opcional)
 docker compose ps
 docker compose logs --tail 200 api
 docker compose logs --tail 200 tasksdb
-```
 
-Abre en tu navegador: `http://localhost:4000` (el backend en producción sirve el frontend construido).
-
-Para parar y eliminar contenedores:
-
-```powershell
+# Parar y eliminar contenedores
 docker compose down
 ```
 
-3) Opción B — Desarrollo local (hot-reload: backend + frontend por separado)
+Abre: `http://localhost:4000` (en producción el backend sirve el frontend construido).
 
-Usa esta opción para desarrollar con recarga automática (nodemon y Vite).
+Opción B — Desarrollo local (hot-reload)
 
-Backend:
+Backend (terminal PowerShell):
 
 ```powershell
-cd "C:\Users\Gus\Documents\Proyectos uni\mern-crud-auth"
+cd "c:\Users\Gus\Documents\Proyectos uni\S.I-Copernico-Academy"
 npm install
 $env:PORT=4000; npm run dev
 ```
 
-Frontend (en otra terminal):
+Frontend (otra terminal PowerShell):
 
 ```powershell
-cd "C:\Users\Gus\Documents\Proyectos uni\mern-crud-auth\client"
+cd "c:\Users\Gus\Documents\Proyectos uni\S.I-Copernico-Academy\client"
 npm install
 npm run dev
 ```
 
-Abre el frontend en `http://localhost:5173`. Las peticiones API irán a `http://localhost:4000`.
+Frontend: `http://localhost:5173`. Backend API: `http://localhost:4000`.
 
-4) Si quieres ejecutar backend local y Mongo en Docker
+Si quieres backend local y Mongo en Docker:
 
 ```powershell
 docker run -d --name tasksdb -p 27017:27017 -v tasksdbdata:/data/db mongo:6
@@ -68,11 +61,9 @@ npm install
 $env:MONGODB_URI='mongodb://localhost:27017/mern-tasks'; $env:PORT=4000; npm run dev
 ```
 
------
+**Variables de entorno importantes**
 
-## Variables de entorno importantes
-
-Coloca un `.env` en la raíz (no lo subas a git) con las variables necesarias:
+Coloca un archivo `.env` en la raíz con al menos estas variables (no subir a git):
 
 ```
 MONGODB_URI=mongodb://localhost:27017/mern-tasks
@@ -81,26 +72,37 @@ TOKEN_SECRET=un_secreto_largo
 FRONTEND_URL=http://localhost:5173
 ```
 
-Cuando ejecutes con Docker Compose, el contenedor `api` está configurado para usar `MONGODB_URI=mongodb://tasksdb:27017/mern-tasks` (resuelve al servicio `tasksdb` dentro de la red de Compose).
+En Docker Compose el `api` usa `MONGODB_URI=mongodb://tasksdb:27017/mern-tasks`.
 
------
+**Resolución de problemas comunes**
 
-## Resolución de problemas comunes
-
-- Cannot GET / :
-	- Si ves esto en `http://localhost:4000` es porque el backend no está sirviendo los archivos estáticos del cliente (en producción el backend sirve `client/dist`). Si usas Docker Compose, vuelve a construir: `docker compose up -d --build`.
-
+- 404 en `/` o `/favicon.ico`:
+  - El servidor devuelve 404 si no existe una ruta para `/`. Añade o prueba `GET /ping` para comprobar que el backend responde.
+- "Cannot use import statement outside a module":
+  - Asegúrate de que `package.json` contiene `"type": "module"` si usas `import`/`export` (ESM), o convierte los archivos a CommonJS con `require`/`module.exports`.
 - MongooseServerSelectionError (ECONNREFUSED):
-	- Significa que la app no puede conectar a MongoDB. Si usas Docker Compose, el contenedor `tasksdb` debe estar `Up`. Ejecuta `docker compose ps` y mira los logs `docker compose logs tasksdb`.
-	- Si ejecutas backend local, asegúrate de que Mongo esté corriendo en `localhost:27017` (o ajusta `MONGODB_URI`).
-
-- Port 4000 is already in use:
-	- Encuentra el PID y mata el proceso:
+  - Significa que la app no puede conectar a MongoDB. Si usas Docker Compose, verifica que `tasksdb` esté `Up`. Si ejecutas localmente, confirma que Mongo se esté ejecutando en `localhost:27017`.
+- Puerto 4000 en uso:
+  - Encuentra y mata el proceso (PowerShell):
 
 ```powershell
 netstat -ano | findstr :4000
 Stop-Process -Id <PID> -Force
 ```
 
-- Docker Desktop pipe/socket errors:
-	- Abre o reinicia Docker Desktop.
+**Roadmap (alto nivel)**
+
+1. Autenticación y roles (estudiante, tutor, admin).
+2. Perfiles de tutor con materias y valoraciones.
+3. Sistema de reservas/agenda y mensajería interna.
+4. Panel administrativo y métricas.
+5. Seguridad, tests y despliegue (Docker/CI).
+
+**Contribuir**
+- Abrir issues describiendo el problema o mejora.
+- Crear ramas `feature/` o `fix/` y enviar pull requests.
+
+**Licencia**
+
+MIT — ver LICENSE (si aplica).
+
