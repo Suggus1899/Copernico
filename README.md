@@ -104,15 +104,3 @@ Stop-Process -Id <PID> -Force
 
 - Docker Desktop pipe/socket errors:
 	- Abre o reinicia Docker Desktop.
-
------
-
-## Notas avanzadas
-
-- El `Dockerfile` en la raíz es multi-stage: primero construye el `client` (Vite) y luego crea una imagen pequeña que contiene sólo las dependencias de producción del backend y `client/dist` para servir estáticos.
-- Si necesitas pasar variables al build del cliente (p. ej. `VITE_API_URL`), dime y añado soporte para `build-arg` en el `Dockerfile`.
-
------
-
-Si al seguir estos pasos encuentras errores pega aquí las salidas de los comandos relevantes (`docker compose ps`, `docker compose logs --tail 200 api`, salida de `npm run dev`, etc.) y te ayudo a resolverlos.
-
