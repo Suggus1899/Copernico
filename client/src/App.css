@@ -1,0 +1,26 @@
+/* App Global Styles */
+.app-container {
+  min-height: 100vh;
+}
+
+/* Ensure full width for homepage */
+.homepage {
+  width: 100%;
+}
+
+/* Login and Signup pages should maintain their centered layout */
+.login-container,
+.signup-container {
+  min-height: calc(100vh - 80px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
+
+/* Dashboard styles */
+.dashboard-container {
+  padding: 40px 20px;
+  min-height: calc(100vh - 80px);
+}
+
