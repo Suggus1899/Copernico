@@ -17,23 +17,13 @@ import {
   rateAppointmentSchema 
 } from '../schemas/appointment.schema.js';
 import { requireRole, requireOwnership } from '../middlewares/role.middleware.js';
+import { authenticateToken } from '../middlewares/auth.middleware.js';
 import Appointment from '../models/Appointment.js';
 
 const router = Router();
 
-// Middleware de autenticación básico
-const requireAuth = (req, res, next) => {
-  if (!req.user) {
-    return res.status(401).json({ 
-      success: false,
-      message: 'Authentication required. Please login.' 
-    });
-  }
-  next();
-};
-
 // Aplicar autenticación a todas las rutas
-router.use(requireAuth);
+router.use(authenticateToken);
 
 // Obtener citas próximas del usuario
 router.get('/upcoming', getUpcomingAppointments);

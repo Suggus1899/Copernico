@@ -12,25 +12,13 @@ import { schemaValidator } from '../middlewares/schemaValidator.js';
 // IMPORTAR LOS NOMBRES CORRECTOS que sí existen:
 import { registerSchema as createUserSchema, updateProfileSchema as updateUserSchema } from '../schemas/user.schema.js';
 import { requireRole, requireOwnership } from '../middlewares/role.middleware.js';
+import { authenticateToken } from '../middlewares/auth.middleware.js';
 import User from '../models/User.js';
 
 const router = Router();
 
-// Middleware de autenticación básico (REEMPLAZO de validateToken)
-const requireAuth = (req, res, next) => {
-  // Esto asume que otro middleware ya estableció req.user
-  // Si no, necesitarás implementar la lógica de verificación de token
-  if (!req.user) {
-    return res.status(401).json({ 
-      success: false,
-      message: 'Authentication required. Please login.' 
-    });
-  }
-  next();
-};
-
-// Aplicar autenticación básica a todas las rutas
-router.use(requireAuth);
+// Aplicar autenticación a todas las rutas
+router.use(authenticateToken);
 
 // Perfil del usuario autenticado
 router.get('/profile', getUserProfile);

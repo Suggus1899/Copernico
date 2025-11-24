@@ -22,26 +22,15 @@ import notificationRoutes from "./routes/notification.routes.js";
 app.set("port", process.env.PORT || 4000);
 
 // middlewares
-app.use(cors());
+app.use(cors({
+  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'auth-token']
+}));
 app.use(morgan("dev"));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true })); // Para form data
-
-// Middleware para simular usuario autenticado (TEMPORAL - para testing)
-app.use((req, res, next) => {
-  // Simular usuario autenticado para testing
-  // En producción, esto vendría de JWT token
-  if (!req.user) {
-    req.user = {
-      id: '65a1b2c3d4e5f67890123456', // ID de ejemplo
-      role: 'admin', // Cambiar según necesites para testing
-      studentProfile: {
-        enrolledCourses: ['Matemáticas', 'Programación']
-      }
-    };
-  }
-  next();
-});
 
 // routes
 app.use("/api", notesRoutes);

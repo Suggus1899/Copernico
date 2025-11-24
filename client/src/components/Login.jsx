@@ -60,7 +60,9 @@ class Login extends Component {
     
     try {
       const res = await axios.post('http://localhost:4000/api/auth/signin', user);
-      localStorage.setItem('token', res.data); // Save the token
+      // El backend ahora devuelve { success: true, token, user }
+      const token = res.data.token || res.data;
+      localStorage.setItem('token', token); // Save the token
       this.props.navigate('/dashboard'); // Redirect to dashboard using React Router
     } catch (error) {
       console.error('Error logging in:', error);
