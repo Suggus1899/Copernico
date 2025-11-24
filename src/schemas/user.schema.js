@@ -27,51 +27,43 @@ export const registerSchema = z.object({
     
     // Solo para estudiantes
     studentProfile: z.object({
-      studentId: z.string().optional(),
-      career: z.string().optional(),
-      semester: z.number().min(1).max(20).optional(),
-      averageGrade: z.number().min(0).max(5).optional(),
-      enrolledCourses: z.array(z.string()).optional()
+      studentId: z.string().min(1, 'ID Estudiantil es requerido')
     }).optional().refine((data, ctx) => {
       if (ctx.parent.role === 'student' && !data?.studentId) {
         return false;
       }
       return true;
     }, {
-      message: "Student ID is required for students",
+      message: "ID Estudiantil es requerido para estudiantes",
       path: ["studentProfile.studentId"]
     }),
     
     // Solo para tutores
     tutorProfile: z.object({
-      specialties: z.array(z.string()).optional(),
-      teachingMethods: z.array(z.string()).optional(),
-      maxStudents: z.number().min(1).optional(),
-      hourlyRate: z.number().min(0).optional(),
-      bio: z.string().max(500).optional()
+      specialties: z.array(z.string().min(1)).min(1, 'Al menos una especialidad es requerida'),
+      experienceYears: z.number().min(0, 'Años de experiencia debe ser 0 o mayor').optional()
     }).optional().refine((data, ctx) => {
       if (ctx.parent.role === 'tutor' && (!data?.specialties || data.specialties.length === 0)) {
         return false;
       }
       return true;
     }, {
-      message: "At least one specialty is required for tutors",
+      message: "Al menos una especialidad es requerida para tutores",
       path: ["tutorProfile.specialties"]
     }),
     
     // Solo para asesores
     advisorProfile: z.object({
-      specializationAreas: z.array(z.string()).optional(),
-      appointmentDuration: z.number().min(30).optional(),
+      specializationAreas: z.array(z.string().min(1)).min(1, 'Al menos un área de especialización es requerida'),
       certification: z.array(z.string()).optional(),
-      bio: z.string().max(500).optional()
+      bio: z.string().max(500, 'El enfoque de asesoramiento no debe exceder 500 caracteres').optional()
     }).optional().refine((data, ctx) => {
       if (ctx.parent.role === 'advisor' && (!data?.specializationAreas || data.specializationAreas.length === 0)) {
         return false;
       }
       return true;
     }, {
-      message: "At least one specialization area is required for advisors",
+      message: "Al menos un área de especialización es requerida para asesores",
       path: ["advisorProfile.specializationAreas"]
     })
     

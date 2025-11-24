@@ -63,6 +63,21 @@ export const signup = async (req, res, next) => {
       });
     }
 
+    // Mapear experienceYears de tutorProfile a academicProfile si existe
+    let finalAcademicProfile = academicProfile || {};
+    let finalTutorProfile = tutorProfile;
+    
+    if (finalRole === 'tutor' && tutorProfile?.experienceYears !== undefined) {
+      // Mover experienceYears de tutorProfile a academicProfile
+      finalAcademicProfile = {
+        ...finalAcademicProfile,
+        experienceYears: tutorProfile.experienceYears
+      };
+      // Remover experienceYears de tutorProfile (no pertenece ahí según el modelo)
+      const { experienceYears, ...tutorProfileWithoutExp } = tutorProfile;
+      finalTutorProfile = tutorProfileWithoutExp;
+    }
+
     // El password se hashea automáticamente en el pre-save hook del modelo
     const user = new User({
       email,
@@ -70,9 +85,9 @@ export const signup = async (req, res, next) => {
       role: finalRole,
       personalInfo: finalPersonalInfo,
       studentProfile: studentProfile || (finalRole === 'student' ? {} : undefined),
-      tutorProfile: tutorProfile || (finalRole === 'tutor' ? {} : undefined),
+      tutorProfile: finalTutorProfile || (finalRole === 'tutor' ? {} : undefined),
       advisorProfile: advisorProfile || (finalRole === 'advisor' ? {} : undefined),
-      academicProfile: academicProfile || {}
+      academicProfile: finalAcademicProfile
     });
 
     const savedUser = await user.save();
