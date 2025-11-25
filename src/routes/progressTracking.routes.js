@@ -19,22 +19,12 @@ import {
   updateGoalStatusSchema 
 } from '../schemas/progressTracking.schema.js';
 import { requireRole } from '../middlewares/role.middleware.js';
+import { authenticateToken } from '../middlewares/auth.middleware.js';
 
 const router = Router();
 
-// Middleware de autenticación básico
-const requireAuth = (req, res, next) => {
-  if (!req.user) {
-    return res.status(401).json({ 
-      success: false,
-      message: 'Authentication required. Please login.' 
-    });
-  }
-  next();
-};
-
 // Aplicar autenticación a todas las rutas
-router.use(requireAuth);
+router.use(authenticateToken);
 
 // Rutas para estudiantes
 router.get('/my-progress', requireRole(['student']), getMyProgress);

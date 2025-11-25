@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import apiClient from "../utils/axiosConfig";
 import { Link } from "react-router-dom";
 
 export function NotesList() {
@@ -7,17 +7,26 @@ export function NotesList() {
 
   useEffect(() => {
     const getNotes = async () => {
-      const res = await axios.get("http://localhost:4000/api/notes");
-      console.log(res);
-      setNotes(res.data);
+      try {
+        const res = await apiClient.get("/notes");
+        console.log(res);
+        setNotes(res.data);
+      } catch (error) {
+        console.error("Error fetching notes:", error);
+      }
     };
     getNotes();
   }, []);
 
   async function deleteNote(noteId) {
-    const res = await axios.delete("http://localhost:4000/api/notes/" + noteId);
-    if (res.status === 204)
-      setNotes([...notes.filter((note) => note._id !== noteId)]);
+    try {
+      const res = await apiClient.delete("/notes/" + noteId);
+      if (res.status === 204 || res.status === 200) {
+        setNotes([...notes.filter((note) => note._id !== noteId)]);
+      }
+    } catch (error) {
+      console.error("Error deleting note:", error);
+    }
   }
 
   return (

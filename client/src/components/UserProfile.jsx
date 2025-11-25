@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import apiClient from '../utils/axiosConfig';
 import './UserProfile.css';
 
 const UserProfile = () => {
@@ -20,17 +20,15 @@ const UserProfile = () => {
         return;
       }
 
-      const response = await axios.get('http://localhost:4000/api/auth/profile', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      setUser(response.data);
+      const response = await apiClient.get('/auth/profile');
+      
+      // El backend ahora devuelve { success: true, data: user }
+      const userData = response.data.data || response.data;
+      setUser(userData);
       setLoading(false);
     } catch (error) {
       console.error('Error fetching user profile:', error);
-      setError('Error al cargar el perfil');
+      setError(error.response?.data?.error || 'Error al cargar el perfil');
       setLoading(false);
     }
   };
@@ -61,13 +59,27 @@ const UserProfile = () => {
   }
 
   // Get initials for avatar
-  const getInitials = (name) => {
-    if (!name) return 'U';
-    const names = name.split(' ');
-    if (names.length >= 2) {
-      return (names[0][0] + names[names.length - 1][0]).toUpperCase();
+  const getInitials = (user) => {
+    if (!user) return 'U';
+    const firstName = user.personalInfo?.firstName || '';
+    const lastName = user.personalInfo?.lastName || '';
+    if (firstName && lastName) {
+      return (firstName[0] + lastName[0]).toUpperCase();
     }
-    return name.substring(0, 2).toUpperCase();
+    if (firstName) {
+      return firstName.substring(0, 2).toUpperCase();
+    }
+    if (user.email) {
+      return user.email.substring(0, 2).toUpperCase();
+    }
+    return 'U';
+  };
+
+  const getFullName = (user) => {
+    if (user.personalInfo?.firstName && user.personalInfo?.lastName) {
+      return `${user.personalInfo.firstName} ${user.personalInfo.lastName}`;
+    }
+    return user.email || 'Usuario';
   };
 
   return (
@@ -75,24 +87,41 @@ const UserProfile = () => {
       <div className="profile-header">
         <div className="profile-avatar">
           <div className="avatar-circle">
-            {getInitials(user.fullname)}
+            {getInitials(user)}
           </div>
         </div>
         <div className="profile-info">
-          <h2 className="profile-name">{user.fullname}</h2>
+          <h2 className="profile-name">{getFullName(user)}</h2>
           <p className="profile-email">{user.email}</p>
+          {user.role && (
+            <p className="profile-role">Rol: {user.role}</p>
+          )}
         </div>
       </div>
       
       <div className="profile-details">
-        <div className="detail-item">
-          <span className="detail-label">Nombre completo:</span>
-          <span className="detail-value">{user.fullname}</span>
-        </div>
+        {user.personalInfo?.firstName && (
+          <div className="detail-item">
+            <span className="detail-label">Nombre:</span>
+            <span className="detail-value">{user.personalInfo.firstName}</span>
+          </div>
+        )}
+        {user.personalInfo?.lastName && (
+          <div className="detail-item">
+            <span className="detail-label">Apellido:</span>
+            <span className="detail-value">{user.personalInfo.lastName}</span>
+          </div>
+        )}
         <div className="detail-item">
           <span className="detail-label">Correo electrónico:</span>
           <span className="detail-value">{user.email}</span>
         </div>
+        {user.role && (
+          <div className="detail-item">
+            <span className="detail-label">Rol:</span>
+            <span className="detail-value">{user.role}</span>
+          </div>
+        )}
         {user.createdAt && (
           <div className="detail-item">
             <span className="detail-label">Miembro desde:</span>
