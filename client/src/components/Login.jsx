@@ -108,9 +108,6 @@ class Login extends Component {
       return (
       <div className="login-container">
         <div className="login-box">
-          <Link to="/" className="back-home-btn">
-            ← Volver al inicio
-          </Link>
           <h2>Iniciar Sesión</h2>
           <p>Bienvenido de nuevo, ¡inicia sesión en tu cuenta!</p>
           {showSuccessMessage && (

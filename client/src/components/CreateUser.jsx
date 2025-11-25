@@ -12,11 +12,13 @@ class CreateUser extends Component {
   state = {
     fullname: '',
     email: '',
+    confirmemail: '',
     password: '',
     confirmPassword: '',
     userType: 'Estudiante',
     error: '',
     passwordMatchError: '',
+    emailMatchError: '',
     loading: false,
   };
 
@@ -31,8 +33,34 @@ class CreateUser extends Component {
     this.setState({
       email: e.target.value,
       error: '', // Clear error when user types
+      emailMatchError: '',
+   }, () => {
+    // Check if email match when email changes
+      if (this.state.confirmemail && this.state.email !== this.state.confirmemail) {
+        this.setState({ emailMatchError: 'Los correos no coinciden' });
+      } else if (this.state.confirmemail && this.state.email === this.state.confirmemail) {
+        this.setState({ emailMatchError: '' });
+      }
     });
   };
+ 
+
+onChangeConfirmemail = (e) => {
+    this.setState({
+      confirmemail: e.target.value,
+      error: '', // Clear error when user types
+    }, () => {
+      // Check if email match
+      if (this.state.email && this.state.confirmemail) {
+        if (this.state.email !== this.state.confirmemail) {
+          this.setState({ emailMatchError: 'Los correos no coinciden' });
+        } else {
+          this.setState({ emailMatchError: '' });
+        }
+      }
+    });
+  };
+
 
   onChangePassword = (e) => {
     this.setState({
@@ -76,6 +104,16 @@ class CreateUser extends Component {
     e.preventDefault();
     
     // Validate passwords match
+    if (this.state.email !== this.state.confirmemai) {
+      this.setState({ 
+        emailMatchError: 'Los correos no coinciden',
+        error: ''
+      });
+      return;
+    }
+
+    this.setState({ loading: true, error: '', emailMatchError: '' });
+
     if (this.state.password !== this.state.confirmPassword) {
       this.setState({ 
         passwordMatchError: 'Las contraseñas no coinciden',
@@ -86,6 +124,8 @@ class CreateUser extends Component {
     
     this.setState({ loading: true, error: '', passwordMatchError: '' });
     
+    
+
     const newUser = {
       fullname: this.state.fullname,
       email: this.state.email,
@@ -180,6 +220,22 @@ class CreateUser extends Component {
                 required
                 disabled={this.state.loading}
               />
+            </div>
+            <div className="input-group">
+              <label htmlFor="confirmemail">Confirmar Correo Electrónico</label>
+              <input
+                type="email"
+                id="confirmemail"
+                placeholder="Confirma tu correo"
+                onChange={this.onChangeConfirmemail}
+                value={this.state.confirmemail}
+                required
+                disabled={this.state.loading}
+                className={this.state.emailMatchError ? 'input-error' : ''}
+              />
+              {this.state.emailMatchError && (
+                <span className="error-message">{this.state.emailMatchError}</span>
+              )}
             </div>
             <div className="input-group">
               <label htmlFor="password">Contraseña</label>

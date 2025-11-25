@@ -11,22 +11,21 @@ const Homepage = () => {
           <div className="row align-items-center">
             <div className="col-lg-6 hero-content">
               <h1 className="hero-title">
-                Estudia gratis y gana certificado en +6.000 cursos online
+                
+                Aprende habilidades esenciales para la vida profesional
               </h1>
               <p className="hero-subtitle">
-                Accede a tutorías personalizadas y asesoramiento académico de calidad
+                Infinidad de tutorias para facilitar tu aprendizaje en la palma de tu mano
+                y capacitarte bajo la guia de profesionales
               </p>
               <div className="hero-buttons">
                 <Link to="/signup" className="btn btn-primary btn-lg hero-cta">
-                  Crear cuenta gratis
+                  Crear cuenta
                 </Link>
                 <Link to="/login" className="btn btn-secondary btn-lg hero-cta-secondary">
                   Iniciar sesión
                 </Link>
               </div>
-              <p className="hero-disclaimer">
-                *Sin datos de tarjetas y sin llamadas de ventas.
-              </p>
             </div>
             <div className="col-lg-6 hero-image">
               <div className="certificate-illustration">
