@@ -1,4 +1,5 @@
 import User from "../models/User.js";
+import { validateObjectId } from "../utils/validators.js";
 
 export const getUsers = async (req, res, next) => {
   try {
@@ -39,6 +40,9 @@ export const getUsers = async (req, res, next) => {
 
 export const getUserById = async (req, res, next) => {
   try {
+    // Validar ObjectId
+    validateObjectId(req.params.id, 'User ID');
+
     const user = await User.findById(req.params.id)
       .select('-password -verificationToken -passwordResetToken');
     
@@ -53,6 +57,13 @@ export const getUserById = async (req, res, next) => {
       data: user
     });
   } catch (error) {
+    // Manejar errores de MongoDB
+    if (error.name === 'CastError') {
+      return res.status(400).json({
+        success: false,
+        error: 'ID inválido'
+      });
+    }
     next(error);
   }
 };

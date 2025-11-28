@@ -1,5 +1,5 @@
 import User from "../models/User.js";
-import { JWT_SECRET } from "../config.js";
+import { JWT_SECRET, JWT_EXPIRES_IN } from "../config.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
@@ -92,11 +92,17 @@ export const signup = async (req, res, next) => {
 
     const savedUser = await user.save();
 
-    const token = jwt.sign({ _id: savedUser._id }, JWT_SECRET);
+    // Generar token con expiración configurable
+    const token = jwt.sign(
+      { _id: savedUser._id }, 
+      JWT_SECRET,
+      { expiresIn: JWT_EXPIRES_IN }
+    );
     res.header("auth-token", token);
     return res.status(201).json({
       success: true,
       token,
+      expiresIn: JWT_EXPIRES_IN,
       user: {
         id: savedUser._id,
         email: savedUser.email,
@@ -172,13 +178,18 @@ export const signin = async (req, res, next) => {
     user.lastLogin = new Date();
     await user.save();
 
-    // Create and assign a token
-    const token = jwt.sign({ _id: user._id }, JWT_SECRET);
+    // Create and assign a token con expiración configurable
+    const token = jwt.sign(
+      { _id: user._id }, 
+      JWT_SECRET,
+      { expiresIn: JWT_EXPIRES_IN }
+    );
     res.header("auth-token", token);
     
     return res.status(200).json({
       success: true,
       token,
+      expiresIn: JWT_EXPIRES_IN,
       user: {
         id: user._id,
         email: user.email,

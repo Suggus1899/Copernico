@@ -13,6 +13,7 @@ import { schemaValidator } from '../middlewares/schemaValidator.js';
 import { registerSchema as createUserSchema, updateProfileSchema as updateUserSchema } from '../schemas/user.schema.js';
 import { requireRole, requireOwnership } from '../middlewares/role.middleware.js';
 import { authenticateToken } from '../middlewares/auth.middleware.js';
+import { validateObjectIdParam } from '../utils/validators.js';
 import User from '../models/User.js';
 
 const router = Router();
@@ -26,19 +27,20 @@ router.put('/profile', schemaValidator(updateUserSchema), updateUserProfile);
 
 // Rutas administrativas
 router.get('/', requireRole(['admin', 'tutor', 'advisor']), getUsers);
-router.get('/:id', requireRole(['admin', 'tutor', 'advisor']), getUserById);
+router.get('/:id', validateObjectIdParam('id'), requireRole(['admin', 'tutor', 'advisor']), getUserById);
 
 // Solo admin puede crear usuarios
 router.post('/', requireRole(['admin']), schemaValidator(createUserSchema), createUser);
 
 // Usuario puede actualizar su propio perfil, admin puede actualizar cualquier usuario
 router.put('/:id', 
+  validateObjectIdParam('id'),
   requireOwnership(User, 'id', '_id'),
   schemaValidator(updateUserSchema), 
   updateUser
 );
 
 // Eliminar usuario - solo admin
-router.delete('/:id', requireRole(['admin']), deleteUser);
+router.delete('/:id', validateObjectIdParam('id'), requireRole(['admin']), deleteUser);
 
 export default router;

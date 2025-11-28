@@ -162,18 +162,24 @@ app.use((req, res, next) => {
 
 // Manejo global de errores
 app.use((err, req, res, next) => {
-  console.error('Error:', err.message);
+  // Log del error
+  console.error('Error:', {
+    message: err.message,
+    status: err.status || 500,
+    path: req.originalUrl,
+    method: req.method,
+    ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
+  });
   
-  // Log más detallado en desarrollo
-  if (process.env.NODE_ENV === 'development') {
-    console.error('Stack:', err.stack);
-  }
+  // Determinar status code
+  const statusCode = err.status || err.statusCode || 500;
   
-  res.status(err.status || 500);
+  // Respuesta de error
+  res.status(statusCode);
   res.json({
     success: false,
     error: {
-      status: err.status || 500,
+      status: statusCode,
       message: err.message || "Internal Server Error",
       ...(process.env.NODE_ENV === 'development' && { 
         stack: err.stack,

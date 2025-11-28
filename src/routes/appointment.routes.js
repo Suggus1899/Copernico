@@ -18,6 +18,7 @@ import {
 } from '../schemas/appointment.schema.js';
 import { requireRole, requireOwnership } from '../middlewares/role.middleware.js';
 import { authenticateToken } from '../middlewares/auth.middleware.js';
+import { validateObjectIdParam } from '../utils/validators.js';
 import Appointment from '../models/Appointment.js';
 
 const router = Router();
@@ -32,7 +33,7 @@ router.get('/upcoming', getUpcomingAppointments);
 router.get('/', getAppointments);
 
 // Obtener cita específica
-router.get('/:id', getAppointmentById);
+router.get('/:id', validateObjectIdParam('id'), getAppointmentById);
 
 // Crear cita - estudiantes pueden crear sus propias citas
 router.post('/', 
@@ -43,6 +44,7 @@ router.post('/',
 
 // Actualizar cita - solo admin, el profesional asignado, o el estudiante dueño
 router.put('/:id', 
+  validateObjectIdParam('id'),
   requireRole(['student', 'tutor', 'advisor', 'admin']),
   schemaValidator(updateAppointmentSchema),
   updateAppointment
@@ -50,12 +52,14 @@ router.put('/:id',
 
 // Cancelar cita
 router.patch('/:id/cancel', 
+  validateObjectIdParam('id'),
   requireRole(['student', 'tutor', 'advisor', 'admin']),
   cancelAppointment
 );
 
 // Agregar nota interna - solo profesionales y admin
 router.post('/:id/notes', 
+  validateObjectIdParam('id'),
   requireRole(['tutor', 'advisor', 'admin']),
   schemaValidator(addInternalNoteSchema),
   addInternalNote
@@ -63,6 +67,7 @@ router.post('/:id/notes',
 
 // Calificar cita - estudiante califica al profesional, profesional califica al estudiante
 router.post('/:id/rate', 
+  validateObjectIdParam('id'),
   requireRole(['student', 'tutor', 'advisor']),
   schemaValidator(rateAppointmentSchema),
   rateAppointment
