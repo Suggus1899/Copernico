@@ -191,28 +191,46 @@ export const createAppointment = async (req, res, next) => {
       }];
     }
 
-    const newAppointment = new Appointment(appointmentData);
-    const appointmentSaved = await newAppointment.save();
+    // Transacción para evitar reservas simultáneas (double-booking)
+    const session = await Appointment.startSession();
+    session.startTransaction();
+    try {
+      let appointmentSaved;
+      if (appointmentData.availabilitySlotId) {
+        // Marcar el slot como 'booked' sólo si sigue 'available'
+        const updatedSlot = await AvailabilitySlot.findOneAndUpdate(
+          { _id: appointmentData.availabilitySlotId, status: 'available' },
+          { $set: { status: 'booked' } },
+          { new: true, session }
+        );
+        if (!updatedSlot) {
+          const error = new Error('Selected time slot was just booked by someone else');
+          error.status = 409;
+          throw error;
+        }
+      }
 
-    // Actualizar el slot de disponibilidad si se usó
-    if (appointmentData.availabilitySlotId) {
-      await AvailabilitySlot.findByIdAndUpdate(
-        appointmentData.availabilitySlotId,
-        { status: 'booked' }
-      );
+      appointmentSaved = await Appointment.create([appointmentData], { session }).then(r => r[0]);
+
+      await session.commitTransaction();
+      session.endSession();
+
+      // Populate para la respuesta
+      const populatedAppointment = await Appointment.findById(appointmentSaved._id)
+        .populate('studentId', 'personalInfo email studentProfile')
+        .populate('professionalId', 'personalInfo email tutorProfile advisorProfile')
+        .populate('availabilitySlotId', 'subject topic duration');
+
+      return res.status(201).json({
+        success: true,
+        message: "Appointment created successfully",
+        data: populatedAppointment
+      });
+    } catch (txErr) {
+      await session.abortTransaction();
+      session.endSession();
+      throw txErr;
     }
-
-    // Populate para la respuesta
-    const populatedAppointment = await Appointment.findById(appointmentSaved._id)
-      .populate('studentId', 'personalInfo email studentProfile')
-      .populate('professionalId', 'personalInfo email tutorProfile advisorProfile')
-      .populate('availabilitySlotId', 'subject topic duration');
-
-    res.status(201).json({
-      success: true,
-      message: "Appointment created successfully",
-      data: populatedAppointment
-    });
   } catch (error) {
     next(error);
   }

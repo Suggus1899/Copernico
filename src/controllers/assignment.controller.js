@@ -71,7 +71,7 @@ export const getAssignments = async (req, res, next) => {
   }
 };
 
-export const getAssignmentById = async (req, res, next) => {
+export const getAssignmentById = async (req, res, next) => { 
   try {
     const assignment = await Assignment.findById(req.params.id)
       .populate('materialId', 'title subject type difficulty assignmentDetails')

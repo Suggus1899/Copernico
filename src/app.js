@@ -73,6 +73,7 @@ app.get("/", (req, res) => {
     message: "Welcome to S.I-COPERNICO-ACADEMY API",
     description: "Complete Academic Support System API",
     version: "1.0.0",
+    favicon: "GET /favicon.ico",
     endpoints: {
       // Sistema de autenticación y usuarios
       auth: {
@@ -152,6 +153,9 @@ app.get("/", (req, res) => {
     }
   });
 });
+
+// Evitar 404 de favicon en navegadores
+app.get("/favicon.ico", (req, res) => res.sendStatus(204));
 
 // Manejo de errores 404
 app.use((req, res, next) => {
