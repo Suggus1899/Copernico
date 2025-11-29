@@ -19,8 +19,11 @@ export const signup = async (req, res, next) => {
       userType
     } = req.body;
 
+    // Normalizar email para evitar duplicados por case
+    const normalizedEmail = (email || '').trim().toLowerCase();
+
     // Check if user already exists
-    const userExists = await User.findOne({ email });
+    const userExists = await User.findOne({ email: normalizedEmail });
 
     if (userExists) {
       return res.status(400).json({ 
@@ -78,9 +81,18 @@ export const signup = async (req, res, next) => {
       finalTutorProfile = tutorProfileWithoutExp;
     }
 
+    // Validar fortaleza de password (refuerzo adicional al schema por mensajes claros)
+    const passwordPolicy = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d@$!%*?&]{8,}$/;
+    if (!passwordPolicy.test(password || '')) {
+      return res.status(400).json({
+        success: false,
+        error: 'Password must be at least 8 chars, include upper, lower and number.'
+      });
+    }
+
     // El password se hashea automáticamente en el pre-save hook del modelo
     const user = new User({
-      email,
+      email: normalizedEmail,
       password, // Se hasheará automáticamente
       role: finalRole,
       personalInfo: finalPersonalInfo,

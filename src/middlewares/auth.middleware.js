@@ -16,12 +16,14 @@ export const authenticateToken = async (req, res, next) => {
     else if (req.headers['auth-token']) {
       token = req.headers['auth-token'];
     }
-    // También verificar en el body o query (útil para testing, no recomendado en producción)
-    else if (req.body?.token) {
-      token = req.body.token;
-    }
-    else if (req.query?.token) {
-      token = req.query.token;
+    // Solo permitir token en body o query en entorno de test para facilitar pruebas
+    if (process.env.NODE_ENV === 'test') {
+      if (!token && req.body?.token) {
+        token = req.body.token;
+      }
+      if (!token && req.query?.token) {
+        token = req.query.token;
+      }
     }
 
     // Si no hay token, retornar error
@@ -177,8 +179,7 @@ export const optionalAuth = async (req, res, next) => {
           }
         }
       } catch (error) {
-        // Si hay error con el token, simplemente continuar sin autenticar
-        // No lanzar error
+        // Ignorar token inválido en optionalAuth para no romper respuestas públicas
       }
     }
     
@@ -205,7 +206,7 @@ export const requireOwnershipOrRole = (ownerField = 'userId', allowedRoles = ['a
       });
     }
 
-    // Los administradores siempre tienen acceso
+    // Los administradores o roles incluidos siempre tienen acceso
     if (allowedRoles.includes(req.user.role)) {
       return next();
     }

@@ -5,7 +5,18 @@ const SALT_ROUNDS = 10;
 
 const UserSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true, lowercase: true, trim: true, index: true },
-  password: { type: String, required: true, select: false },
+  password: { 
+    type: String, 
+    required: true, 
+    select: false,
+    validate: {
+      validator: function(v) {
+        // Mínimo 8 caracteres, al menos una mayúscula, una minúscula y un dígito
+        return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d@$!%*?&]{8,}$/.test(v);
+      },
+      message: 'Password must be at least 8 chars with upper, lower and number.'
+    }
+  },
   role: { type: String, enum: ['student','tutor','advisor','admin'], default: 'student', index: true },
   status: { type: String, enum: ['active','inactive','suspended','deleted'], default: 'active', index: true },
   personalInfo: {

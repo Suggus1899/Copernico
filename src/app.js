@@ -1,6 +1,10 @@
 import express from "express";
 import cors from "cors";
 import morgan from "morgan";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
+import mongoSanitize from "express-mongo-sanitize";
+import hpp from "hpp";
 
 const app = express();
 
@@ -21,16 +25,32 @@ import notificationRoutes from "./routes/notification.routes.js";
 // settings
 app.set("port", process.env.PORT || 4000);
 
-// middlewares
+// Seguridad básica y middlewares
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:5173',
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'auth-token']
 }));
+// Helmet para headers de seguridad (ajustar según necesidades)
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: 'cross-origin' }
+}));
+// Rate limiting global (100 peticiones / 15 minutos por IP)
+app.use(rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false
+}));
+// Sanitizar payloads contra operadores de MongoDB
+app.use(mongoSanitize());
+// Prevenir HTTP Parameter Pollution
+app.use(hpp());
+// Logging y body parsers
 app.use(morgan("dev"));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true })); // Para form data
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: true, limit: '1mb' })); // Para form data
 
 // routes
 app.use("/api", notesRoutes);
