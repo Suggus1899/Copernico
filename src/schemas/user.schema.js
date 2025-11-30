@@ -72,3 +72,42 @@ export const registerSchema = z.object({
     path: ["confirmPassword"],
   })
 });
+
+export const updateProfileSchema = z.object({
+  body: z.object({
+    // Información personal (opcional para actualizar)
+    personalInfo: z.object({
+      firstName: z.string().min(2, 'El nombre es requerido').optional(),
+      lastName: z.string().min(2, 'El apellido es requerido').optional(),
+      phone: z.string().optional(),
+      avatar: z.string().optional()
+    }).optional(),
+    
+    // Campos condicionales por rol (opcionales)
+    academicProfile: z.object({
+      institution: z.string().optional(),
+      department: z.string().optional(),
+      title: z.string().optional(),
+      experienceYears: z.number().min(0).optional(),
+      skills: z.array(z.string()).optional()
+    }).optional(),
+    
+    // Solo para estudiantes
+    studentProfile: z.object({
+      studentId: z.string().min(1, 'ID Estudiantil es requerido').optional()
+    }).optional(),
+    
+    // Solo para tutores
+    tutorProfile: z.object({
+      specialties: z.array(z.string().min(1)).optional(),
+      experienceYears: z.number().min(0, 'Años de experiencia debe ser 0 o mayor').optional()
+    }).optional(),
+    
+    // Solo para asesores
+    advisorProfile: z.object({
+      specializationAreas: z.array(z.string().min(1)).optional(),
+      certification: z.array(z.string()).optional(),
+      bio: z.string().max(500, 'El enfoque de asesoramiento no debe exceder 500 caracteres').optional()
+    }).optional()
+  })
+});

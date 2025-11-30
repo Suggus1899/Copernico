@@ -19,7 +19,7 @@ function CreateNote() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // const res = await axios.get("http://localhost:4000/api/users");
+    // const res = await axios.get(`${import.meta.env.VITE_API_URL}/users`);
     // if (res.data.length > 0) {
     //   setContent({
     //     ...content,
@@ -28,7 +28,7 @@ function CreateNote() {
     //   });
     // }
     if (params.id) {
-      //     const res = await axios.get('http://localhost:4000/api/notes/' + this.props.match.params.id);
+      //     const res = await axios.get(`${import.meta.env.VITE_API_URL}/notes/` + this.props.match.params.id);
       //     console.log(res.data)
       //     this.setState({
       //         title: res.data.title,
@@ -51,7 +51,7 @@ function CreateNote() {
         date: this.state.date,
       };
       await axios.put(
-        "http://localhost:4000/api/notes/" + this.state._id,
+        `${import.meta.env.VITE_API_URL}/notes/` + this.state._id,
         updatedNote
       );
     } else {
@@ -62,7 +62,7 @@ function CreateNote() {
         author: 'fazt',
         date: content.date,
       };
-      const res = await axios.post("http://localhost:4000/api/notes", newNote);
+      const res = await axios.post(`${import.meta.env.VITE_API_URL}/notes`, newNote);
       console.log(res)
     }
     // navigate("/");

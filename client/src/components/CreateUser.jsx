@@ -104,7 +104,7 @@ onChangeConfirmemail = (e) => {
     e.preventDefault();
     
     // Validate passwords match
-    if (this.state.email !== this.state.confirmemai) {
+    if (this.state.email !== this.state.confirmemail) {
       this.setState({ 
         emailMatchError: 'Los correos no coinciden',
         error: ''
@@ -134,7 +134,7 @@ onChangeConfirmemail = (e) => {
     };
     
     try {
-      const res = await axios.post('http://localhost:4000/api/auth/signup', newUser);
+      const res = await axios.post(`${import.meta.env.VITE_API_URL}/auth/signup`, newUser);
       
       // Registration successful - redirect to login with email as query parameter
       console.log('Registration successful, redirecting to login...');
