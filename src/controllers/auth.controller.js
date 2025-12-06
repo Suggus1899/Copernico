@@ -184,11 +184,12 @@ export const signin = async (req, res, next) => {
       });
     }
 
-    // Reset login attempts on successful login
+    // Reset login attempts on successful login sin revalidar password hash
     user.loginAttempts = 0;
     user.lockedUntil = undefined;
     user.lastLogin = new Date();
-    await user.save();
+    // Evitar revalidación completa que incluye el campo password (hash)
+    await user.save({ validateBeforeSave: false });
 
     // Create and assign a token con expiración configurable
     const token = jwt.sign(

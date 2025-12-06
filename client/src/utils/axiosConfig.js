@@ -1,7 +1,8 @@
 import axios from 'axios';
 
 // Configurar la URL base de la API
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
+// Preferir VITE_API_URL. En Docker: VITE_API_URL="http://api:4000/api"; en local: "http://localhost:4000/api"
+const API_BASE_URL = import.meta.env?.VITE_API_URL || 'http://localhost:4000/api';
 
 // Crear instancia de axios con configuración base
 const apiClient = axios.create({
@@ -14,7 +15,11 @@ const apiClient = axios.create({
 // Interceptor para agregar el token de autenticación a todas las peticiones
 apiClient.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
+    // Proteger uso de localStorage en entornos no-browser
+    const rawToken = typeof window !== 'undefined' && typeof localStorage !== 'undefined'
+      ? localStorage.getItem('token')
+      : null;
+    const token = rawToken?.trim();
     if (token) {
       // Agregar token en el header Authorization (formato Bearer)
       config.headers.Authorization = `Bearer ${token}`;
@@ -37,12 +42,23 @@ apiClient.interceptors.response.use(
     // Si el token es inválido o expiró, redirigir al login
     if (error.response?.status === 401) {
       // Limpiar token inválido
-      localStorage.removeItem('token');
-      
-      // Redirigir al login solo si no estamos ya en la página de login
-      if (window.location.pathname !== '/login' && window.location.pathname !== '/signup') {
-        window.location.href = '/login';
+      if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+        localStorage.removeItem('token');
       }
+
+      // Redirigir al login solo si no estamos ya en la página de login
+      if (typeof window !== 'undefined') {
+        const path = window.location.pathname;
+        if (path !== '/login' && path !== '/signup') {
+          window.location.href = '/login';
+        }
+      }
+    }
+
+    // Manejo de 403 (falta de permisos): no redirigir, pero informar
+    if (error.response?.status === 403) {
+      // Opcional: podrías mostrar una notificación UI aquí
+      // console.warn('Acceso denegado: permisos insuficientes');
     }
     
     return Promise.reject(error);

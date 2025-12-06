@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import apiClient from '../utils/axiosConfig';
 import './UserProfile.css';
 
@@ -6,6 +7,7 @@ const UserProfile = () => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchUserProfile();
@@ -75,6 +77,16 @@ const UserProfile = () => {
     return 'U';
   };
 
+  const getRoleLabel = (role) => {
+    const map = {
+      student: 'Estudiante',
+      tutor: 'Tutor',
+      advisor: 'Asesor',
+      admin: 'Administrador'
+    };
+    return map[role] || role;
+  };
+
   const getFullName = (user) => {
     if (user.personalInfo?.firstName && user.personalInfo?.lastName) {
       return `${user.personalInfo.firstName} ${user.personalInfo.lastName}`;
@@ -94,8 +106,12 @@ const UserProfile = () => {
           <h2 className="profile-name">{getFullName(user)}</h2>
           <p className="profile-email">{user.email}</p>
           {user.role && (
-            <p className="profile-role">Rol: {user.role}</p>
+            <p className="profile-role">Rol: {getRoleLabel(user.role)}</p>
           )}
+          <div className="profile-actions">
+            <button className="btn btn-outline-primary" onClick={() => navigate('/account/change-email')}>Cambiar dirección de correo electrónico</button>
+            <button className="btn btn-outline-secondary" onClick={() => navigate('/account/change-password')}>Cambiar contraseña</button>
+          </div>
         </div>
       </div>
       
@@ -112,14 +128,62 @@ const UserProfile = () => {
             <span className="detail-value">{user.personalInfo.lastName}</span>
           </div>
         )}
+        {user.personalInfo?.username && (
+          <div className="detail-item">
+            <span className="detail-label">Usuario:</span>
+            <span className="detail-value">{user.personalInfo.username}</span>
+          </div>
+        )}
         <div className="detail-item">
           <span className="detail-label">Correo electrónico:</span>
           <span className="detail-value">{user.email}</span>
         </div>
+        {user.personalInfo?.email && (
+          <div className="detail-item">
+            <span className="detail-label">Correo alterno:</span>
+            <span className="detail-value">{user.personalInfo.email}</span>
+          </div>
+        )}
+        {user.personalInfo?.address && (
+          <div className="detail-item">
+            <span className="detail-label">Dirección:</span>
+            <span className="detail-value">{user.personalInfo.address}</span>
+          </div>
+        )}
+        {user.personalInfo?.city && (
+          <div className="detail-item">
+            <span className="detail-label">Ciudad:</span>
+            <span className="detail-value">{user.personalInfo.city}</span>
+          </div>
+        )}
+        {user.personalInfo?.province && (
+          <div className="detail-item">
+            <span className="detail-label">Provincia:</span>
+            <span className="detail-value">{user.personalInfo.province}</span>
+          </div>
+        )}
+        {user.personalInfo?.country && (
+          <div className="detail-item">
+            <span className="detail-label">País:</span>
+            <span className="detail-value">{user.personalInfo.country}</span>
+          </div>
+        )}
+        {user.personalInfo?.postalCode && (
+          <div className="detail-item">
+            <span className="detail-label">Código Postal:</span>
+            <span className="detail-value">{user.personalInfo.postalCode}</span>
+          </div>
+        )}
+        {user.personalInfo?.phone && (
+          <div className="detail-item">
+            <span className="detail-label">Teléfono:</span>
+            <span className="detail-value">{user.personalInfo.phone}</span>
+          </div>
+        )}
         {user.role && (
           <div className="detail-item">
             <span className="detail-label">Rol:</span>
-            <span className="detail-value">{user.role}</span>
+            <span className="detail-value">{getRoleLabel(user.role)}</span>
           </div>
         )}
         {user.createdAt && (

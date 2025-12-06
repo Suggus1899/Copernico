@@ -30,6 +30,11 @@ const SidebarMenu = () => {
       label: 'Tutores'
     },
     {
+      path: '/dashboard/asesoria',
+      icon: '💬',
+      label: 'Asesoría'
+    },
+    {
       path: '/dashboard/notas',
       icon: '📝',
       label: 'Mis Notas'

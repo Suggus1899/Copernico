@@ -1,4 +1,4 @@
-version: "3.8"
+
 
 services:
   # Base de datos MongoDB
@@ -63,7 +63,8 @@ services:
       - /app/node_modules
     environment:
       - NODE_ENV=development
-      - VITE_API_URL=http://api:4000/api
+      # Importante: el navegador accede via host, no por nombre de servicio Docker
+      - VITE_API_URL=http://localhost:4000/api
     depends_on:
       - api
     networks:

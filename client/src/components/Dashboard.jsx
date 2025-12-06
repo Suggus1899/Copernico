@@ -1,6 +1,6 @@
 import React from 'react';
+import { Outlet } from 'react-router-dom';
 import SidebarMenu from './SidebarMenu';
-import UserProfile from './UserProfile';
 import './Dashboard.css';
 
 const Dashboard = () => {
@@ -13,13 +13,8 @@ const Dashboard = () => {
           <p>Tu plataforma de aprendizaje y tutorías</p>
         </div>
         <div className="dashboard-main">
-          <UserProfile />
-          <div className="dashboard-welcome">
-            <div className="welcome-card">
-              <h2>¡Bienvenido de nuevo!</h2>
-              <p>Has iniciado sesión correctamente. Explora todas las funcionalidades disponibles desde el menú lateral.</p>
-            </div>
-          </div>
+          {/* Renderiza vistas específicas dentro del layout del Dashboard */}
+          <Outlet />
         </div>
       </div>
     </div>

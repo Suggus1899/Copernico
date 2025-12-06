@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import axios from 'axios';
+import apiClient from '../utils/axiosConfig';
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
 // Wrapper component to use hooks with class component
@@ -59,7 +59,7 @@ class Login extends Component {
     };
     
     try {
-      const res = await axios.post(`${import.meta.env.VITE_API_URL}/auth/signin`, user);
+      const res = await apiClient.post(`/auth/signin`, user);
       // El backend ahora devuelve { success: true, token, user }
       const token = res.data.token || res.data;
       localStorage.setItem('token', token); // Save the token

@@ -22,6 +22,13 @@ const UserSchema = new mongoose.Schema({
   personalInfo: {
     firstName: String,
     lastName: String,
+    username: String,
+    email: String, // copia del email si se quiere mostrar en perfil
+    address: String,
+    city: String,
+    country: String,
+    province: String,
+    postalCode: String,
     avatar: String,
     phone: String,
     bio: String

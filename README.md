@@ -421,6 +421,8 @@ environment:
   - MONGODB_URI=mongodb://db:27017/merndatabase
   - JWT_SECRET=${JWT_SECRET:-default-secret}
   - FRONTEND_URL=http://localhost:5173
+  # Frontend (Vite) consumiendo la API desde el navegador (host)
+  - VITE_API_URL=http://localhost:4000/api
 ```
 
 **Nota**: `db` es el nombre del servicio MongoDB en la red Docker.
@@ -490,6 +492,9 @@ JWT_SECRET=your-super-secret-jwt-key-change-in-production
 
 # CORS
 FRONTEND_URL=http://localhost:5173
+
+# Frontend (Vite) - URL de la API en local
+VITE_API_URL=http://localhost:4000/api
 ```
 
 #### 2. Instalación de Dependencias
@@ -1084,6 +1089,12 @@ curl http://localhost:4000/api/users/profile \
 #### Backend
 
 ```bash
+
+### Configuración Frontend
+
+Para que el frontend (Vite) apunte correctamente a la API:
+
+```bash
 # Modo debug con inspector
 npm run debug
 
@@ -1093,10 +1104,18 @@ npm run debug
 
 #### Frontend
 
+En Docker Compose ya se define para el cliente:
+
+```yaml
+
 ```bash
 # React DevTools
 # Instala extensión en Chrome/Firefox
 
+
+Notas:
+- Si cambias el puerto del backend, actualiza `VITE_API_URL` en el `.env` del cliente.
+- En producción, configura la URL pública de la API en el entorno de build del frontend.
 # Vite DevTools
 # Abre DevTools del navegador
 ```

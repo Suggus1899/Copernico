@@ -53,7 +53,8 @@ app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' })); // Para form data
 
 // routes
-app.use("/api", notesRoutes);
+// Montar notas bajo /api/notes para no interceptar rutas públicas como /api/health
+app.use("/api/notes", notesRoutes);
 app.use("/api/users", usersRoutes);
 app.use("/api/auth", authRoutes);
 
