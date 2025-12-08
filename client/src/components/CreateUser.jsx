@@ -20,14 +20,7 @@ class CreateUser extends Component {
 		passwordMatchError: '',
 		passwordPolicyError: '',
 		emailMatchError: '',
-		// Campos adicionales de información personal
 		username: '',
-		address: '',
-		city: '',
-		country: '',
-		province: '',
-		postalCode: '',
-		phone: '',
 		loading: false,
 	};
 
@@ -120,27 +113,9 @@ class CreateUser extends Component {
 		});
 	};
 
-	// Handlers adicionales
+	// Handler username
 	onChangeUsername = (e) => {
 		this.setState({ username: e.target.value });
-	};
-	onChangeAddress = (e) => {
-		this.setState({ address: e.target.value });
-	};
-	onChangeCity = (e) => {
-		this.setState({ city: e.target.value });
-	};
-	onChangeCountry = (e) => {
-		this.setState({ country: e.target.value });
-	};
-	onChangeProvince = (e) => {
-		this.setState({ province: e.target.value });
-	};
-	onChangePostalCode = (e) => {
-		this.setState({ postalCode: e.target.value });
-	};
-	onChangePhone = (e) => {
-		this.setState({ phone: e.target.value });
 	};
 
 	onSubmit = async (e) => {
@@ -200,34 +175,7 @@ class CreateUser extends Component {
 				lastName: lastName || '',
 				username: (this.state.username || '').trim(),
 				email: (this.state.email || '').trim(),
-				address: (this.state.address || '').trim(),
-				city: (this.state.city || '').trim(),
-				country: (this.state.country || '').trim(),
-				province: (this.state.province || '').trim(),
-				postalCode: (this.state.postalCode || '').trim(),
-				phone: (this.state.phone || '').trim(),
 			},
-			...(role === 'student'
-				? {
-						studentProfile: {
-							studentId: ((this.state.email || '').split('@')[0] || firstName || 'student').trim(),
-						},
-					}
-				: {}),
-			...(role === 'tutor'
-				? {
-						tutorProfile: {
-							specialties: ['general'],
-						},
-					}
-				: {}),
-			...(role === 'advisor'
-				? {
-						advisorProfile: {
-							specializationAreas: ['general'],
-						},
-					}
-				: {}),
 		};
 
 		try {
@@ -336,73 +284,7 @@ class CreateUser extends Component {
 								<span className="error-message">{this.state.emailMatchError}</span>
 							)}
 						</div>
-						{/* Campos adicionales de información personal dentro del formulario */}
-						<div className="input-group">
-							<label htmlFor="address">Dirección</label>
-							<input
-								type="text"
-								id="address"
-								placeholder="Dirección"
-								onChange={this.onChangeAddress}
-								value={this.state.address}
-								disabled={this.state.loading}
-							/>
-						</div>
-						<div className="input-group">
-							<label htmlFor="city">Ciudad</label>
-							<input
-								type="text"
-								id="city"
-								placeholder="Ciudad"
-								onChange={this.onChangeCity}
-								value={this.state.city}
-								disabled={this.state.loading}
-							/>
-						</div>
-						<div className="input-group">
-							<label htmlFor="country">País</label>
-							<input
-								type="text"
-								id="country"
-								placeholder="País"
-								onChange={this.onChangeCountry}
-								value={this.state.country}
-								disabled={this.state.loading}
-							/>
-						</div>
-						<div className="input-group">
-							<label htmlFor="province">Provincia</label>
-							<input
-								type="text"
-								id="province"
-								placeholder="Provincia"
-								onChange={this.onChangeProvince}
-								value={this.state.province}
-								disabled={this.state.loading}
-							/>
-						</div>
-						<div className="input-group">
-							<label htmlFor="postalCode">Código Postal</label>
-							<input
-								type="text"
-								id="postalCode"
-								placeholder="Código Postal"
-								onChange={this.onChangePostalCode}
-								value={this.state.postalCode}
-								disabled={this.state.loading}
-							/>
-						</div>
-						<div className="input-group">
-							<label htmlFor="phone">Número de teléfono</label>
-							<input
-								type="text"
-								id="phone"
-								placeholder="Teléfono"
-								onChange={this.onChangePhone}
-								value={this.state.phone}
-								disabled={this.state.loading}
-							/>
-						</div>
+						{/* Información personal adicional se completará en el perfil */}
 						<div className="input-group">
 							<label htmlFor="password">Contraseña</label>
 							<input
@@ -438,21 +320,7 @@ class CreateUser extends Component {
 								<span className="error-message">{this.state.passwordMatchError}</span>
 							)}
 						</div>
-						<div className="input-group">
-							<label htmlFor="userType">Tipo de Usuario</label>
-							<select
-								id="userType"
-								onChange={this.onChangeUserType}
-								value={this.state.userType}
-								required
-								disabled={this.state.loading}
-								className="user-type-select"
-							>
-								<option value="Estudiante">Estudiante</option>
-								<option value="Tutor">Tutor</option>
-								<option value="Asesor">Asesor</option>
-							</select>
-						</div>
+						{/* Tipo de usuario opcional; por defecto Estudiante */}
 						<button type="submit" className="sign-in-btn" disabled={this.state.loading}>
 							{this.state.loading ? 'Registrando...' : 'Registrarse'}
 						</button>

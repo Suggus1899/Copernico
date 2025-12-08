@@ -54,32 +54,6 @@ export const registerSchema = z.object({
     message: "Passwords don't match",
     path: ["confirmPassword"],
   })
-}).superRefine((req, ctx) => {
-  const data = req.body;
-  if (!data) return;
-  const role = data.role;
-  if (role === 'student' && !data.studentProfile?.studentId) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: 'ID Estudiantil es requerido para estudiantes',
-      path: ['body', 'studentProfile', 'studentId']
-    });
-  }
-  if (role === 'tutor' && (!data.tutorProfile?.specialties || data.tutorProfile.specialties.length === 0)) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: 'Al menos una especialidad es requerida para tutores',
-      path: ['body', 'tutorProfile', 'specialties']
-    });
-  }
-  if (role === 'advisor' && (!data.advisorProfile?.specializationAreas || data.advisorProfile.specializationAreas.length === 0)) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: 'Al menos un área de especialización es requerida para asesores',
-      path: ['body', 'advisorProfile', 'specializationAreas']
-    });
-  }
-  // admin no requiere perfiles adicionales
 });
 
 export const updateProfileSchema = z.object({
