@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import apiClient from '../utils/axiosConfig';
 import './UserProfile.css';
+import SidebarMenu from './SidebarMenu';
+import './Dashboard.css';
 
 const UserProfile = () => {
   const [user, setUser] = useState(null);
@@ -95,7 +97,10 @@ const UserProfile = () => {
   };
 
   return (
-    <div className="user-profile">
+    <div className="dashboard-container">
+      <SidebarMenu />
+      <div className="dashboard-content">
+        <div className="user-profile">
       <div className="profile-header">
         <div className="profile-avatar">
           <div className="avatar-circle">
@@ -198,6 +203,8 @@ const UserProfile = () => {
             </span>
           </div>
         )}
+      </div>
+        </div>
       </div>
     </div>
   );

@@ -13,44 +13,14 @@ const SidebarMenu = () => {
   };
 
   const menuItems = [
-    {
-      path: '/dashboard',
-      icon: '🏠',
-      label: 'Inicio',
-      exact: true
-    },
-    {
-      path: '/dashboard/cursos',
-      icon: '📚',
-      label: 'Mis Cursos'
-    },
-    {
-      path: '/dashboard/tutores',
-      icon: '👨‍🏫',
-      label: 'Tutores'
-    },
-    {
-      path: '/dashboard/asesoria',
-      icon: '💬',
-      label: 'Asesoría'
-    },
-    {
-      path: '/dashboard/notas',
-      icon: '📝',
-      label: 'Mis Notas'
-    },
-    {
-      path: '/dashboard/perfil',
-      icon: '👤',
-      label: 'Mi Perfil'
-    },
-    {
-      path: '/dashboard/configuracion',
-      icon: '⚙️',
-      label: 'Configuración'
-    }
+    { path: '/dashboard', icon: '🏠', label: 'Inicio', exact: true },
+    { path: '/dashboard/cursos', icon: '📚', label: 'Mis Cursos' },
+    { path: '/dashboard/tutores', icon: '👨‍🏫', label: 'Tutores' },
+    { path: '/dashboard/asesoria', icon: '💬', label: 'Asesoría' },
+    { path: '/dashboard/notas', icon: '📝', label: 'Mis Notas' },
+    { path: '/dashboard/perfil', icon: '👤', label: 'Mi Perfil' },
+    { path: '/dashboard/configuracion', icon: '⚙️', label: 'Configuración' }
   ];
-
   const isActive = (path, exact = false) => {
     if (exact) {
       return location.pathname === path;

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import apiClient from "../utils/axiosConfig";
 import { Link } from "react-router-dom";
 
-export function NotesList() {
+function NotesList() {
   const [notes, setNotes] = useState([]);
 
   useEffect(() => {
@@ -59,3 +59,5 @@ export function NotesList() {
     </div>
   );
 }
+
+export default NotesList;
