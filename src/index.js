@@ -5,8 +5,8 @@ import "./database.js";
 async function main() {
   try {
     const server = app.listen(PORT, () => {
-      console.log(`✅ Server running on port ${PORT}`);
-      console.log(`📡 Environment: ${process.env.NODE_ENV || 'development'}`);
+      console.log(` Server running on port ${PORT}`);
+      console.log(` Environment: ${process.env.NODE_ENV || 'development'}`);
     });
 
     // Graceful shutdown

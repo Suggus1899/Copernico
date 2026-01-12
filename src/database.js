@@ -11,11 +11,11 @@ const options = {
 
 try {
   const conn = await mongoose.connect(MONGODB_URI, options);
-  console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
-  console.log(`📊 Database: ${conn.connection.db.databaseName}`);
+  console.log(` MongoDB Connected: ${conn.connection.host}`);
+  console.log(` Database: ${conn.connection.db.databaseName}`);
 } catch (error) {
-  console.error("❌ Error connecting to MongoDB:", error.message);
-  console.error("\n📝 SOLUCIÓN:");
+  console.error(" Error connecting to MongoDB:", error.message);
+  console.error("\n SOLUCIÓN:");
   console.error("1. Si usas MongoDB local, asegúrate de que esté corriendo:");
   console.error("   - Windows: Instala MongoDB Community Server");
   console.error("   - O usa MongoDB Atlas (gratis): https://www.mongodb.com/cloud/atlas");

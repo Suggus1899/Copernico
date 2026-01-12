@@ -9,11 +9,11 @@ export const MONGODB_URI =
 const JWT_SECRET_ENV = process.env.JWT_SECRET;
 if (!JWT_SECRET_ENV || JWT_SECRET_ENV === "secretkey" || JWT_SECRET_ENV.length < 32) {
   if (process.env.NODE_ENV === 'production') {
-    console.error('⚠️  ERROR CRÍTICO: JWT_SECRET no está configurado o es inseguro en producción');
+    console.error('  ERROR CRÍTICO: JWT_SECRET no está configurado o es inseguro en producción');
     console.error('   Configura una clave secreta de al menos 32 caracteres en .env');
     process.exit(1);
   } else {
-    console.warn('⚠️  ADVERTENCIA: JWT_SECRET usando valor por defecto. NO usar en producción.');
+    console.warn('  ADVERTENCIA: JWT_SECRET usando valor por defecto. NO usar en producción.');
   }
 }
 

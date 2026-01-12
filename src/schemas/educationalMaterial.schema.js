@@ -34,7 +34,7 @@ export const createEducationalMaterialSchema = z.object({
     // Validar que tenga al menos un recurso
     return !!(data.fileUrl || data.externalLink || data.content);
   }, {
-    message: "Material must have at least one resource (fileUrl, externalLink, or content)",
+    message: "Material must have at least one resource (fileUrl, externalLink, or contents)",
     path: ["fileUrl"]
   }).refine((data) => {
     // Si es assignment, validar dueDate
