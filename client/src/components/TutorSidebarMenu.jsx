@@ -1,0 +1,75 @@
+import React from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import logo from '../assets/logo.jpg';
+import './SidebarMenu.css';
+
+const TutorSidebarMenu = ({ userRole = 'tutor' }) => {
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    navigate('/login');
+  };
+
+  const isAdvisor = userRole === 'advisor';
+  const roleTitle = isAdvisor ? 'Panel de Asesor' : 'Panel de Tutor';
+
+  const menuItems = [
+    { path: '/dashboard', icon: '🏠', label: 'Dashboard', exact: true },
+    { path: '/dashboard/cursos-tutor', icon: '📚', label: isAdvisor ? 'Mis Asesorías' : 'Mis Cursos/Grupos' },
+    { path: '/dashboard/estudiantes', icon: '👨‍🎓', label: 'Mis Estudiantes' },
+    { path: '/dashboard/agenda', icon: '📅', label: isAdvisor ? 'Agenda de Asesorías' : 'Agenda de Clases' },
+    { path: '/dashboard/materiales', icon: '📄', label: 'Gestión de Materiales' },
+    { path: '/dashboard/progreso', icon: '📊', label: 'Progreso Estudiantes' },
+    { path: '/dashboard/notificaciones', icon: '🔔', label: 'Notificaciones' },
+    { path: '/dashboard/perfil-tutor', icon: '👤', label: isAdvisor ? 'Mi Perfil de Asesor' : 'Mi Perfil de Tutor' }
+  ];
+
+  const isActive = (path, exact = false) => {
+    if (exact) {
+      return location.pathname === path;
+    }
+    return location.pathname.startsWith(path);
+  };
+
+  return (
+    <aside className="sidebar-menu">
+      <div className="sidebar-header">
+        <div className="sidebar-header-content">
+          <img src={logo} alt="Copernico Academy Logo" className="sidebar-logo" />
+          <h3 className="sidebar-title">{roleTitle}</h3>
+        </div>
+      </div>
+
+      <nav className="sidebar-nav">
+        <ul className="menu-list">
+          {menuItems.map((item) => (
+            <li key={item.path} className="menu-item">
+              <Link
+                to={item.path}
+                className={`menu-link ${isActive(item.path, item.exact) ? 'active' : ''}`}
+              >
+                <span className="menu-icon">{item.icon}</span>
+                <span className="menu-label">{item.label}</span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </nav>
+
+      <div className="sidebar-footer">
+        <div className="tutor-status">
+          <div className="status-indicator online"></div>
+          <span className="status-text">En línea</span>
+        </div>
+        <button onClick={handleLogout} className="logout-btn">
+          <span className="menu-icon">🚪</span>
+          <span className="menu-label">Cerrar Sesión</span>
+        </button>
+      </div>
+    </aside>
+  );
+};
+
+export default TutorSidebarMenu;

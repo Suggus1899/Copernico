@@ -148,7 +148,7 @@ class Login extends Component {
               />
             </div>
             <div className="options">
-              <a href="#">¿Olvidaste tu contraseña?</a>
+              <Link to="/forgot-password">¿Olvidaste tu contraseña?</Link>
             </div>
             <button 
               type="submit" 

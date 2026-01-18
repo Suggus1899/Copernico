@@ -4,6 +4,7 @@ import { Navigation } from "./components/Navigation";
 import Homepage from "./components/Homepage";
 import CreateUser from "./components/CreateUser";
 import Login from "./components/Login";
+import ForgotPassword from "./components/ForgotPassword";
 import Dashboard from "./components/Dashboard";
 import MyCourses from "./components/MyCourses";
 import Advisories from "./components/Advisories";
@@ -14,6 +15,14 @@ import Settings from "./components/Settings";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ChangeEmail from "./components/ChangeEmail";
 import ChangePassword from "./components/ChangePassword";
+// Componentes de Tutor
+import TutorCourses from "./components/TutorCourses";
+import TutorStudents from "./components/TutorStudents";
+import TutorAgenda from "./components/TutorAgenda";
+import TutorMaterials from "./components/TutorMaterials";
+import TutorProgress from "./components/TutorProgress";
+import TutorNotifications from "./components/TutorNotifications";
+import TutorProfile from "./components/TutorProfile";
 
 import "./App.css";
 
@@ -40,6 +49,12 @@ function App() {
               <Login />
             </>
           } />
+          <Route path="/forgot-password" element={
+            <>
+              <Navigation />
+              <ForgotPassword />
+            </>
+          } />
           <Route path="/signup" element={
             <>
               <Navigation />
@@ -56,6 +71,14 @@ function App() {
             <Route path="/dashboard/configuracion" element={<Settings />} />
             <Route path="/account/change-email" element={<ChangeEmail />} />
             <Route path="/account/change-password" element={<ChangePassword />} />
+            {/* Rutas específicas para tutores */}
+            <Route path="/dashboard/cursos-tutor" element={<TutorCourses />} />
+            <Route path="/dashboard/estudiantes" element={<TutorStudents />} />
+            <Route path="/dashboard/agenda" element={<TutorAgenda />} />
+            <Route path="/dashboard/materiales" element={<TutorMaterials />} />
+            <Route path="/dashboard/progreso" element={<TutorProgress />} />
+            <Route path="/dashboard/notificaciones" element={<TutorNotifications />} />
+            <Route path="/dashboard/perfil-tutor" element={<TutorProfile />} />
           </Route>
         </Routes>
       </BrowserRouter>

@@ -15,7 +15,7 @@ class CreateUser extends Component {
 		confirmemail: '',
 		password: '',
 		confirmPassword: '',
-		userType: 'Estudiante',
+		userType: '',
 		error: '',
 		passwordMatchError: '',
 		passwordPolicyError: '',
@@ -150,6 +150,15 @@ class CreateUser extends Component {
 			return;
 		}
 
+		// Validar que se haya seleccionado un tipo de cuenta
+		if (!this.state.userType) {
+			this.setState({
+				error: 'Por favor selecciona un tipo de cuenta',
+				loading: false,
+			});
+			return;
+		}
+
 		// Si pasa validaciones, activar loading y limpiar errores
 		this.setState({ loading: true, error: '', emailMatchError: '', passwordMatchError: '', passwordPolicyError: '' });
 
@@ -223,108 +232,201 @@ class CreateUser extends Component {
 
 	render() {
 		return (
-			<div className="login-container">
-				<div className="login-box">
-					<h2>Crear Cuenta</h2>
-					<p>Crea tu cuenta para empezar.</p>
+			<div className="signup-container">
+				<div className="signup-card">
+					<div className="signup-header">
+						<h2>Crear Cuenta</h2>
+						<p>Únete a S.I Copernico Academy</p>
+					</div>
+
 					{this.state.error && (
 						<div className="alert alert-danger" role="alert">
 							{this.state.error}
 						</div>
 					)}
+
 					<form onSubmit={this.onSubmit}>
-						<div className="input-group">
-							<label htmlFor="fullname">Nombre Completo</label>
-							<input
-								type="text"
-								id="fullname"
-								placeholder="Ingresa tu nombre completo"
-								onChange={this.onChangeFullname}
-								value={this.state.fullname}
-								required
-								disabled={this.state.loading}
-							/>
-						</div>
-						<div className="input-group">
-							<label htmlFor="username">Usuario</label>
-							<input
-								type="text"
-								id="username"
-								placeholder="Nombre de usuario"
-								onChange={this.onChangeUsername}
-								value={this.state.username}
-								disabled={this.state.loading}
-							/>
-						</div>
-						<div className="input-group">
-							<label htmlFor="email">Correo Electrónico</label>
-							<input
-								type="email"
-								id="email"
-								placeholder="Ingresa tu correo electrónico"
-								onChange={this.onChangeEmail}
-								value={this.state.email}
-								required
-								disabled={this.state.loading}
-							/>
-						</div>
-						<div className="input-group">
-							<label htmlFor="confirmemail">Confirmar Correo Electrónico</label>
-							<input
-								type="email"
-								id="confirmemail"
-								placeholder="Confirma tu correo"
-								onChange={this.onChangeConfirmemail}
-								value={this.state.confirmemail}
-								required
-								disabled={this.state.loading}
-								className={this.state.emailMatchError ? 'input-error' : ''}
-							/>
-							{this.state.emailMatchError && (
-								<span className="error-message">{this.state.emailMatchError}</span>
+						{/* Selección de tipo de cuenta con tarjetas */}
+						<div className="account-type-section">
+							<h3>¿Qué tipo de cuenta deseas crear?</h3>
+							<div className="account-type-cards">
+								<div
+									className={`account-type-card ${this.state.userType === 'Estudiante' ? 'selected' : ''}`}
+									onClick={() => this.setState({ userType: 'Estudiante' })}
+								>
+									<div className="card-icon">🎓</div>
+									<div className="card-content">
+										<h4>Estudiante</h4>
+										<p>Acceso a cursos, tutores y materiales educativos</p>
+									</div>
+									<div className={`card-radio ${this.state.userType === 'Estudiante' ? 'checked' : ''}`}>
+										<div className="radio-dot"></div>
+									</div>
+								</div>
+
+								<div
+									className={`account-type-card ${this.state.userType === 'Tutor' ? 'selected' : ''}`}
+									onClick={() => this.setState({ userType: 'Tutor' })}
+								>
+									<div className="card-icon">👨‍🏫</div>
+									<div className="card-content">
+										<h4>Tutor</h4>
+										<p>Ofrece tutorías y comparte conocimientos</p>
+									</div>
+									<div className={`card-radio ${this.state.userType === 'Tutor' ? 'checked' : ''}`}>
+										<div className="radio-dot"></div>
+									</div>
+								</div>
+
+								<div
+									className={`account-type-card ${this.state.userType === 'Asesor' ? 'selected' : ''}`}
+									onClick={() => this.setState({ userType: 'Asesor' })}
+								>
+									<div className="card-icon">💼</div>
+									<div className="card-content">
+										<h4>Asesor</h4>
+										<p>Proporciona asesorías especializadas</p>
+									</div>
+									<div className={`card-radio ${this.state.userType === 'Asesor' ? 'checked' : ''}`}>
+										<div className="radio-dot"></div>
+									</div>
+								</div>
+							</div>
+							{!this.state.userType && (
+								<div className="error-message">Por favor selecciona un tipo de cuenta</div>
 							)}
 						</div>
-						{/* Información personal adicional se completará en el perfil */}
-						<div className="input-group">
-							<label htmlFor="password">Contraseña</label>
-							<input
-								type="password"
-								id="password"
-								placeholder="Ingresa tu contraseña (8+ con mayúscula, minúscula y número)"
-								onChange={this.onChangePassword}
-								value={this.state.password}
-								required
-								disabled={this.state.loading}
-								minLength="8"
-								className={this.state.passwordMatchError ? 'input-error' : ''}
-							/>
-							<small className="help-text">Debe incluir al menos: una mayúscula, una minúscula y un número.</small>
-							{this.state.passwordPolicyError && (
-								<span className="error-message">{this.state.passwordPolicyError}</span>
-							)}
+
+						{/* Información personal */}
+						<div className="form-section">
+							<h3>Información Personal</h3>
+							<div className="form-grid">
+								<div className="input-group">
+									<label htmlFor="fullname">Nombre Completo</label>
+									<input
+										type="text"
+										id="fullname"
+										placeholder="Ingresa tu nombre completo"
+										onChange={this.onChangeFullname}
+										value={this.state.fullname}
+										required
+										disabled={this.state.loading}
+									/>
+								</div>
+
+								<div className="input-group">
+									<label htmlFor="username">Nombre de Usuario</label>
+									<input
+										type="text"
+										id="username"
+										placeholder="Elige un nombre de usuario"
+										onChange={this.onChangeUsername}
+										value={this.state.username}
+										disabled={this.state.loading}
+									/>
+								</div>
+							</div>
 						</div>
-						<div className="input-group">
-							<label htmlFor="confirmPassword">Confirmar Contraseña</label>
-							<input
-								type="password"
-								id="confirmPassword"
-								placeholder="Confirma tu contraseña"
-								onChange={this.onChangeConfirmPassword}
-								value={this.state.confirmPassword}
-								required
-								disabled={this.state.loading}
-								minLength="8"
-								className={this.state.passwordMatchError ? 'input-error' : ''}
-							/>
-							{this.state.passwordMatchError && (
-								<span className="error-message">{this.state.passwordMatchError}</span>
-							)}
+
+						{/* Información de acceso */}
+						<div className="form-section">
+							<h3>Información de Acceso</h3>
+							<div className="input-group">
+								<label htmlFor="email">Correo Electrónico</label>
+								<input
+									type="email"
+									id="email"
+									placeholder="tu@email.com"
+									onChange={this.onChangeEmail}
+									value={this.state.email}
+									required
+									disabled={this.state.loading}
+								/>
+							</div>
+
+							<div className="input-group">
+								<label htmlFor="confirmemail">Confirmar Correo Electrónico</label>
+								<input
+									type="email"
+									id="confirmemail"
+									placeholder="Confirma tu correo electrónico"
+									onChange={this.onChangeConfirmemail}
+									value={this.state.confirmemail}
+									required
+									disabled={this.state.loading}
+									className={this.state.emailMatchError ? 'input-error' : ''}
+								/>
+								{this.state.emailMatchError && (
+									<span className="error-message">{this.state.emailMatchError}</span>
+								)}
+							</div>
 						</div>
-						{/* Tipo de usuario opcional; por defecto Estudiante */}
-						<button type="submit" className="sign-in-btn" disabled={this.state.loading}>
-							{this.state.loading ? 'Registrando...' : 'Registrarse'}
-						</button>
+
+						{/* Seguridad */}
+						<div className="form-section">
+							<h3>Seguridad</h3>
+							<div className="input-group">
+								<label htmlFor="password">Contraseña</label>
+								<input
+									type="password"
+									id="password"
+									placeholder="Crea una contraseña segura"
+									onChange={this.onChangePassword}
+									value={this.state.password}
+									required
+									disabled={this.state.loading}
+									minLength="8"
+									className={this.state.passwordMatchError ? 'input-error' : ''}
+								/>
+								<div className="password-requirements">
+									<small className="help-text">
+										<span className="req-icon">✓</span> Al menos 8 caracteres
+									</small>
+									<small className="help-text">
+										<span className="req-icon">✓</span> Una letra mayúscula
+									</small>
+									<small className="help-text">
+										<span className="req-icon">✓</span> Una letra minúscula
+									</small>
+									<small className="help-text">
+										<span className="req-icon">✓</span> Un número
+									</small>
+								</div>
+								{this.state.passwordPolicyError && (
+									<span className="error-message">{this.state.passwordPolicyError}</span>
+								)}
+							</div>
+
+							<div className="input-group">
+								<label htmlFor="confirmPassword">Confirmar Contraseña</label>
+								<input
+									type="password"
+									id="confirmPassword"
+									placeholder="Repite tu contraseña"
+									onChange={this.onChangeConfirmPassword}
+									value={this.state.confirmPassword}
+									required
+									disabled={this.state.loading}
+									minLength="8"
+									className={this.state.passwordMatchError ? 'input-error' : ''}
+								/>
+								{this.state.passwordMatchError && (
+									<span className="error-message">{this.state.passwordMatchError}</span>
+								)}
+							</div>
+						</div>
+
+						{/* Botón de registro */}
+						<div className="form-actions">
+							<button type="submit" className="signup-btn" disabled={this.state.loading}>
+								{this.state.loading ? 'Creando cuenta...' : 'Crear Mi Cuenta'}
+							</button>
+						</div>
 					</form>
+
+					<div className="signup-footer">
+						<p>¿Ya tienes una cuenta? <a href="/login">Inicia sesión</a></p>
+					</div>
 				</div>
 			</div>
 		);

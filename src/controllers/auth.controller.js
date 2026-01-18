@@ -216,11 +216,50 @@ export const signin = async (req, res, next) => {
   }
 };
 
+export const forgotPassword = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        error: "Email is required"
+      });
+    }
+
+    // Normalizar email
+    const normalizedEmail = email.trim().toLowerCase();
+
+    // Check if user exists
+    const user = await User.findOne({ email: normalizedEmail });
+
+    if (!user) {
+      // Por seguridad, no revelamos si el email existe o no
+      return res.status(200).json({
+        success: true,
+        message: "Si el correo electrónico está registrado, recibirás un enlace para restablecer tu contraseña."
+      });
+    }
+
+    // TODO: En una implementación completa, aquí se generaría un token de reset
+    // y se enviaría un email con el enlace de recuperación
+
+    // Por ahora, solo retornamos éxito
+    return res.status(200).json({
+      success: true,
+      message: "Si el correo electrónico está registrado, recibirás un enlace para restablecer tu contraseña."
+    });
+  } catch (error) {
+    console.error('Forgot password error:', error.message);
+    next(error);
+  }
+};
+
 export const profile = async (req, res, next) => {
   try {
     const userFound = await User.findById(req.user._id)
       .select("-password -verificationToken -passwordResetToken");
-    
+
     if (!userFound) {
       return res.status(404).json({
         success: false,
