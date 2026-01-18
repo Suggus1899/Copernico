@@ -23,6 +23,8 @@ import TutorMaterials from "./components/TutorMaterials";
 import TutorProgress from "./components/TutorProgress";
 import TutorNotifications from "./components/TutorNotifications";
 import TutorProfile from "./components/TutorProfile";
+import TutorDashboard from "./components/TutorDashboard";
+import AdvisorDashboard from "./components/AdvisorDashboard";
 
 import "./App.css";
 
@@ -63,6 +65,9 @@ function App() {
           } />
           <Route element={<ProtectedRoute />}>
             <Route path="/dashboard" element={<Dashboard />} />
+            {/* Dashboards por rol */}
+            <Route path="/dashboard/tutor" element={<TutorDashboard />} />
+            <Route path="/dashboard/asesor" element={<AdvisorDashboard />} />
             <Route path="/dashboard/cursos" element={<MyCourses />} />
             <Route path="/dashboard/tutores" element={<Tutors />} />
             <Route path="/dashboard/asesoria" element={<Advisories />} />

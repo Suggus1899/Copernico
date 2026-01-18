@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import TutorSidebarMenu from './TutorSidebarMenu';
+import apiClient from '../utils/axiosConfig';
 import './Dashboard.css';
 
 class TutorMaterials extends Component {
@@ -9,14 +10,56 @@ class TutorMaterials extends Component {
   };
 
   componentDidMount() {
-    this.setState({
-      materials: [
-        { id: 1, title: 'Álgebra Lineal - Guía Completa', course: 'Matemáticas Avanzadas', type: 'pdf', size: '2.5 MB', uploaded: '2024-01-10', downloads: 12 },
-        { id: 2, title: 'Ejercicios de Mecánica Cuántica', course: 'Física Cuántica', type: 'docx', size: '1.8 MB', uploaded: '2024-01-12', downloads: 8 },
-        { id: 3, title: 'Video: Reacciones Orgánicas', course: 'Química Orgánica', type: 'mp4', size: '45 MB', uploaded: '2024-01-14', downloads: 15 },
-        { id: 4, title: 'Tabla Periódica Interactiva', course: 'Química Orgánica', type: 'pdf', size: '800 KB', uploaded: '2024-01-13', downloads: 22 }
-      ]
-    });
+    this.fetchMaterials();
+  }
+
+  fetchMaterials = async () => {
+    try {
+      const res = await apiClient.get('/educational-material/my/materials');
+      const list = (res.data?.data || []).map(m => ({
+        id: m._id,
+        title: m.title,
+        course: m.course || m.subject || 'General',
+        type: (m.type || 'pdf').toLowerCase(),
+        size: m.fileSize || '',
+        url: m.fileUrl || m.externalLink || '',
+        uploaded: m.createdAt,
+        downloads: m.downloads || 0
+      }));
+      this.setState({ materials: list });
+    } catch (err) {
+      // silencioso por ahora
+    }
+  }
+
+  handleDelete = async (id) => {
+    if (!window.confirm('¿Eliminar este material?')) return;
+    try {
+      await apiClient.delete(`/materials/${id}`);
+      await this.fetchMaterials();
+    } catch (err) {
+      // mostrar error en UI si se desea
+    }
+  }
+
+  handleEdit = async (material) => {
+    const newTitle = window.prompt('Nuevo título', material.title) || material.title;
+    const newCourse = window.prompt('Materia/Curso', material.course) || material.course;
+    try {
+      await apiClient.put(`/materials/${material.id}`, {
+        title: newTitle,
+        subject: newCourse
+      });
+      await this.fetchMaterials();
+    } catch (err) {
+      // mostrar error en UI si se desea
+    }
+  }
+
+  handleDownload = (material) => {
+    if (material.url) {
+      window.open(material.url, '_blank');
+    }
   }
 
   render() {
@@ -39,7 +82,33 @@ class TutorMaterials extends Component {
                   <option key={course} value={course}>{course}</option>
                 ))}
               </select>
-              <button className="btn-primary">Subir Nuevo Material</button>
+              <label className="btn-primary" style={{ cursor: 'pointer' }}>
+                Subir Nuevo Material
+                <input type="file" style={{ display: 'none' }} onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  const form = new FormData();
+                  form.append('file', file);
+                  try {
+                    const upRes = await apiClient.post('/materials/upload', form, {
+                      headers: { 'Content-Type': 'multipart/form-data' }
+                    });
+                    const { fileUrl, fileSize } = upRes.data?.data || {};
+                    // Prellenar creación rápida de material usando el fileUrl
+                    const createRes = await apiClient.post('/materials', {
+                      title: file.name,
+                      description: '',
+                      type: 'document',
+                      subject: 'General',
+                      fileUrl,
+                      fileSize
+                    });
+                    await this.fetchMaterials();
+                  } catch (err) {
+                    // podría mostrar error toast
+                  }
+                }} />
+              </label>
             </div>
 
             <div className="materials-grid">
@@ -60,9 +129,9 @@ class TutorMaterials extends Component {
                     <p><strong>Descargas:</strong> {material.downloads}</p>
                   </div>
                   <div className="material-actions">
-                    <button className="btn-outline small">Descargar</button>
-                    <button className="btn-outline small">Editar</button>
-                    <button className="btn-danger small">Eliminar</button>
+                    <button className="btn-outline small" onClick={() => this.handleDownload(material)}>Descargar</button>
+                    <button className="btn-outline small" onClick={() => this.handleEdit(material)}>Editar</button>
+                    <button className="btn-danger small" onClick={() => this.handleDelete(material.id)}>Eliminar</button>
                   </div>
                 </div>
               ))}

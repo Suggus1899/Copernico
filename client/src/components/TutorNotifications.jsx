@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import TutorSidebarMenu from './TutorSidebarMenu';
+import apiClient from '../utils/axiosConfig';
 import './Dashboard.css';
 
 class TutorNotifications extends Component {
@@ -9,69 +10,51 @@ class TutorNotifications extends Component {
   };
 
   componentDidMount() {
-    this.setState({
-      notifications: [
-        {
-          id: 1,
-          type: 'student_request',
-          title: 'Nueva solicitud de tutoría',
-          message: 'María González ha solicitado tutoría en Matemáticas Avanzadas',
-          timestamp: '2024-01-15T10:30:00',
-          read: false,
-          priority: 'high'
-        },
-        {
-          id: 2,
-          type: 'payment',
-          title: 'Pago recibido',
-          message: 'Se ha procesado el pago por clases del mes de enero',
-          timestamp: '2024-01-15T09:15:00',
-          read: false,
-          priority: 'medium'
-        },
-        {
-          id: 3,
-          type: 'class_reminder',
-          title: 'Recordatorio de clase',
-          message: 'Clase de Física Cuántica con Carlos Rodríguez en 30 minutos',
-          timestamp: '2024-01-15T08:45:00',
-          read: true,
-          priority: 'high'
-        },
-        {
-          id: 4,
-          type: 'material_feedback',
-          title: 'Comentario en material',
-          message: 'Ana García comentó en "Guía de Álgebra Lineal"',
-          timestamp: '2024-01-14T16:20:00',
-          read: true,
-          priority: 'low'
-        },
-        {
-          id: 5,
-          type: 'system',
-          title: 'Actualización del sistema',
-          message: 'Mantenimiento programado para mañana a las 02:00 AM',
-          timestamp: '2024-01-14T12:00:00',
-          read: true,
-          priority: 'medium'
-        }
-      ]
-    });
+    this.fetchNotifications();
   }
 
-  markAsRead = (id) => {
-    this.setState(prevState => ({
-      notifications: prevState.notifications.map(notif =>
-        notif.id === id ? { ...notif, read: true } : notif
-      )
-    }));
+  fetchNotifications = async () => {
+    try {
+      const [listRes] = await Promise.all([
+        apiClient.get('/notifications')
+      ]);
+      const list = (listRes.data?.data || []).map(n => ({
+        id: n._id,
+        type: n.type || 'system',
+        title: n.title || 'Notificación',
+        message: n.message,
+        timestamp: n.createdAt || n.timestamp,
+        read: !!n.read,
+        priority: n.priority || 'low'
+      }));
+      this.setState({ notifications: list });
+    } catch (err) {
+      // silencioso por ahora
+    }
+  }
+
+  markAsRead = async (id) => {
+    try {
+      await apiClient.patch(`/notifications/${id}/read`);
+      this.setState(prevState => ({
+        notifications: prevState.notifications.map(notif =>
+          notif.id === id ? { ...notif, read: true } : notif
+        )
+      }));
+    } catch (err) {
+      // ignore
+    }
   };
 
-  markAllAsRead = () => {
-    this.setState(prevState => ({
-      notifications: prevState.notifications.map(notif => ({ ...notif, read: true }))
-    }));
+  markAllAsRead = async () => {
+    try {
+      await apiClient.patch('/notifications/read-all');
+      this.setState(prevState => ({
+        notifications: prevState.notifications.map(notif => ({ ...notif, read: true }))
+      }));
+    } catch (err) {
+      // ignore
+    }
   };
 
   getFilteredNotifications = () => {

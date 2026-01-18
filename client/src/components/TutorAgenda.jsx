@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import TutorSidebarMenu from './TutorSidebarMenu';
+import apiClient from '../utils/axiosConfig';
 import './Dashboard.css';
 
 class TutorAgenda extends Component {
@@ -9,14 +10,30 @@ class TutorAgenda extends Component {
   };
 
   componentDidMount() {
-    this.setState({
-      classes: [
-        { id: 1, subject: 'Matemáticas Avanzadas', student: 'Ana García', time: '14:00', duration: 120, date: '2024-01-15', type: 'class' },
-        { id: 2, subject: 'Física Cuántica', student: 'Carlos Rodríguez', time: '16:30', duration: 90, date: '2024-01-15', type: 'class' },
-        { id: 3, subject: 'Química Orgánica', student: 'María López', time: '10:00', duration: 240, date: '2024-01-16', type: 'class' },
-        { id: 4, subject: 'Asesoría Personalizada', student: 'Juan Pérez', time: '15:00', duration: 60, date: '2024-01-17', type: 'advisory' }
-      ]
-    });
+    this.fetchDayClasses();
+  }
+
+  fetchDayClasses = async () => {
+    try {
+      const { selectedDate } = this.state;
+      const start = new Date(selectedDate + 'T00:00:00Z').toISOString();
+      const end = new Date(selectedDate + 'T23:59:59Z').toISOString();
+      const res = await apiClient.get('/appointments', {
+        params: { dateFrom: start, dateTo: end }
+      });
+      const list = (res.data?.data || []).map(a => ({
+        id: a._id,
+        subject: a.subject || a.availabilitySlotId?.subject || 'Sesión',
+        student: a.studentId?.personalInfo?.firstName + ' ' + (a.studentId?.personalInfo?.lastName || ''),
+        time: new Date(a.scheduledDate).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
+        duration: a.duration,
+        date: new Date(a.scheduledDate).toISOString().split('T')[0],
+        type: a.appointmentType === 'advising' ? 'advisory' : 'class'
+      }));
+      this.setState({ classes: list });
+    } catch (err) {
+      // mantener silencioso por ahora
+    }
   }
 
   render() {
@@ -37,7 +54,7 @@ class TutorAgenda extends Component {
               <input
                 type="date"
                 value={selectedDate}
-                onChange={(e) => this.setState({ selectedDate: e.target.value })}
+                onChange={(e) => this.setState({ selectedDate: e.target.value }, this.fetchDayClasses)}
                 className="date-picker"
               />
               <button className="btn-primary">Programar Nueva Clase</button>

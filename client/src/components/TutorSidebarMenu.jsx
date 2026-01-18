@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import logo from '../assets/logo.jpg';
 import './SidebarMenu.css';
+import apiClient from '../utils/axiosConfig';
 
 const TutorSidebarMenu = ({ userRole = 'tutor' }) => {
   const location = useLocation();
@@ -14,6 +15,20 @@ const TutorSidebarMenu = ({ userRole = 'tutor' }) => {
 
   const isAdvisor = userRole === 'advisor';
   const roleTitle = isAdvisor ? 'Panel de Asesor' : 'Panel de Tutor';
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const res = await apiClient.get('/notifications/unread-count');
+        if (mounted) setUnreadCount(res?.data?.data?.count || 0);
+      } catch (e) {
+        // silencioso
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
 
   const menuItems = [
     { path: '/dashboard', icon: '🏠', label: 'Dashboard', exact: true },
@@ -22,7 +37,7 @@ const TutorSidebarMenu = ({ userRole = 'tutor' }) => {
     { path: '/dashboard/agenda', icon: '📅', label: isAdvisor ? 'Agenda de Asesorías' : 'Agenda de Clases' },
     { path: '/dashboard/materiales', icon: '📄', label: 'Gestión de Materiales' },
     { path: '/dashboard/progreso', icon: '📊', label: 'Progreso Estudiantes' },
-    { path: '/dashboard/notificaciones', icon: '🔔', label: 'Notificaciones' },
+    { path: '/dashboard/notificaciones', icon: '🔔', label: `Notificaciones${unreadCount ? ` (${unreadCount})` : ''}` },
     { path: '/dashboard/perfil-tutor', icon: '👤', label: isAdvisor ? 'Mi Perfil de Asesor' : 'Mi Perfil de Tutor' }
   ];
 

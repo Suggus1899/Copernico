@@ -7,7 +7,9 @@ import {
   cancelAppointment,
   addInternalNote,
   rateAppointment,
-  getUpcomingAppointments
+  getUpcomingAppointments,
+  getMyStudentsCount,
+  getMyStudentsList
 } from '../controllers/appointment.controller.js';
 import { schemaValidator } from '../middlewares/schemaValidator.js';
 import { 
@@ -28,6 +30,11 @@ router.use(authenticateToken);
 
 // Obtener citas próximas del usuario
 router.get('/upcoming', getUpcomingAppointments);
+
+// Conteo de estudiantes del profesional autenticado (tutor/asesor)
+router.get('/my/students/count', requireRole(['tutor', 'advisor']), getMyStudentsCount);
+// Listado de estudiantes del profesional con materias y búsqueda
+router.get('/my/students', requireRole(['tutor', 'advisor']), getMyStudentsList);
 
 // Obtener todas las citas (filtradas por usuario según rol)
 router.get('/', getAppointments);

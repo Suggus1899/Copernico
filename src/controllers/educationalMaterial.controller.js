@@ -1,5 +1,6 @@
 import EducationalMaterial from "../models/EducationalMaterial.js";
 import User from "../models/User.js";
+import path from 'path';
 
 export const getEducationalMaterials = async (req, res, next) => {
   try {
@@ -343,21 +344,46 @@ export const shareEducationalMaterial = async (req, res, next) => {
 
 export const getMyEducationalMaterials = async (req, res, next) => {
   try {
-    const { status, type, isAssignment } = req.query;
+    const { status, type, isAssignment, subject, tags, q, page = 1, limit = 20, sort = 'createdAt_desc' } = req.query;
     
     const filter = { createdBy: req.user.id };
     
     if (status) filter.status = status;
     if (type) filter.type = type;
     if (isAssignment !== undefined) filter.isAssignment = isAssignment === 'true';
+    if (subject) filter.subject = new RegExp(subject, 'i');
+    if (tags) {
+      const tagArray = String(tags).split(',').map(t=>t.trim().toLowerCase()).filter(Boolean);
+      if (tagArray.length) filter.tags = { $in: tagArray };
+    }
+    if (q) {
+      const rx = new RegExp(q, 'i');
+      filter.$or = [{ title: rx }, { description: rx }, { topic: rx }];
+    }
 
-    const materials = await EducationalMaterial.find(filter)
-      .populate('allowedStudents', 'personalInfo email')
-      .sort({ createdAt: -1 });
+    const [sortField, sortOrder] = String(sort).split('_');
+    const sortObj = { [sortField || 'createdAt']: (sortOrder === 'asc' ? 1 : -1) };
+
+    const pageNum = parseInt(page); const limitNum = parseInt(limit);
+
+    const [items, total] = await Promise.all([
+      EducationalMaterial.find(filter)
+        .populate('allowedStudents', 'personalInfo email')
+        .sort(sortObj)
+        .skip((pageNum - 1) * limitNum)
+        .limit(limitNum),
+      EducationalMaterial.countDocuments(filter)
+    ]);
 
     res.json({
       success: true,
-      data: materials
+      data: items,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        pages: Math.ceil(total / limitNum)
+      }
     });
   } catch (error) {
     next(error);
@@ -445,6 +471,37 @@ export const getPopularMaterials = async (req, res, next) => {
     res.json({
       success: true,
       data: materials
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const uploadEducationalMaterialFile = async (req, res, next) => {
+  try {
+    if (!['tutor', 'advisor', 'admin'].includes(req.user.role)) {
+      const error = new Error('Only tutors, advisors or admins can upload material files');
+      error.status = 403;
+      throw error;
+    }
+
+    const file = req.file;
+    if (!file) {
+      const error = new Error('No file uploaded');
+      error.status = 400;
+      throw error;
+    }
+
+    const fileUrl = `${req.protocol}://${req.get('host')}/uploads/materials/${file.filename}`;
+    res.status(201).json({
+      success: true,
+      data: {
+        fileUrl,
+        fileSize: file.size,
+        originalName: file.originalname,
+        mimeType: file.mimetype,
+        filename: file.filename
+      }
     });
   } catch (error) {
     next(error);

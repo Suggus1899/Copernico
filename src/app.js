@@ -5,6 +5,7 @@ import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import mongoSanitize from "express-mongo-sanitize";
 import hpp from "hpp";
+import path from 'path';
 
 const app = express();
 
@@ -51,6 +52,9 @@ app.use(hpp());
 app.use(morgan("dev"));
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' })); // Para form data
+
+// Archivos estáticos para uploads de materiales
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
 // routes
 // Montar notas bajo /api/notes para no interceptar rutas públicas como /api/health
