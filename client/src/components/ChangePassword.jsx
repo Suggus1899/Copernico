@@ -28,6 +28,7 @@ const ChangePassword = () => {
 
     setLoading(true);
     try {
+      // Endpoint placeholder, ajústalo si ya existe en el backend
       const res = await apiClient.post('/auth/change-password', {
         currentPassword: currentPassword.trim(),
         newPassword: newPassword.trim(),
@@ -35,9 +36,6 @@ const ChangePassword = () => {
       });
       if (res.data?.success) {
         setSuccess('Contraseña actualizada correctamente.');
-        setCurrentPassword('');
-        setNewPassword('');
-        setConfirmPassword('');
       } else {
         setError(res.data?.error || 'No se pudo actualizar la contraseña.');
       }

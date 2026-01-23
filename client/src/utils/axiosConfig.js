@@ -1,8 +1,8 @@
 import axios from 'axios';
 
 // Configurar la URL base de la API
-// Preferir VITE_API_URL. En Docker: VITE_API_URL="http://api:4000/api"; en local: "http://localhost:4000/api"
-const API_BASE_URL = import.meta.env?.VITE_API_URL || 'http://localhost:4000/api';
+// Preferir VITE_API_URL. En Docker: VITE_API_URL="http://api:4000/api"; en local: "http://localhost:4002/api"
+const API_BASE_URL = import.meta.env?.VITE_API_URL || 'http://localhost:4002/api';
 
 // Crear instancia de axios con configuración base
 const apiClient = axios.create({
@@ -66,4 +66,3 @@ apiClient.interceptors.response.use(
 );
 
 export default apiClient;
-

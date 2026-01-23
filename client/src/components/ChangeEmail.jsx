@@ -21,11 +21,10 @@ const ChangeEmail = () => {
 
     setLoading(true);
     try {
+      // Endpoint placeholder, ajústalo si ya existe en el backend
       const res = await apiClient.post('/auth/change-email', { newEmail: newEmail.trim() });
       if (res.data?.success) {
         setSuccess('Correo actualizado correctamente.');
-        setNewEmail('');
-        setConfirmEmail('');
       } else {
         setError(res.data?.error || 'No se pudo actualizar el correo.');
       }

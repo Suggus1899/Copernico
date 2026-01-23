@@ -2,7 +2,6 @@ import React, { Component } from 'react';
 import { Link } from 'react-router-dom';
 import apiClient from '../utils/axiosConfig';
 import TutorSidebarMenu from './TutorSidebarMenu';
-import TutorAdvisorSearch from './TutorAdvisorSearch';
 import './Dashboard.css';
 
 class TutorDashboard extends Component {
@@ -27,38 +26,40 @@ class TutorDashboard extends Component {
 
   loadDashboardData = async () => {
     try {
-      const profileRes = await apiClient.get('/auth/profile');
-      const upcomingRes = await apiClient.get('/appointments/upcoming');
-      const notifsRes = await apiClient.get('/notifications');
-      const studentsCountRes = await apiClient.get('/appointments/my/students/count');
-      const unreadCountRes = await apiClient.get('/notifications/unread-count');
-
-      const user = profileRes.data?.data;
-      const upcoming = upcomingRes.data?.data || [];
-
-      // Calcular estadísticas básicas
-      const todayStr = new Date().toISOString().split('T')[0];
-      const todayCount = upcoming.filter(a => new Date(a.scheduledDate).toISOString().split('T')[0] === todayStr).length;
+      const [profileRes, statsRes] = await Promise.all([
+        apiClient.get('/auth/profile'),
+        // TODO: Add endpoint for tutor stats
+        // apiClient.get('/tutors/stats')
+      ]);
 
       this.setState({
-        user,
-        stats: {
-          todayClasses: todayCount,
-          upcomingClasses: upcoming.length,
-          totalStudents: studentsCountRes?.data?.data?.count || 0,
-          pendingMaterials: 0 // TODO: endpoint/materiales pendientes
-        },
-        upcomingClasses: upcoming.map(a => ({
-          id: a._id,
-          subject: a.subject || a.availabilitySlotId?.subject || 'Sesión',
-          student: a.studentId?.personalInfo?.firstName + ' ' + (a.studentId?.personalInfo?.lastName || ''),
-          time: new Date(a.scheduledDate).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
-          date: new Date(a.scheduledDate).toLocaleDateString('es-ES')
-        })),
-        notifications: (notifsRes.data?.data || []).slice(0,4).map(n => ({ id: n._id, message: n.message, type: n.type || 'info', unread: !n.read })),
-        unreadCount: unreadCountRes?.data?.data?.unreadCount || 0,
-        recentActivities: [], // TODO: actividad reciente
+        user: profileRes.data.data,
         loading: false
+      });
+
+      // Mock data for now - replace with real API calls
+      this.setState({
+        stats: {
+          todayClasses: 3,
+          upcomingClasses: 8,
+          totalStudents: 24,
+          pendingMaterials: 2
+        },
+        recentActivities: [
+          { id: 1, type: 'class', message: 'Clase de Matemáticas completada', time: '2 horas atrás' },
+          { id: 2, type: 'material', message: 'Nuevo material subido: Álgebra Lineal', time: '5 horas atrás' },
+          { id: 3, type: 'student', message: 'Juan Pérez completó la tarea', time: '1 día atrás' }
+        ],
+        upcomingClasses: [
+          { id: 1, subject: 'Matemáticas Avanzadas', student: 'Ana García', time: '14:00', date: 'Hoy' },
+          { id: 2, subject: 'Física Cuántica', student: 'Carlos Rodríguez', time: '16:30', date: 'Hoy' },
+          { id: 3, subject: 'Química Orgánica', student: 'María López', time: '10:00', date: 'Mañana' }
+        ],
+        notifications: [
+          { id: 1, message: 'Nueva solicitud de tutoría de Física', type: 'info', unread: true },
+          { id: 2, message: 'Recordatorio: Subir material para clase de mañana', type: 'warning', unread: true },
+          { id: 3, message: 'Pago recibido por clases del mes pasado', type: 'success', unread: false }
+        ]
       });
     } catch (error) {
       console.error('Error loading dashboard data:', error);
@@ -70,7 +71,7 @@ class TutorDashboard extends Component {
   };
 
   render() {
-    const { user, stats, recentActivities, upcomingClasses, notifications, unreadCount, loading, error } = this.state;
+    const { user, stats, recentActivities, upcomingClasses, notifications, loading, error } = this.state;
     const isAdvisor = user?.role === 'advisor';
 
     if (loading) {
@@ -102,13 +103,9 @@ class TutorDashboard extends Component {
           <div className="dashboard-header">
             <h1>Dashboard de {user?.role === 'advisor' ? 'Asesor' : 'Tutor'}</h1>
             <p>Bienvenido de vuelta, {user?.personalInfo?.firstName} {user?.personalInfo?.lastName}</p>
-            <div className="header-badges">
-              <span className="badge-notifications">🔔 {unreadCount || 0}</span>
-            </div>
           </div>
 
           <div className="dashboard-main">
-            <TutorAdvisorSearch />
             {/* Estadísticas rápidas */}
             <div className="stats-grid">
               <div className="stat-card">

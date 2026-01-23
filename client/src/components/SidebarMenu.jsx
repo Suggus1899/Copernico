@@ -15,6 +15,7 @@ const SidebarMenu = () => {
   const menuItems = [
     { path: '/dashboard', icon: '🏠', label: 'Inicio', exact: true },
     { path: '/dashboard/cursos', icon: '📚', label: 'Mis Cursos' },
+    { path: '/dashboard/videos', icon: '🎥', label: 'Videos de Clases' },
     { path: '/dashboard/tutores', icon: '👨‍🏫', label: 'Tutores' },
     { path: '/dashboard/asesoria', icon: '💬', label: 'Asesoría' },
     { path: '/dashboard/notas', icon: '📝', label: 'Mis Notas' },
@@ -64,4 +65,3 @@ const SidebarMenu = () => {
 };
 
 export default SidebarMenu;
-

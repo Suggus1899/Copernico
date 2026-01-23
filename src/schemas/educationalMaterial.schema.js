@@ -4,47 +4,17 @@ export const createEducationalMaterialSchema = z.object({
   body: z.object({
     title: z.string().min(1, 'Title is required').max(200, 'Title too long'),
     description: z.string().max(1000, 'Description too long').optional(),
-    type: z.enum(['document', 'presentation', 'video', 'link', 'exercise', 'worksheet', 'quiz']),
+    type: z.enum(['document', 'presentation', 'video', 'link', 'exercise', 'worksheet', 'quiz', 'image']),
     subject: z.string().min(1, 'Subject is required'),
     topic: z.string().optional(),
     difficulty: z.enum(['beginner', 'intermediate', 'advanced']).default('intermediate'),
     tags: z.array(z.string()).default([]),
-    fileUrl: z.string().url().optional().or(z.literal('')),
-    fileSize: z.number().min(0).optional(),
-    thumbnail: z.string().url().optional().or(z.literal('')),
-    externalLink: z.string().url().optional().or(z.literal('')),
-    content: z.string().optional(),
     visibility: z.enum(['private', 'students', 'public']).default('students'),
     allowedStudents: z.array(z.string()).default([]),
     allowedGroups: z.array(z.string()).default([]),
-    isAssignment: z.boolean().default(false),
-    assignmentDetails: z.object({
-      dueDate: z.string().datetime().optional(),
-      maxPoints: z.number().min(0).optional(),
-      instructions: z.string().max(2000).optional(),
-      evaluationCriteria: z.array(z.string()).default([]),
-      allowedFormats: z.array(z.enum(['pdf', 'doc', 'docx', 'txt', 'image', 'video', 'link'])).default([]),
-      maxFileSize: z.number().min(0).optional(),
-      submissionLimit: z.number().min(1).default(1)
-    }).optional(),
-    language: z.string().default('es'),
-    estimatedStudyTime: z.number().min(0).optional(),
-    prerequisites: z.array(z.string()).default([])
-  }).refine((data) => {
-    // Validar que tenga al menos un recurso
-    return !!(data.fileUrl || data.externalLink || data.content);
-  }, {
-    message: "Material must have at least one resource (fileUrl, externalLink, or contents)",
-    path: ["fileUrl"]
-  }).refine((data) => {
-    // Si es assignment, validar dueDate
-    if (data.isAssignment && !data.assignmentDetails?.dueDate) {
-      return false;
-    }
-    return true;
-  }, {
-    message: "Assignments must have a due date",
-    path: ["assignmentDetails.dueDate"]
+    fileSize: z.number().min(0).optional(),
+    originalFileName: z.string().optional(),
+    mimeType: z.string().optional()
   })
 });
 

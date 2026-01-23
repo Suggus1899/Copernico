@@ -14,7 +14,6 @@ RUN npm ci --production
 
 ### Stage 3: Final image
 FROM node:18-alpine
-RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
 # copy production node_modules

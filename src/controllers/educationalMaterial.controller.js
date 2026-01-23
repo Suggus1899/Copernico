@@ -1,6 +1,62 @@
 import EducationalMaterial from "../models/EducationalMaterial.js";
 import User from "../models/User.js";
+import multer from 'multer';
 import path from 'path';
+
+// Configuración de multer para subida de archivos
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/materials/');
+  },
+  filename: (req, file, cb) => {
+    // Generar nombre único para evitar conflictos
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, 'material-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const fileFilter = (req, file, cb) => {
+  // Permitir archivos de documentos, presentaciones, imágenes, etc.
+  const allowedMimes = [
+    // Documentos
+    'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'text/plain',
+    // Hojas de cálculo
+    'application/vnd.ms-excel',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    // Presentaciones
+    'application/vnd.ms-powerpoint',
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    // Imágenes
+    'image/jpeg',
+    'image/png',
+    'image/gif',
+    'image/webp',
+    // Videos (por si acaso)
+    'video/mp4',
+    'video/avi',
+    'video/quicktime'
+  ];
+
+  if (allowedMimes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error(`Tipo de archivo no permitido: ${file.mimetype}. Solo se permiten documentos PDF, Word, Excel, PowerPoint, imágenes y videos.`), false);
+  }
+};
+
+const upload = multer({
+  storage: storage,
+  fileFilter: fileFilter,
+  limits: {
+    fileSize: 50 * 1024 * 1024, // 50MB máximo para materiales
+  }
+});
+
+// Middleware para subida de archivos
+export const uploadMaterialFile = upload.single('file');
 
 export const getEducationalMaterials = async (req, res, next) => {
   try {
@@ -122,8 +178,8 @@ export const getEducationalMaterialById = async (req, res, next) => {
 
 export const createEducationalMaterial = async (req, res, next) => {
   try {
-    const materialData = req.body;
-    
+    const materialData = { ...req.body };
+
     // Asignar createdBy al usuario actual
     materialData.createdBy = req.user.id;
 
@@ -132,6 +188,23 @@ export const createEducationalMaterial = async (req, res, next) => {
       const error = new Error("Only tutors, advisors and admins can create educational materials");
       error.status = 403;
       throw error;
+    }
+
+    // Procesar archivo subido
+    if (req.file) {
+      materialData.fileUrl = `/uploads/materials/${req.file.filename}`;
+      materialData.fileSize = req.file.size;
+      materialData.originalFileName = req.file.originalname;
+      materialData.mimeType = req.file.mimetype;
+    }
+
+    // Parsear tags si vienen como string
+    if (materialData.tags && typeof materialData.tags === 'string') {
+      try {
+        materialData.tags = JSON.parse(materialData.tags);
+      } catch (e) {
+        // Si no es JSON, mantener como string y dejar que el modelo lo maneje
+      }
     }
 
     const newMaterial = new EducationalMaterial(materialData);
@@ -344,46 +417,21 @@ export const shareEducationalMaterial = async (req, res, next) => {
 
 export const getMyEducationalMaterials = async (req, res, next) => {
   try {
-    const { status, type, isAssignment, subject, tags, q, page = 1, limit = 20, sort = 'createdAt_desc' } = req.query;
+    const { status, type, isAssignment } = req.query;
     
     const filter = { createdBy: req.user.id };
     
     if (status) filter.status = status;
     if (type) filter.type = type;
     if (isAssignment !== undefined) filter.isAssignment = isAssignment === 'true';
-    if (subject) filter.subject = new RegExp(subject, 'i');
-    if (tags) {
-      const tagArray = String(tags).split(',').map(t=>t.trim().toLowerCase()).filter(Boolean);
-      if (tagArray.length) filter.tags = { $in: tagArray };
-    }
-    if (q) {
-      const rx = new RegExp(q, 'i');
-      filter.$or = [{ title: rx }, { description: rx }, { topic: rx }];
-    }
 
-    const [sortField, sortOrder] = String(sort).split('_');
-    const sortObj = { [sortField || 'createdAt']: (sortOrder === 'asc' ? 1 : -1) };
-
-    const pageNum = parseInt(page); const limitNum = parseInt(limit);
-
-    const [items, total] = await Promise.all([
-      EducationalMaterial.find(filter)
-        .populate('allowedStudents', 'personalInfo email')
-        .sort(sortObj)
-        .skip((pageNum - 1) * limitNum)
-        .limit(limitNum),
-      EducationalMaterial.countDocuments(filter)
-    ]);
+    const materials = await EducationalMaterial.find(filter)
+      .populate('allowedStudents', 'personalInfo email')
+      .sort({ createdAt: -1 });
 
     res.json({
       success: true,
-      data: items,
-      pagination: {
-        page: pageNum,
-        limit: limitNum,
-        total,
-        pages: Math.ceil(total / limitNum)
-      }
+      data: materials
     });
   } catch (error) {
     next(error);
@@ -471,37 +519,6 @@ export const getPopularMaterials = async (req, res, next) => {
     res.json({
       success: true,
       data: materials
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-export const uploadEducationalMaterialFile = async (req, res, next) => {
-  try {
-    if (!['tutor', 'advisor', 'admin'].includes(req.user.role)) {
-      const error = new Error('Only tutors, advisors or admins can upload material files');
-      error.status = 403;
-      throw error;
-    }
-
-    const file = req.file;
-    if (!file) {
-      const error = new Error('No file uploaded');
-      error.status = 400;
-      throw error;
-    }
-
-    const fileUrl = `${req.protocol}://${req.get('host')}/uploads/materials/${file.filename}`;
-    res.status(201).json({
-      success: true,
-      data: {
-        fileUrl,
-        fileSize: file.size,
-        originalName: file.originalname,
-        mimeType: file.mimetype,
-        filename: file.filename
-      }
     });
   } catch (error) {
     next(error);

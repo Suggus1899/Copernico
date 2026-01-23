@@ -34,39 +34,9 @@ const UserSchema = new mongoose.Schema({
     bio: String
   },
   academicProfile: { institution: String, department: String, title: String, experienceYears: Number, skills: [String] },
-  tutorProfile: { 
-    specialties: [String], 
-    teachingMethods: [String], 
-    maxStudents: Number, 
-    available: Boolean, 
-    hourlyRate: Number, 
-    rating: Number, 
-    totalSessions: Number,
-    paymentInfo: {
-      method: String,
-      account: String,
-      bankName: String
-    },
-    documents: [mongoose.Schema.Types.Mixed]
-  },
-  advisorProfile: { 
-    specializationAreas: [String], 
-    appointmentDuration: Number, 
-    available: Boolean, 
-    rating: Number,
-    bio: String,
-    documents: [mongoose.Schema.Types.Mixed]
-  },
-  studentProfile: { 
-    studentId: String, 
-    institution: String,
-    program: String,
-    gradYear: Number,
-    career: String, 
-    semester: Number, 
-    averageGrade: Number, 
-    enrolledCourses: [String] 
-  },
+  tutorProfile: { specialties: [String], teachingMethods: [String], maxStudents: Number, available: Boolean, hourlyRate: Number, rating: Number, totalSessions: Number },
+  advisorProfile: { specializationAreas: [String], appointmentDuration: Number, available: Boolean, rating: Number },
+  studentProfile: { studentId: String, career: String, semester: Number, averageGrade: Number, enrolledCourses: [String] },
   communicationSettings: { allowNotifications: { type: Boolean, default: true }, emailNotifications: { type: Boolean, default: true }, notificationPreferences: [String] },
   emailVerified: { type: Boolean, default: false },
   verificationToken: String,

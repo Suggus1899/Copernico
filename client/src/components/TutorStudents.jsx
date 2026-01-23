@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import apiClient from '../utils/axiosConfig';
 import TutorSidebarMenu from './TutorSidebarMenu';
 import './Dashboard.css';
 

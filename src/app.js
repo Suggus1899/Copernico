@@ -5,7 +5,6 @@ import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import mongoSanitize from "express-mongo-sanitize";
 import hpp from "hpp";
-import path from 'path';
 
 const app = express();
 
@@ -18,13 +17,14 @@ import authRoutes from "./routes/auth.routes.js";
 import availabilityRoutes from "./routes/availability.routes.js";
 import appointmentRoutes from "./routes/appointment.routes.js";
 import educationalMaterialRoutes from "./routes/educationalMaterial.routes.js";
+import classVideoRoutes from "./routes/classVideo.routes.js";
 import assignmentRoutes from "./routes/assignment.routes.js";
 import progressTrackingRoutes from "./routes/progressTracking.routes.js";
 import reportRoutes from "./routes/report.routes.js";
 import notificationRoutes from "./routes/notification.routes.js";
 
 // settings
-app.set("port", process.env.PORT || 4000);
+app.set("port", process.env.PORT || 4002);
 
 // Seguridad básica y middlewares
 app.use(cors({
@@ -37,10 +37,10 @@ app.use(cors({
 app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' }
 }));
-// Rate limiting global (100 peticiones / 15 minutos por IP)
+// Rate limiting global (1000 peticiones / 15 minutos por IP para desarrollo)
 app.use(rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100,
+  max: 1000,
   standardHeaders: true,
   legacyHeaders: false
 }));
@@ -53,8 +53,8 @@ app.use(morgan("dev"));
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' })); // Para form data
 
-// Archivos estáticos para uploads de materiales
-app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+// Servir archivos estáticos (videos y thumbnails subidos)
+app.use('/uploads', express.static('uploads'));
 
 // routes
 // Montar notas bajo /api/notes para no interceptar rutas públicas como /api/health
@@ -62,14 +62,18 @@ app.use("/api/notes", notesRoutes);
 app.use("/api/users", usersRoutes);
 app.use("/api/auth", authRoutes);
 
-// SISTEMA ACADÉMICO COMPLETO - 8 Colecciones
+// SISTEMA ACADÉMICO COMPLETO - 9 Colecciones
+console.log('Montando rutas del sistema académico...');
 app.use("/api/availability", availabilityRoutes);
 app.use("/api/appointments", appointmentRoutes);
 app.use("/api/materials", educationalMaterialRoutes);
+console.log('Montando ruta /api/videos con classVideoRoutes...');
+app.use("/api/videos", classVideoRoutes);
 app.use("/api/assignments", assignmentRoutes);
 app.use("/api/progress", progressTrackingRoutes);
 app.use("/api/reports", reportRoutes);
 app.use("/api/notifications", notificationRoutes);
+console.log('Rutas montadas exitosamente');
 
 // Ruta de salud/status
 app.get("/api/health", (req, res) => {
@@ -80,9 +84,10 @@ app.get("/api/health", (req, res) => {
     version: "1.0.0",
     collections: [
       "users",
-      "availability_slots", 
+      "availability_slots",
       "appointments",
       "educational_materials",
+      "class_videos",
       "assignments",
       "progress_tracking",
       "reports",
@@ -134,6 +139,13 @@ app.get("/", (req, res) => {
         specific: "GET/PUT/DELETE /api/materials/:id",
         rate: "POST /api/materials/:id/rate",
         download: "PATCH /api/materials/:id/download"
+      },
+      videos: {
+        base: "GET/POST /api/videos",
+        popular: "GET /api/videos/popular",
+        my_videos: "GET /api/videos/my/videos",
+        specific: "GET/PUT/DELETE /api/videos/:id",
+        like: "POST /api/videos/:id/like"
       },
       assignments: {
         base: "GET/POST /api/assignments",

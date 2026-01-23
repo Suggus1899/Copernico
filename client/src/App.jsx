@@ -15,6 +15,9 @@ import Settings from "./components/Settings";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ChangeEmail from "./components/ChangeEmail";
 import ChangePassword from "./components/ChangePassword";
+// Componentes de Videos
+import VideosList from "./components/VideosList";
+import TutorVideos from "./components/TutorVideos";
 // Componentes de Tutor
 import TutorCourses from "./components/TutorCourses";
 import TutorStudents from "./components/TutorStudents";
@@ -23,8 +26,6 @@ import TutorMaterials from "./components/TutorMaterials";
 import TutorProgress from "./components/TutorProgress";
 import TutorNotifications from "./components/TutorNotifications";
 import TutorProfile from "./components/TutorProfile";
-import TutorDashboard from "./components/TutorDashboard";
-import AdvisorDashboard from "./components/AdvisorDashboard";
 
 import "./App.css";
 
@@ -65,10 +66,8 @@ function App() {
           } />
           <Route element={<ProtectedRoute />}>
             <Route path="/dashboard" element={<Dashboard />} />
-            {/* Dashboards por rol */}
-            <Route path="/dashboard/tutor" element={<TutorDashboard />} />
-            <Route path="/dashboard/asesor" element={<AdvisorDashboard />} />
             <Route path="/dashboard/cursos" element={<MyCourses />} />
+            <Route path="/dashboard/videos" element={<VideosList />} />
             <Route path="/dashboard/tutores" element={<Tutors />} />
             <Route path="/dashboard/asesoria" element={<Advisories />} />
             <Route path="/dashboard/notas" element={<NotesList />} />
@@ -81,6 +80,7 @@ function App() {
             <Route path="/dashboard/estudiantes" element={<TutorStudents />} />
             <Route path="/dashboard/agenda" element={<TutorAgenda />} />
             <Route path="/dashboard/materiales" element={<TutorMaterials />} />
+            <Route path="/dashboard/videos-tutor" element={<TutorVideos />} />
             <Route path="/dashboard/progreso" element={<TutorProgress />} />
             <Route path="/dashboard/notificaciones" element={<TutorNotifications />} />
             <Route path="/dashboard/perfil-tutor" element={<TutorProfile />} />

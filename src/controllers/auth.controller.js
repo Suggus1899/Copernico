@@ -241,105 +241,16 @@ export const forgotPassword = async (req, res, next) => {
       });
     }
 
+    // TODO: En una implementación completa, aquí se generaría un token de reset
+    // y se enviaría un email con el enlace de recuperación
+
+    // Por ahora, solo retornamos éxito
     return res.status(200).json({
       success: true,
       message: "Si el correo electrónico está registrado, recibirás un enlace para restablecer tu contraseña."
     });
   } catch (error) {
     console.error('Forgot password error:', error.message);
-    next(error);
-  }
-};
-
-export const changePassword = async (req, res, next) => {
-  try {
-    const { currentPassword, newPassword } = req.body;
-
-    if (!req.user?._id) {
-      return res.status(401).json({
-        success: false,
-        error: "Unauthorized",
-      });
-    }
-
-    const user = await User.findById(req.user._id).select("+password");
-
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        error: "User not found",
-      });
-    }
-
-    const isValidCurrentPassword = await user.comparePassword(currentPassword);
-    if (!isValidCurrentPassword) {
-      return res.status(400).json({
-        success: false,
-        error: "La contraseña actual es incorrecta",
-      });
-    }
-
-    user.password = newPassword;
-    await user.save();
-
-    return res.status(200).json({
-      success: true,
-      message: "Contraseña actualizada correctamente",
-    });
-  } catch (error) {
-    console.error("Change password error:", error.message);
-    next(error);
-  }
-};
-
-export const changeEmail = async (req, res, next) => {
-  try {
-    const { newEmail } = req.body;
-
-    if (!req.user?._id) {
-      return res.status(401).json({
-        success: false,
-        error: "Unauthorized",
-      });
-    }
-
-    const normalizedEmail = (newEmail || "").trim().toLowerCase();
-    if (!normalizedEmail) {
-      return res.status(400).json({
-        success: false,
-        error: "El correo es requerido",
-      });
-    }
-
-    const emailInUse = await User.findOne({ email: normalizedEmail });
-    if (emailInUse) {
-      return res.status(400).json({
-        success: false,
-        error: "El correo ya está registrado",
-      });
-    }
-
-    const user = await User.findById(req.user._id);
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        error: "User not found",
-      });
-    }
-
-    user.email = normalizedEmail;
-    user.personalInfo = {
-      ...user.personalInfo,
-      email: normalizedEmail,
-    };
-    await user.save({ validateBeforeSave: false });
-
-    return res.status(200).json({
-      success: true,
-      message: "Correo actualizado correctamente",
-    });
-  } catch (error) {
-    console.error("Change email error:", error.message);
     next(error);
   }
 };

@@ -136,39 +136,11 @@ export const createNotification = async (req, res, next) => {
     notificationData.createdBy = req.user.id;
     notificationData.updatedBy = req.user.id;
 
-    // Respetar preferencias de notificación del usuario
-    const prefs = user.communicationSettings || {};
-    const requestedMethods = Array.isArray(notificationData.deliveryMethod) && notificationData.deliveryMethod.length
-      ? notificationData.deliveryMethod
-      : ['in_app'];
-    const allowAll = prefs.allowNotifications !== false;
-    const prefList = Array.isArray(prefs.notificationPreferences) ? prefs.notificationPreferences : [];
-    const isAllowed = (method) => {
-      if (!allowAll) return false;
-      if (prefList.length === 0) {
-        // Sin preferencias específicas: permitir todos los métodos, pero email depende de emailNotifications
-        return method === 'email' ? prefs.emailNotifications !== false : true;
-      }
-      if (!prefList.includes(method)) return false;
-      if (method === 'email') return prefs.emailNotifications !== false;
-      return true;
-    };
-    const allowedMethods = requestedMethods.filter(isAllowed);
-
-    // Guardar solo métodos permitidos en el documento
-    notificationData.deliveryMethod = allowedMethods;
-
     const newNotification = new Notification(notificationData);
     const notificationSaved = await newNotification.save();
 
-    // Registrar entregas solo en canales permitidos; registrar fallas para los no permitidos
-    for (const m of requestedMethods) {
-      if (allowedMethods.includes(m)) {
-        await notificationSaved.recordDelivery(m, 'sent');
-      } else {
-        await notificationSaved.recordDelivery(m, 'failed', 'channel disabled by user preferences');
-      }
-    }
+    // Simular envío (en producción esto sería asíncrono)
+    await notificationSaved.recordDelivery('in_app', 'sent');
 
     // Populate para la respuesta
     const populatedNotification = await Notification.findById(notificationSaved._id)
@@ -341,53 +313,35 @@ export const createBulkNotifications = async (req, res, next) => {
       throw error;
     }
 
-    // Crear notificaciones en lote, respetando preferencias por usuario
-    const nowBatchId = batchId || `bulk_${Date.now()}`;
-    const createdNotifications = [];
-    for (const uid of users) {
-      const u = existingUsers.find(eu => eu._id.toString() === uid.toString());
-      const prefs = u?.communicationSettings || {};
-      const requestedMethods = Array.isArray(deliveryMethod) && deliveryMethod.length ? deliveryMethod : ['in_app'];
-      const allowAll = prefs.allowNotifications !== false;
-      const prefList = Array.isArray(prefs.notificationPreferences) ? prefs.notificationPreferences : [];
-      const isAllowed = (method) => {
-        if (!allowAll) return false;
-        if (prefList.length === 0) {
-          return method === 'email' ? prefs.emailNotifications !== false : true;
-        }
-        if (!prefList.includes(method)) return false;
-        if (method === 'email') return prefs.emailNotifications !== false;
-        return true;
-      };
-      const allowedMethods = requestedMethods.filter(isAllowed);
+    // Crear notificaciones en lote
+    const notifications = users.map(userId => ({
+      userId,
+      title,
+      message,
+      type,
+      priority,
+      category,
+      deliveryMethod,
+      batchId: batchId || `bulk_${Date.now()}`,
+      createdBy: req.user.id,
+      updatedBy: req.user.id
+    }));
 
-      const notifDoc = await Notification.create({
-        userId: uid,
-        title,
-        message,
-        type,
-        priority,
-        category,
-        deliveryMethod: allowedMethods,
-        batchId: nowBatchId,
-        createdBy: req.user.id,
-        updatedBy: req.user.id
-      });
-      // Registrar entregas por usuario
-      for (const m of requestedMethods) {
-        if (allowedMethods.includes(m)) {
-          await notifDoc.recordDelivery(m, 'sent');
-        } else {
-          await notifDoc.recordDelivery(m, 'failed', 'channel disabled by user preferences');
-        }
-      }
-      createdNotifications.push(notifDoc);
+    const createdNotifications = await Notification.insertMany(notifications);
+
+    // Simular envío (en producción esto sería asíncrono)
+    for (const notification of createdNotifications) {
+      const notif = await Notification.findById(notification._id);
+      await notif.recordDelivery('in_app', 'sent');
     }
 
     res.status(201).json({
       success: true,
       message: `${createdNotifications.length} notifications created successfully`,
-      data: { count: createdNotifications.length, batchId: nowBatchId }
+      data: {
+        count: createdNotifications.length,
+        batchId: batchId || `bulk_${Date.now()}`
+      }
     });
   } catch (error) {
     next(error);
