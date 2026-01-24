@@ -1,66 +1,65 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import logo from '../assets/logo.jpg';
 import './SidebarMenu.css';
+
+// Importación de activos (Asegúrate de que los nombres de archivo sean correctos)
+import logo from '../assets/logo.jpg';
+import iconCursos from '../assets/course.png';
+import iconVideos from '../assets/videos.png';
+import iconTutores from '../assets/tutors.png';
+import iconAsesoria from '../assets/asesorias.png';
+import iconNotas from '../assets/notas.png';
+import iconPerfil from '../assets/profile.png';
+import iconConfig from '../assets/settings.png';
+import iconLogout from '../assets/logout.png';
+
 
 const SidebarMenu = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const handleLogout = () => {
+  const handleLogout = (e) => {
+    e.preventDefault();
     localStorage.removeItem('token');
     navigate('/login');
   };
 
   const menuItems = [
-    { path: '/dashboard', icon: '🏠', label: 'Inicio', exact: true },
-    { path: '/dashboard/cursos', icon: '📚', label: 'Mis Cursos' },
-    { path: '/dashboard/videos', icon: '🎥', label: 'Videos de Clases' },
-    { path: '/dashboard/tutores', icon: '👨‍🏫', label: 'Tutores' },
-    { path: '/dashboard/asesoria', icon: '💬', label: 'Asesoría' },
-    { path: '/dashboard/notas', icon: '📝', label: 'Mis Notas' },
-    { path: '/dashboard/perfil', icon: '👤', label: 'Mi Perfil' },
-    { path: '/dashboard/configuracion', icon: '⚙️', label: 'Configuración' }
+    { path: '/dashboard/cursos', icon: iconCursos, label: 'Cursos' },
+    { path: '/dashboard/videos', icon: iconVideos, label: 'Clases' },
+    { path: '/dashboard/tutores', icon: iconTutores, label: 'Tutores' },
+    { path: '/dashboard/asesoria', icon: iconAsesoria, label: 'Asesoría' },
+    { path: '/dashboard/notas', icon: iconNotas, label: 'Notas' },
+    { path: '/dashboard/perfil', icon: iconPerfil, label: 'Perfil' },
+    { path: '/dashboard/configuracion', icon: iconConfig, label: 'Ajustes' },
+    { path: '#', icon: iconLogout, label: 'Salir', isLogout: true }
   ];
-  const isActive = (path, exact = false) => {
-    if (exact) {
-      return location.pathname === path;
-    }
-    return location.pathname.startsWith(path);
-  };
+
+  const isActive = (path) => location.pathname === path;
 
   return (
-    <aside className="sidebar-menu">
-      <div className="sidebar-header">
-        <div className="sidebar-header-content">
-          <img src={logo} alt="Copernico Academy Logo" className="sidebar-logo" />
-          <h3 className="sidebar-title">Menú</h3>
-        </div>
-      </div>
+    <nav className="sidebar-menu">
+      {/* El logo ahora es parte integral del flujo, sin cajas oscuras */}
+      <Link to="/dashboard" className="sidebar-logo-container">
+        <img src={logo} alt="Copernico Logo" className="sidebar-logo" />
+        <div className="logo-separator"></div>
+      </Link>
       
-      <nav className="sidebar-nav">
-        <ul className="menu-list">
-          {menuItems.map((item) => (
-            <li key={item.path} className="menu-item">
-              <Link
-                to={item.path}
-                className={`menu-link ${isActive(item.path, item.exact) ? 'active' : ''}`}
-              >
-                <span className="menu-icon">{item.icon}</span>
-                <span className="menu-label">{item.label}</span>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </nav>
-
-      <div className="sidebar-footer">
-        <button onClick={handleLogout} className="logout-btn">
-          <span className="menu-icon">🚪</span>
-          <span className="menu-label">Cerrar Sesión</span>
-        </button>
-      </div>
-    </aside>
+      <ul className="menu-list">
+        {menuItems.map((item) => (
+          <li key={item.label}>
+            <Link
+              to={item.path}
+              onClick={item.isLogout ? handleLogout : null}
+              className={`menu-link ${isActive(item.path) ? 'active' : ''} ${item.isLogout ? 'logout' : ''}`}
+            >
+              <img src={item.icon} alt={item.label} className="menu-icon-img" />
+              <span className="menu-label">{item.label}</span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </nav>
   );
 };
 

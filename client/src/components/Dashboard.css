@@ -6,7 +6,7 @@
 
 .dashboard-content {
   flex: 1;
-  margin-left: 280px;
+  margin: 30px;
   padding: 30px;
   min-height: 100vh;
 }

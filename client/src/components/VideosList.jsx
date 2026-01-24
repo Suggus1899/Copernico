@@ -1,5 +1,7 @@
 import React, { Component } from 'react';
 import apiClient from '../utils/axiosConfig';
+import SidebarMenu from './SidebarMenu';
+import './Dashboard.css';
 
 class VideosList extends Component {
   state = {
@@ -99,211 +101,212 @@ class VideosList extends Component {
     return `${mins}m`;
   };
 
-  render() {
+render() {
     const { loading, selectedVideo, filters } = this.state;
     const filteredVideos = this.getFilteredVideos();
     const uniqueSubjects = this.getUniqueSubjects();
 
     return (
-      <div className="videos-list-page">
-        <div className="videos-header">
-          <h2>🎥 Videos de Clases</h2>
-          <p>Accede a los videos de clases subidos por tus tutores</p>
-        </div>
+      <div className="dashboard-container">
+        <SidebarMenu />
+        <div className="dashboard-content">
+          <div className="videos-list-page">
+            <div className="videos-header">
+              <h2>🎥 Videos de Clases</h2>
+              <p>Accede a los videos de clases subidos por tus tutores</p>
+            </div>
 
-        {/* Filtros */}
-        <div className="videos-filters">
-          <div className="filter-group">
-            <input
-              type="text"
-              name="search"
-              value={filters.search}
-              onChange={this.handleFilterChange}
-              placeholder="Buscar videos..."
-              className="search-input"
-            />
-          </div>
-          <div className="filter-group">
-            <select
-              name="subject"
-              value={filters.subject}
-              onChange={this.handleFilterChange}
-              className="subject-select"
-            >
-              <option value="">Todas las materias</option>
-              {uniqueSubjects.map(subject => (
-                <option key={subject} value={subject}>{subject}</option>
-              ))}
-            </select>
-          </div>
-        </div>
+            {/* Filtros */}
+            <div className="videos-filters">
+              <div className="filter-group">
+                <input
+                  type="text"
+                  name="search"
+                  value={filters.search}
+                  onChange={this.handleFilterChange}
+                  placeholder="Buscar videos..."
+                  className="search-input"
+                />
+              </div>
+              <div className="filter-group">
+                <select
+                  name="subject"
+                  value={filters.subject}
+                  onChange={this.handleFilterChange}
+                  className="subject-select"
+                >
+                  <option value="">Todas las materias</option>
+                  {uniqueSubjects.map(subject => (
+                    <option key={subject} value={subject}>{subject}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
 
-        <div className="videos-content">
-          {/* Lista de videos */}
-          <div className="videos-sidebar">
-            {loading ? (
-              <div className="loading">Cargando videos...</div>
-            ) : filteredVideos.length === 0 ? (
-              <div className="empty-state">
-                <p>🎬 No se encontraron videos.</p>
-                {this.state.videos.length === 0 && (
-                  <p>Los tutores aún no han subido videos de clases.</p>
+            <div className="videos-content">
+              {/* Lista de videos */}
+              <div className="videos-sidebar">
+                {loading ? (
+                  <div className="loading">Cargando videos...</div>
+                ) : filteredVideos.length === 0 ? (
+                  <div className="empty-state">
+                    <p>🎬 No se encontraron videos.</p>
+                    {this.state.videos.length === 0 && (
+                      <p>Los tutores aún no han subido videos de clases.</p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="videos-list">
+                    {filteredVideos.map(video => (
+                      <div
+                        key={video._id}
+                        className={`video-item ${selectedVideo?._id === video._id ? 'active' : ''}`}
+                        onClick={() => this.handleVideoSelect(video)}
+                      >
+                        <div className="video-item-thumbnail">
+                          {video.thumbnailUrl ? (
+                            <img src={video.thumbnailUrl} alt={video.title} />
+                          ) : (
+                            <div className="thumbnail-placeholder">
+                              <span>🎥</span>
+                            </div>
+                          )}
+                          {video.duration && (
+                            <div className="video-duration-small">
+                              {this.formatDuration(video.duration)}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="video-item-info">
+                          <h4>{video.title}</h4>
+                          <p className="video-subject">{video.subject}</p>
+                          {video.topic && <p className="video-topic">{video.topic}</p>}
+                          <div className="video-stats-small">
+                            <span>👁️ {video.views}</span>
+                            <span>❤️ {video.likes}</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 )}
               </div>
-            ) : (
-              <div className="videos-list">
-                {filteredVideos.map(video => (
-                  <div
-                    key={video._id}
-                    className={`video-item ${selectedVideo?._id === video._id ? 'active' : ''}`}
-                    onClick={() => this.handleVideoSelect(video)}
-                  >
-                    <div className="video-item-thumbnail">
-                      {video.thumbnailUrl ? (
-                        <img src={video.thumbnailUrl} alt={video.title} />
-                      ) : (
-                        <div className="thumbnail-placeholder">
-                          <span>🎥</span>
-                        </div>
-                      )}
-                      {video.duration && (
-                        <div className="video-duration-small">
-                          {this.formatDuration(video.duration)}
-                        </div>
-                      )}
+
+              {/* Reproductor de video */}
+              <div className="video-player-section">
+                {selectedVideo ? (
+                  <div className="video-player">
+                    <div className="video-player-header">
+                      <h3>{selectedVideo.title}</h3>
+                      <div className="video-actions">
+                        <button
+                          className="btn-like"
+                          onClick={() => this.handleLike(selectedVideo._id)}
+                        >
+                          ❤️ {selectedVideo.likes}
+                        </button>
+                      </div>
                     </div>
 
-                    <div className="video-item-info">
-                      <h4>{video.title}</h4>
-                      <p className="video-subject">{video.subject}</p>
-                      {video.topic && <p className="video-topic">{video.topic}</p>}
-                      <div className="video-stats-small">
-                        <span>👁️ {video.views}</span>
-                        <span>❤️ {video.likes}</span>
+                    <div className="video-player-content">
+                      <div className="video-iframe-container">
+                        {selectedVideo.videoUrl.includes('/uploads/videos/') ? (
+                          <video
+                            controls
+                            src={selectedVideo.videoUrl}
+                            poster={selectedVideo.thumbnailUrl}
+                            className="video-element"
+                            preload="metadata"
+                          >
+                            Tu navegador no soporta la reproducción de video.
+                          </video>
+                        ) :
+                        selectedVideo.videoUrl.includes('youtube.com') ||
+                        selectedVideo.videoUrl.includes('youtu.be') ? (
+                          <iframe
+                            src={`https://www.youtube.com/embed/${this.getYouTubeVideoId(selectedVideo.videoUrl)}`}
+                            title={selectedVideo.title}
+                            frameBorder="0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                          ></iframe>
+                        ) :
+                        selectedVideo.videoUrl.includes('vimeo.com') ? (
+                          <iframe
+                            src={`https://player.vimeo.com/video/${this.getVimeoVideoId(selectedVideo.videoUrl)}`}
+                            title={selectedVideo.title}
+                            frameBorder="0"
+                            allow="autoplay; fullscreen; picture-in-picture"
+                            allowFullScreen
+                          ></iframe>
+                        ) : (
+                          <video
+                            controls
+                            src={selectedVideo.videoUrl}
+                            poster={selectedVideo.thumbnailUrl}
+                            className="video-element"
+                          >
+                            Tu navegador no soporta la reproducción de video.
+                          </video>
+                        )}
+                      </div>
+
+                      <div className="video-details">
+                        <div className="video-meta">
+                          <span className="subject-badge">{selectedVideo.subject}</span>
+                          {selectedVideo.topic && (
+                            <span className="topic-badge">{selectedVideo.topic}</span>
+                          )}
+                          {selectedVideo.grade && (
+                            <span className="grade-badge">{selectedVideo.grade}</span>
+                          )}
+                          {selectedVideo.duration && (
+                            <span className="duration-badge">
+                              ⏱️ {this.formatDuration(selectedVideo.duration)}
+                            </span>
+                          )}
+                        </div>
+
+                        {selectedVideo.description && (
+                          <div className="video-description">
+                            <h4>Descripción</h4>
+                            <p>{selectedVideo.description}</p>
+                          </div>
+                        )}
+
+                        <div className="video-uploader">
+                          <h4>Subido por</h4>
+                          <p>{selectedVideo.uploadedBy?.personalInfo?.firstName} {selectedVideo.uploadedBy?.personalInfo?.lastName}</p>
+                          <p className="uploader-role">
+                            {selectedVideo.uploadedBy?.role === 'tutor' ? 'Tutor' : 'Asesor'}
+                          </p>
+                        </div>
+
+                        {selectedVideo.tags && selectedVideo.tags.length > 0 && (
+                          <div className="video-tags">
+                            <h4>Etiquetas</h4>
+                            <div className="tags-list">
+                              {selectedVideo.tags.map((tag, index) => (
+                                <span key={index} className="tag">{tag}</span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Reproductor de video */}
-          <div className="video-player-section">
-            {selectedVideo ? (
-              <div className="video-player">
-                <div className="video-player-header">
-                  <h3>{selectedVideo.title}</h3>
-                  <div className="video-actions">
-                    <button
-                      className="btn-like"
-                      onClick={() => this.handleLike(selectedVideo._id)}
-                    >
-                      ❤️ {selectedVideo.likes}
-                    </button>
-                  </div>
-                </div>
-
-                <div className="video-player-content">
-                  <div className="video-iframe-container">
-                    {/* Para videos locales del servidor */}
-                    {selectedVideo.videoUrl.includes('/uploads/videos/') ? (
-                      <video
-                        controls
-                        src={selectedVideo.videoUrl}
-                        poster={selectedVideo.thumbnailUrl}
-                        className="video-element"
-                        preload="metadata"
-                      >
-                        Tu navegador no soporta la reproducción de video.
-                      </video>
-                    ) :
-                    /* Para videos de YouTube */
-                    selectedVideo.videoUrl.includes('youtube.com') ||
-                    selectedVideo.videoUrl.includes('youtu.be') ? (
-                      <iframe
-                        src={`https://www.youtube.com/embed/${this.getYouTubeVideoId(selectedVideo.videoUrl)}`}
-                        title={selectedVideo.title}
-                        frameBorder="0"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                      ></iframe>
-                    ) :
-                    /* Para videos de Vimeo */
-                    selectedVideo.videoUrl.includes('vimeo.com') ? (
-                      <iframe
-                        src={`https://player.vimeo.com/video/${this.getVimeoVideoId(selectedVideo.videoUrl)}`}
-                        title={selectedVideo.title}
-                        frameBorder="0"
-                        allow="autoplay; fullscreen; picture-in-picture"
-                        allowFullScreen
-                      ></iframe>
-                    ) : (
-                      /* Para otros URLs externos */
-                      <video
-                        controls
-                        src={selectedVideo.videoUrl}
-                        poster={selectedVideo.thumbnailUrl}
-                        className="video-element"
-                      >
-                        Tu navegador no soporta la reproducción de video.
-                      </video>
-                    )}
-                  </div>
-
-                  <div className="video-details">
-                    <div className="video-meta">
-                      <span className="subject-badge">{selectedVideo.subject}</span>
-                      {selectedVideo.topic && (
-                        <span className="topic-badge">{selectedVideo.topic}</span>
-                      )}
-                      {selectedVideo.grade && (
-                        <span className="grade-badge">{selectedVideo.grade}</span>
-                      )}
-                      {selectedVideo.duration && (
-                        <span className="duration-badge">
-                          ⏱️ {this.formatDuration(selectedVideo.duration)}
-                        </span>
-                      )}
+                ) : (
+                  <div className="video-placeholder">
+                    <div className="placeholder-content">
+                      <span className="placeholder-icon">🎥</span>
+                      <h3>Selecciona un video</h3>
+                      <p>Haz clic en un video de la lista para comenzar a verlo</p>
                     </div>
-
-                    {selectedVideo.description && (
-                      <div className="video-description">
-                        <h4>Descripción</h4>
-                        <p>{selectedVideo.description}</p>
-                      </div>
-                    )}
-
-                    <div className="video-uploader">
-                      <h4>Subido por</h4>
-                      <p>{selectedVideo.uploadedBy?.personalInfo?.firstName} {selectedVideo.uploadedBy?.personalInfo?.lastName}</p>
-                      <p className="uploader-role">
-                        {selectedVideo.uploadedBy?.role === 'tutor' ? 'Tutor' : 'Asesor'}
-                      </p>
-                    </div>
-
-                    {selectedVideo.tags && selectedVideo.tags.length > 0 && (
-                      <div className="video-tags">
-                        <h4>Etiquetas</h4>
-                        <div className="tags-list">
-                          {selectedVideo.tags.map((tag, index) => (
-                            <span key={index} className="tag">{tag}</span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
                   </div>
-                </div>
+                )}
               </div>
-            ) : (
-              <div className="video-placeholder">
-                <div className="placeholder-content">
-                  <span className="placeholder-icon">🎥</span>
-                  <h3>Selecciona un video</h3>
-                  <p>Haz clic en un video de la lista para comenzar a verlo</p>
-                </div>
-              </div>
-            )}
+            </div>
           </div>
         </div>
       </div>
