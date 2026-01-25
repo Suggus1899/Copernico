@@ -1,0 +1,40 @@
+### Test appointment creation and notification system
+
+# First, login as a student to get token
+POST http://localhost:4002/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "student@example.com",
+  "password": "password123"
+}
+
+###
+
+# Create appointment request (replace {{token}} with actual token from login)
+POST http://localhost:4002/api/appointments
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "tutorId": "TUTOR_ID_HERE",
+  "subject": "Matemáticas",
+  "topic": "Álgebra Lineal",
+  "date": "2026-01-26",
+  "time": "14:00",
+  "duration": 60,
+  "message": "Necesito ayuda con matrices y determinantes",
+  "type": "advisory"
+}
+
+###
+
+# Get notifications for tutor (replace {{tutorToken}} with tutor's token)
+GET http://localhost:4002/api/notifications
+Authorization: Bearer {{tutorToken}}
+
+###
+
+# Get appointments for student
+GET http://localhost:4002/api/appointments
+Authorization: Bearer {{token}}

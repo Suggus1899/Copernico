@@ -60,9 +60,15 @@ export const updateProfileSchema = z.object({
   body: z.object({
     // Información personal (opcional para actualizar)
     personalInfo: z.object({
-      firstName: z.string().min(2, 'El nombre es requerido').optional(),
-      lastName: z.string().min(2, 'El apellido es requerido').optional(),
+      firstName: z.string().min(1, 'El nombre es requerido').optional(),
+      lastName: z.string().min(1, 'El apellido es requerido').optional(),
+      username: z.string().optional(),
       phone: z.string().optional(),
+      address: z.string().optional(),
+      city: z.string().optional(),
+      country: z.string().optional(),
+      province: z.string().optional(),
+      postalCode: z.string().optional(),
       avatar: z.string().optional()
     }).optional(),
     
@@ -77,20 +83,34 @@ export const updateProfileSchema = z.object({
     
     // Solo para estudiantes
     studentProfile: z.object({
-      studentId: z.string().min(1, 'ID Estudiantil es requerido').optional()
+      studentId: z.string().optional(),
+      career: z.string().optional(),
+      semester: z.number().optional(),
+      averageGrade: z.number().optional(),
+      enrolledCourses: z.array(z.string()).optional()
     }).optional(),
     
     // Solo para tutores
     tutorProfile: z.object({
-      specialties: z.array(z.string().min(1)).optional(),
-      experienceYears: z.number().min(0, 'Años de experiencia debe ser 0 o mayor').optional()
+      specialties: z.array(z.string()).optional(),
+      teachingMethods: z.array(z.string()).optional(),
+      maxStudents: z.number().optional(),
+      available: z.boolean().optional(),
+      hourlyRate: z.number().optional()
     }).optional(),
     
     // Solo para asesores
     advisorProfile: z.object({
-      specializationAreas: z.array(z.string().min(1)).optional(),
-      certification: z.array(z.string()).optional(),
-      bio: z.string().max(500, 'El enfoque de asesoramiento no debe exceder 500 caracteres').optional()
+      specializationAreas: z.array(z.string()).optional(),
+      appointmentDuration: z.number().optional(),
+      available: z.boolean().optional()
+    }).optional(),
+    
+    // Configuraciones de comunicación
+    communicationSettings: z.object({
+      allowNotifications: z.boolean().optional(),
+      emailNotifications: z.boolean().optional(),
+      notificationPreferences: z.array(z.string()).optional()
     }).optional()
   })
 });

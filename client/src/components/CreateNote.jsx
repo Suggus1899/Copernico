@@ -79,7 +79,7 @@ function CreateNote() {
   return (
     <div className="col-md-6 offset-md-3">
       <div className="card card-body">
-        <h4>Create a Note</h4>
+        <h4>Crear Apunte</h4>
         <form onSubmit={onSubmit}>
           {/* SELECT THE USER */}
           {/* <div className="form-group">
@@ -102,7 +102,7 @@ function CreateNote() {
             <input
               type="text"
               className="form-control"
-              placeholder="Title"
+              placeholder="Título"
               onChange={onInputChange}
               name="title"
               value={content.title}
@@ -116,7 +116,7 @@ function CreateNote() {
             <textarea
               type="text"
               className="form-control"
-              placeholder="Content"
+              placeholder="Contenido"
               name="content"
               onChange={onInputChange}
               value={content.content}
@@ -132,7 +132,7 @@ function CreateNote() {
             />
           </div>
           <button className="btn btn-primary">
-            Save <i className="material-icons">assignment</i>
+            Guardar <i className="material-icons">assignment</i>
           </button>
         </form>
       </div>

@@ -11,7 +11,7 @@ export const requireRole = (roles = []) => (req, res, next) => {
 
 export const requireOwnership = (Model, idParam = 'id', ownerField = 'tutor') => {
   if (!Model || !Model.findById) {
-    throw new Error('requireOwnership middleware requires a valid Mongoose Model');
+    throw new Error('requireOwnership: provide a valid Mongoose Model as first argument');
   }
 
   

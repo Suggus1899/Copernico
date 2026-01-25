@@ -1,87 +1,197 @@
-import React, { Component } from 'react';
+import React, { useEffect, useState } from 'react';
 import TutorSidebarMenu from './TutorSidebarMenu';
+import apiClient from '../utils/axiosConfig';
 import './Dashboard.css';
 
-class TutorAgenda extends Component {
-  state = {
-    classes: [],
-    selectedDate: new Date().toISOString().split('T')[0]
+const TutorAgenda = () => {
+  const [appointments, setAppointments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+
+  useEffect(() => {
+    fetchAppointments();
+  }, []);
+
+  const fetchAppointments = async () => {
+    try {
+      setLoading(true);
+      const response = await apiClient.get('/appointments');
+      const appointments = response.data.data || [];
+      
+      // Filtrar solo citas confirmadas y programadas
+      const confirmedAppointments = appointments.filter(apt => 
+        ['confirmed', 'scheduled'].includes(apt.status)
+      );
+      
+      setAppointments(confirmedAppointments);
+      setError('');
+    } catch (err) {
+      console.error('Error fetching appointments:', err);
+      setError('No se pudieron cargar las citas');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  componentDidMount() {
-    this.setState({
-      classes: [
-        { id: 1, subject: 'Matemáticas Avanzadas', student: 'Ana García', time: '14:00', duration: 120, date: '2024-01-15', type: 'class' },
-        { id: 2, subject: 'Física Cuántica', student: 'Carlos Rodríguez', time: '16:30', duration: 90, date: '2024-01-15', type: 'class' },
-        { id: 3, subject: 'Química Orgánica', student: 'María López', time: '10:00', duration: 240, date: '2024-01-16', type: 'class' },
-        { id: 4, subject: 'Asesoría Personalizada', student: 'Juan Pérez', time: '15:00', duration: 60, date: '2024-01-17', type: 'advisory' }
-      ]
+  const getAppointmentsForDate = (date) => {
+    return appointments.filter(apt => {
+      const appointmentDate = new Date(apt.scheduledDate).toISOString().split('T')[0];
+      return appointmentDate === date;
     });
-  }
+  };
 
-  render() {
-    const { classes, selectedDate } = this.state;
-    const todayClasses = classes.filter(c => c.date === selectedDate);
+  const formatTime = (dateString) => {
+    return new Date(dateString).toLocaleTimeString('es-ES', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
 
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString('es-ES', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
+  const getStudentName = (student) => {
+    if (!student) return 'Estudiante';
+    if (student.personalInfo) {
+      const firstName = student.personalInfo.firstName || '';
+      const lastName = student.personalInfo.lastName || '';
+      return `${firstName} ${lastName}`.trim() || student.email;
+    }
+    return student.email || 'Estudiante';
+  };
+
+  const getAppointmentTypeLabel = (type) => {
+    const types = {
+      'tutoring': 'Tutoría',
+      'advising': 'Asesoría',
+      'consultation': 'Consulta'
+    };
+    return types[type] || 'Sesión';
+  };
+
+  const todayAppointments = getAppointmentsForDate(selectedDate);
+
+  if (loading) {
     return (
       <div className="dashboard-container">
         <TutorSidebarMenu />
         <div className="dashboard-content">
-          <div className="dashboard-header">
-            <h1>Agenda de Clases</h1>
-            <p>Gestiona tus clases y asesorías programadas</p>
-          </div>
-
-          <div className="dashboard-main">
-            <div className="agenda-controls">
-              <input
-                type="date"
-                value={selectedDate}
-                onChange={(e) => this.setState({ selectedDate: e.target.value })}
-                className="date-picker"
-              />
-              <button className="btn-primary">Programar Nueva Clase</button>
-            </div>
-
-            <div className="agenda-calendar">
-              <div className="today-schedule">
-                <h2>Clases del {new Date(selectedDate).toLocaleDateString('es-ES')}</h2>
-                {todayClasses.length > 0 ? (
-                  <div className="schedule-list">
-                    {todayClasses.map((classItem) => (
-                      <div key={classItem.id} className={`schedule-item ${classItem.type}`}>
-                        <div className="schedule-time">
-                          <span className="time">{classItem.time}</span>
-                          <span className="duration">({classItem.duration}min)</span>
-                        </div>
-                        <div className="schedule-info">
-                          <h4>{classItem.subject}</h4>
-                          <p>Estudiante: {classItem.student}</p>
-                          <span className={`type-badge ${classItem.type}`}>
-                            {classItem.type === 'class' ? 'Clase' : 'Asesoría'}
-                          </span>
-                        </div>
-                        <div className="schedule-actions">
-                          <button className="btn-outline small">Unirse</button>
-                          <button className="btn-outline small">Editar</button>
-                          <button className="btn-outline small">Cancelar</button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="no-classes">
-                    <p>No hay clases programadas para esta fecha</p>
-                    <button className="btn-secondary">Programar Clase</button>
-                  </div>
-                )}
-              </div>
-            </div>
+          <div className="loading-container">
+            <div className="loading-spinner"></div>
+            <p>Cargando agenda...</p>
           </div>
         </div>
       </div>
     );
   }
-}
+
+  return (
+    <div className="dashboard-container">
+      <TutorSidebarMenu />
+      <div className="dashboard-content">
+        <div className="dashboard-header">
+          <h1>📅 Agenda de Clases</h1>
+          <p>Gestiona tus clases y asesorías programadas</p>
+        </div>
+
+        {error && <div className="alert alert-danger">{error}</div>}
+
+        <div className="dashboard-main">
+          <div className="agenda-controls">
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="date-picker"
+            />
+            <div className="agenda-stats">
+              <span className="stat-item">
+                📊 Total citas: {appointments.length}
+              </span>
+              <span className="stat-item">
+                📅 Hoy: {todayAppointments.length}
+              </span>
+            </div>
+          </div>
+
+          <div className="agenda-calendar">
+            <div className="today-schedule">
+              <h2>📋 Citas del {formatDate(selectedDate)}</h2>
+              {todayAppointments.length > 0 ? (
+                <div className="schedule-list">
+                  {todayAppointments
+                    .sort((a, b) => new Date(a.scheduledDate) - new Date(b.scheduledDate))
+                    .map((appointment) => (
+                    <div key={appointment._id} className={`schedule-item ${appointment.appointmentType}`}>
+                      <div className="schedule-time">
+                        <span className="time">🕐 {formatTime(appointment.scheduledDate)}</span>
+                        <span className="duration">({appointment.duration || 60}min)</span>
+                      </div>
+                      <div className="schedule-info">
+                        <h4>📚 {appointment.subject}</h4>
+                        {appointment.topic && (
+                          <p className="topic">🎯 Tema: {appointment.topic}</p>
+                        )}
+                        <p className="student">👨‍🎓 {getStudentName(appointment.studentId)}</p>
+                        <span className={`type-badge ${appointment.appointmentType}`}>
+                          {getAppointmentTypeLabel(appointment.appointmentType)}
+                        </span>
+                        <span className={`status-badge ${appointment.status}`}>
+                          {appointment.status === 'confirmed' ? '✅ Confirmada' : '📋 Programada'}
+                        </span>
+                      </div>
+                      <div className="schedule-actions">
+                        <button 
+                          className="btn btn-primary small"
+                          onClick={() => {
+                            // Aquí se podría implementar funcionalidad de unirse a la sesión
+                            alert('Funcionalidad de unirse a la sesión por implementar');
+                          }}
+                        >
+                          🎥 Iniciar Sesión
+                        </button>
+                        <button 
+                          className="btn btn-outline small"
+                          onClick={() => {
+                            // Aquí se podría implementar funcionalidad de editar
+                            alert('Funcionalidad de editar por implementar');
+                          }}
+                        >
+                          ✏️ Editar
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="no-classes">
+                  <div className="empty-icon">📅</div>
+                  <h3>No hay citas programadas para esta fecha</h3>
+                  <p>Las citas aparecerán aquí cuando los estudiantes soliciten asesorías y tú las aceptes</p>
+                  <div className="help-text">
+                    <h4>💡 ¿Cómo funcionan las citas?</h4>
+                    <ul>
+                      <li>Los estudiantes solicitan asesorías contigo</li>
+                      <li>Recibes notificaciones de las solicitudes</li>
+                      <li>Cuando aceptas, la cita aparece en tu agenda</li>
+                      <li>Puedes ver todas tus citas confirmadas aquí</li>
+                    </ul>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export default TutorAgenda;

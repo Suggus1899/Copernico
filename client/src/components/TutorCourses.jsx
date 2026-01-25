@@ -1,102 +1,372 @@
-import React, { Component } from 'react';
+import React, { useEffect, useState } from 'react';
 import TutorSidebarMenu from './TutorSidebarMenu';
 import apiClient from '../utils/axiosConfig';
 import './Dashboard.css';
 
-class TutorCourses extends Component {
-  state = {
-    user: null,
-    courses: [],
-    loading: false
+const TutorCourses = () => {
+  const [courses, setCourses] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterStatus, setFilterStatus] = useState('all');
+
+  useEffect(() => {
+    fetchTutorCourses();
+  }, []);
+
+  const fetchTutorCourses = async () => {
+    try {
+      setLoading(true);
+      
+      // Obtener todas las citas del tutor/asesor
+      const appointmentsResponse = await apiClient.get('/appointments');
+      const appointments = appointmentsResponse.data.data || [];
+      
+      // Filtrar solo citas confirmadas o completadas
+      const confirmedAppointments = appointments.filter(apt => 
+        ['confirmed', 'completed'].includes(apt.status)
+      );
+      
+      // Agrupar por estudiante y materia para crear "cursos"
+      const coursesMap = new Map();
+      
+      confirmedAppointments.forEach(appointment => {
+        const studentId = appointment.studentId?._id;
+        const studentName = appointment.studentId?.personalInfo 
+          ? `${appointment.studentId.personalInfo.firstName || ''} ${appointment.studentId.personalInfo.lastName || ''}`.trim()
+          : appointment.studentId?.email || 'Estudiante';
+        
+        const subject = appointment.subject;
+        const courseKey = `${studentId}-${subject}`;
+        
+        if (!coursesMap.has(courseKey)) {
+          coursesMap.set(courseKey, {
+            id: courseKey,
+            subject: subject,
+            studentId: studentId,
+            studentName: studentName,
+            studentEmail: appointment.studentId?.email,
+            appointments: [],
+            totalSessions: 0,
+            completedSessions: 0,
+            upcomingSessions: 0,
+            topics: new Set()
+          });
+        }
+        
+        const course = coursesMap.get(courseKey);
+        course.appointments.push(appointment);
+        course.totalSessions++;
+        
+        if (appointment.status === 'completed') {
+          course.completedSessions++;
+        } else if (appointment.status === 'confirmed') {
+          course.upcomingSessions++;
+        }
+        
+        if (appointment.topic) {
+          course.topics.add(appointment.topic);
+        }
+      });
+      
+      // Convertir Map a Array y calcular estadísticas
+      const coursesArray = Array.from(coursesMap.values()).map(course => {
+        const progress = course.totalSessions > 0 
+          ? Math.round((course.completedSessions / course.totalSessions) * 100)
+          : 0;
+        
+        const nextAppointment = course.appointments
+          .filter(apt => apt.status === 'confirmed' && new Date(apt.scheduledDate) > new Date())
+          .sort((a, b) => new Date(a.scheduledDate) - new Date(b.scheduledDate))[0];
+        
+        const lastAppointment = course.appointments
+          .filter(apt => apt.status === 'completed')
+          .sort((a, b) => new Date(b.scheduledDate) - new Date(a.scheduledDate))[0];
+        
+        return {
+          ...course,
+          progress,
+          nextAppointment,
+          lastAppointment,
+          topics: Array.from(course.topics),
+          status: course.upcomingSessions > 0 ? 'active' : 'completed'
+        };
+      });
+      
+      setCourses(coursesArray);
+      setError('');
+    } catch (err) {
+      console.error('Error fetching tutor courses:', err);
+      setError('No se pudieron cargar tus cursos');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  componentDidMount() {
-    // TODO: Load tutor's courses from API
-    this.setState({
-      courses: [
-        {
-          id: 1,
-          name: 'Matemáticas Avanzadas',
-          subject: 'Matemáticas',
-          level: 'Universitario',
-          students: 12,
-          schedule: 'Lunes y Miércoles 14:00-16:00',
-          status: 'active'
-        },
-        {
-          id: 2,
-          name: 'Física Cuántica',
-          subject: 'Física',
-          level: 'Posgrado',
-          students: 8,
-          schedule: 'Martes y Jueves 10:00-12:00',
-          status: 'active'
-        },
-        {
-          id: 3,
-          name: 'Química Orgánica',
-          subject: 'Química',
-          level: 'Universitario',
-          students: 15,
-          schedule: 'Viernes 09:00-13:00',
-          status: 'active'
-        }
-      ]
-    });
-  }
+  const getFilteredCourses = () => {
+    let filtered = courses;
 
-  render() {
-    const { courses, loading } = this.state;
+    if (filterStatus !== 'all') {
+      filtered = filtered.filter(course => course.status === filterStatus);
+    }
 
+    if (searchTerm) {
+      filtered = filtered.filter(course =>
+        course.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        course.studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        course.topics.some(topic => topic.toLowerCase().includes(searchTerm.toLowerCase()))
+      );
+    }
+
+    return filtered;
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'No programada';
+    const date = new Date(dateString);
+    const now = new Date();
+    const isToday = date.toDateString() === now.toDateString();
+    const isTomorrow = date.toDateString() === new Date(now.getTime() + 86400000).toDateString();
+    
+    if (isToday) {
+      return `Hoy a las ${date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}`;
+    } else if (isTomorrow) {
+      return `Mañana a las ${date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}`;
+    } else {
+      return date.toLocaleDateString('es-ES', {
+        weekday: 'long',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+  };
+
+  const getStatusBadge = (status) => {
+    const statusConfig = {
+      active: { label: 'Activo', class: 'status-active', icon: '🟢' },
+      completed: { label: 'Completado', class: 'status-completed', icon: '✅' }
+    };
+    return statusConfig[status] || { label: 'Desconocido', class: 'status-unknown', icon: '❓' };
+  };
+
+  const filteredCourses = getFilteredCourses();
+
+  if (loading) {
     return (
       <div className="dashboard-container">
         <TutorSidebarMenu />
         <div className="dashboard-content">
-          <div className="dashboard-header">
-            <h1>Mis Cursos / Grupos</h1>
-            <p>Gestiona tus cursos y grupos de estudiantes</p>
-          </div>
-
-          <div className="dashboard-main">
-            <div className="action-buttons">
-              <button className="btn-primary">Crear Nuevo Curso</button>
-              <button className="btn-secondary">Crear Grupo</button>
-            </div>
-
-            <div className="courses-grid">
-              {courses.map((course) => (
-                <div key={course.id} className="course-card">
-                  <div className="course-header">
-                    <h3>{course.name}</h3>
-                    <span className={`status-badge ${course.status}`}>{course.status}</span>
-                  </div>
-                  <div className="course-info">
-                    <p><strong>Materia:</strong> {course.subject}</p>
-                    <p><strong>Nivel:</strong> {course.level}</p>
-                    <p><strong>Estudiantes:</strong> {course.students}</p>
-                    <p><strong>Horario:</strong> {course.schedule}</p>
-                  </div>
-                  <div className="course-actions">
-                    <button className="btn-outline">Editar</button>
-                    <button className="btn-outline">Ver Estudiantes</button>
-                    <button className="btn-outline">Gestionar Materiales</button>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {courses.length === 0 && (
-              <div className="empty-state">
-                <h3>No tienes cursos activos</h3>
-                <p>Crea tu primer curso para comenzar a enseñar</p>
-                <button className="btn-primary">Crear Primer Curso</button>
-              </div>
-            )}
+          <div className="loading-container">
+            <div className="loading-spinner"></div>
+            <p>Cargando tus cursos...</p>
           </div>
         </div>
       </div>
     );
   }
+
+  return (
+    <div className="dashboard-container">
+      <TutorSidebarMenu />
+      <div className="dashboard-content">
+        <div className="courses-page">
+          <div className="courses-header">
+            <h2>📚 Mis Cursos</h2>
+            <p>Cursos en progreso con tus estudiantes</p>
+          </div>
+
+          {error && <div className="alert alert-danger">{error}</div>}
+
+          {courses.length > 0 && (
+            <>
+              {/* Filtros y búsqueda */}
+              <div className="courses-filters">
+                <div className="search-group">
+                  <input
+                    type="text"
+                    placeholder="Buscar por materia, estudiante o tema..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="search-input"
+                  />
+                </div>
+                <div className="filter-buttons">
+                  <button
+                    className={`filter-btn ${filterStatus === 'all' ? 'active' : ''}`}
+                    onClick={() => setFilterStatus('all')}
+                  >
+                    Todos ({courses.length})
+                  </button>
+                  <button
+                    className={`filter-btn ${filterStatus === 'active' ? 'active' : ''}`}
+                    onClick={() => setFilterStatus('active')}
+                  >
+                    Activos ({courses.filter(c => c.status === 'active').length})
+                  </button>
+                  <button
+                    className={`filter-btn ${filterStatus === 'completed' ? 'active' : ''}`}
+                    onClick={() => setFilterStatus('completed')}
+                  >
+                    Completados ({courses.filter(c => c.status === 'completed').length})
+                  </button>
+                </div>
+              </div>
+
+              {/* Estadísticas */}
+              <div className="courses-stats">
+                <div className="stat-item">
+                  <span className="stat-number">{courses.filter(c => c.status === 'active').length}</span>
+                  <span className="stat-label">Cursos activos</span>
+                </div>
+                <div className="stat-item">
+                  <span className="stat-number">{courses.reduce((acc, c) => acc + c.completedSessions, 0)}</span>
+                  <span className="stat-label">Sesiones completadas</span>
+                </div>
+                <div className="stat-item">
+                  <span className="stat-number">{courses.reduce((acc, c) => acc + c.upcomingSessions, 0)}</span>
+                  <span className="stat-label">Sesiones programadas</span>
+                </div>
+                <div className="stat-item">
+                  <span className="stat-number">{Math.round(courses.reduce((acc, c) => acc + c.progress, 0) / courses.length) || 0}%</span>
+                  <span className="stat-label">Progreso promedio</span>
+                </div>
+              </div>
+            </>
+          )}
+
+          {filteredCourses.length === 0 ? (
+            <div className="empty-state">
+              <div className="empty-icon">📚</div>
+              <h3>
+                {courses.length === 0 
+                  ? 'No tienes cursos en progreso aún' 
+                  : 'No se encontraron cursos con los filtros aplicados'
+                }
+              </h3>
+              <p>
+                {courses.length === 0 
+                  ? 'Los cursos aparecerán aquí cuando los estudiantes soliciten asesorías y tú las aceptes'
+                  : 'Intenta con otros términos de búsqueda o filtros diferentes'
+                }
+              </p>
+              {courses.length === 0 && (
+                <div className="help-text">
+                  <h4>💡 ¿Cómo funcionan los cursos?</h4>
+                  <ul>
+                    <li>Los estudiantes solicitan asesorías contigo</li>
+                    <li>Cuando aceptas una solicitud, se crea automáticamente un "curso"</li>
+                    <li>Cada materia con un estudiante específico forma un curso</li>
+                    <li>Aquí verás el progreso de todas las sesiones con cada estudiante</li>
+                  </ul>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="courses-grid">
+              {filteredCourses.map((course) => {
+                const statusBadge = getStatusBadge(course.status);
+                return (
+                  <div key={course.id} className="course-card">
+                    <div className="course-header">
+                      <div className="course-title">
+                        <h3>📚 {course.subject}</h3>
+                        <span className={`status-badge ${statusBadge.class}`}>
+                          {statusBadge.icon} {statusBadge.label}
+                        </span>
+                      </div>
+                      <div className="course-instructor">
+                        <span className="instructor-info">
+                          👨‍🎓 {course.studentName}
+                        </span>
+                        <span className="role-badge">Estudiante</span>
+                      </div>
+                    </div>
+
+                    <div className="course-content">
+                      {course.topics.length > 0 && (
+                        <div className="course-topics">
+                          <span className="topics-label">🎯 Temas:</span>
+                          <div className="topics-list">
+                            {course.topics.slice(0, 3).map((topic, index) => (
+                              <span key={index} className="topic-tag">{topic}</span>
+                            ))}
+                            {course.topics.length > 3 && (
+                              <span className="topic-tag more">+{course.topics.length - 3} más</span>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="course-progress">
+                        <div className="progress-header">
+                          <span>Progreso: {course.progress}%</span>
+                          <span>{course.completedSessions}/{course.totalSessions} sesiones</span>
+                        </div>
+                        <div className="progress-bar">
+                          <div 
+                            className="progress-fill" 
+                            style={{ width: `${course.progress}%` }}
+                          ></div>
+                        </div>
+                      </div>
+
+                      <div className="course-details">
+                        <div className="detail-item">
+                          <span className="detail-label">📊 Total sesiones:</span>
+                          <span>{course.totalSessions}</span>
+                        </div>
+                        <div className="detail-item">
+                          <span className="detail-label">✅ Completadas:</span>
+                          <span>{course.completedSessions}</span>
+                        </div>
+                        <div className="detail-item">
+                          <span className="detail-label">📅 Programadas:</span>
+                          <span>{course.upcomingSessions}</span>
+                        </div>
+                        
+                        {course.nextAppointment && (
+                          <div className="detail-item next-session">
+                            <span className="detail-label">🕐 Próxima sesión:</span>
+                            <span className="next-session-date">
+                              {formatDate(course.nextAppointment.scheduledDate)}
+                            </span>
+                          </div>
+                        )}
+                        
+                        {course.lastAppointment && !course.nextAppointment && (
+                          <div className="detail-item">
+                            <span className="detail-label">📅 Última sesión:</span>
+                            <span>{formatDate(course.lastAppointment.scheduledDate)}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="course-actions">
+                      <button 
+                        className="btn btn-primary"
+                        onClick={() => window.location.href = '/tutor/videos'}
+                      >
+                        📹 Subir Material
+                      </button>
+                      <button 
+                        className="btn btn-secondary"
+                        onClick={() => window.location.href = '/tutor/students'}
+                      >
+                        👥 Ver Estudiante
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default TutorCourses;

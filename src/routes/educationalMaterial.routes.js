@@ -36,7 +36,17 @@ router.patch('/:id/download', incrementDownloads);
 
 // Rutas para creadores (tutores, asesores, admin)
 router.get('/my/materials', requireRole(['tutor', 'advisor', 'admin']), getMyEducationalMaterials);
-router.post('/', requireRole(['tutor', 'advisor', 'admin']), uploadMaterialFile, schemaValidator(createEducationalMaterialSchema), createEducationalMaterial);
+
+// Endpoint de prueba
+router.post('/test', requireRole(['tutor', 'advisor', 'admin']), (req, res) => {
+  console.log('=== TEST ENDPOINT ===');
+  console.log('Body:', req.body);
+  console.log('File:', req.file);
+  console.log('User:', req.user?.id, req.user?.role);
+  res.json({ success: true, message: 'Test endpoint working', data: { body: req.body, hasFile: !!req.file } });
+});
+
+router.post('/', requireRole(['tutor', 'advisor', 'admin']), uploadMaterialFile, createEducationalMaterial);
 router.put('/:id', requireRole(['tutor', 'advisor', 'admin']), schemaValidator(updateEducationalMaterialSchema), updateEducationalMaterial);
 router.delete('/:id', requireRole(['tutor', 'advisor', 'admin']), deleteEducationalMaterial);
 router.patch('/:id/share', requireRole(['tutor', 'advisor', 'admin']), schemaValidator(shareMaterialSchema), shareEducationalMaterial);

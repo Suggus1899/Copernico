@@ -34,6 +34,13 @@ const classVideoSchema = new mongoose.Schema({
     min: 0
   },
 
+  // Estudiante destinatario específico
+  targetStudentId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    index: true
+  },
+
   // Archivo del video
   videoUrl: {
     type: String,

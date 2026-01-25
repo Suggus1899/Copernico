@@ -4,6 +4,7 @@ import apiClient from '../utils/axiosConfig';
 class TutorVideos extends Component {
   state = {
     videos: [],
+    students: [], // Lista de estudiantes del tutor
     loading: false,
     uploading: false,
     showForm: false,
@@ -15,28 +16,38 @@ class TutorVideos extends Component {
       grade: '',
       duration: '',
       visibility: 'students',
-      tags: ''
+      tags: '',
+      videoUrl: '',
+      targetStudentId: '' // Nuevo campo para el estudiante específico
     },
     selectedVideoFile: null,
     selectedThumbnailFile: null,
     editMode: false,
-    editingId: null
+    editingId: null,
+    uploadMethod: 'file' // 'file' o 'url'
   };
 
   componentDidMount() {
     this.loadVideos();
+    this.loadStudents();
   }
+
+  loadStudents = async () => {
+    try {
+      const response = await apiClient.get('/appointments/my-students');
+      this.setState({
+        students: response.data.data || []
+      });
+    } catch (error) {
+      console.error('Error loading students:', error);
+    }
+  };
 
   loadVideos = async () => {
     try {
       this.setState({ loading: true });
 
-      // Primero probar la ruta de test
-      console.log('Probando conectividad con /videos/test...');
-      const testResponse = await apiClient.get('/videos/test');
-      console.log('Respuesta de test:', testResponse.data);
-
-      // Luego cargar los videos
+      // Cargar los videos del tutor/asesor
       const response = await apiClient.get('/videos/my/videos');
       this.setState({
         videos: response.data.data,
@@ -73,18 +84,25 @@ class TutorVideos extends Component {
   handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Validar que se haya seleccionado un archivo de video
-    if (!this.state.editMode && !this.state.selectedVideoFile) {
-      alert('Por favor selecciona un archivo de video');
-      return;
+    // Validar que se haya proporcionado un video (archivo o URL)
+    if (!this.state.editMode) {
+      if (this.state.uploadMethod === 'file' && !this.state.selectedVideoFile) {
+        alert('Por favor selecciona un archivo de video');
+        return;
+      }
+      if (this.state.uploadMethod === 'url' && !this.state.formData.videoUrl.trim()) {
+        alert('Por favor proporciona una URL de video');
+        return;
+      }
     }
 
     try {
       this.setState({ uploading: true });
 
       console.log('Iniciando subida de video...');
+      console.log('Método de subida:', this.state.uploadMethod);
       console.log('Archivo de video:', this.state.selectedVideoFile);
-      console.log('Archivo de miniatura:', this.state.selectedThumbnailFile);
+      console.log('URL de video:', this.state.formData.videoUrl);
 
       const formDataToSend = new FormData();
 
@@ -94,16 +112,23 @@ class TutorVideos extends Component {
           const tags = this.state.formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag);
           formDataToSend.append(key, JSON.stringify(tags));
           console.log('Tags procesadas:', tags);
-        } else {
+        } else if (key === 'videoUrl' && this.state.uploadMethod === 'url') {
+          // Solo agregar videoUrl si se está usando el método URL
+          formDataToSend.append(key, this.state.formData[key]);
+        } else if (key !== 'videoUrl') {
+          // Agregar todos los otros campos excepto videoUrl cuando se usa archivo
           formDataToSend.append(key, this.state.formData[key]);
         }
       });
 
-      // Agregar archivos
-      if (this.state.selectedVideoFile) {
-        formDataToSend.append('videoFile', this.state.selectedVideoFile);
-        console.log('Agregando archivo de video:', this.state.selectedVideoFile.name);
+      // Agregar archivos solo si se está usando el método de archivo
+      if (this.state.uploadMethod === 'file' || this.state.editMode) {
+        if (this.state.selectedVideoFile) {
+          formDataToSend.append('videoFile', this.state.selectedVideoFile);
+          console.log('Agregando archivo de video:', this.state.selectedVideoFile.name);
+        }
       }
+      
       if (this.state.selectedThumbnailFile) {
         formDataToSend.append('thumbnailFile', this.state.selectedThumbnailFile);
         console.log('Agregando archivo de miniatura:', this.state.selectedThumbnailFile.name);
@@ -134,6 +159,7 @@ class TutorVideos extends Component {
         editingId: null,
         selectedVideoFile: null,
         selectedThumbnailFile: null,
+        uploadMethod: 'file',
         formData: {
           title: '',
           description: '',
@@ -142,12 +168,15 @@ class TutorVideos extends Component {
           grade: '',
           duration: '',
           visibility: 'students',
-          tags: ''
+          tags: '',
+          videoUrl: '',
+          targetStudentId: ''
         }
       });
 
       console.log('Estado reseteado, cargando videos...');
       this.loadVideos();
+      alert('Video subido exitosamente');
     } catch (error) {
       console.error('Error completo:', error);
       console.error('Error response:', error.response);
@@ -183,7 +212,8 @@ class TutorVideos extends Component {
         grade: video.grade || '',
         duration: video.duration || '',
         visibility: video.visibility,
-        tags: video.tags ? video.tags.join(', ') : ''
+        tags: video.tags ? video.tags.join(', ') : '',
+        targetStudentId: video.targetStudentId || ''
       }
     });
   };
@@ -256,6 +286,44 @@ class TutorVideos extends Component {
                 </div>
               </div>
 
+              <div className="form-row">
+                <div className="form-group">
+                  <label>👨‍🎓 Estudiante Destinatario *</label>
+                  <select
+                    name="targetStudentId"
+                    value={formData.targetStudentId}
+                    onChange={this.handleInputChange}
+                    required
+                  >
+                    <option value="">Seleccionar estudiante</option>
+                    {this.state.students.map(student => {
+                      const studentName = `${student.personalInfo?.firstName || ''} ${student.personalInfo?.lastName || ''}`.trim() || student.email;
+                      return (
+                        <option key={student._id} value={student._id}>
+                          {studentName} - {student.stats.subjects.join(', ')}
+                        </option>
+                      );
+                    })}
+                  </select>
+                  <small style={{ color: '#666', fontSize: '0.8rem' }}>
+                    Solo aparecen estudiantes con citas confirmadas contigo
+                  </small>
+                </div>
+                <div className="form-group">
+                  <label>Visibilidad</label>
+                  <select
+                    name="visibility"
+                    value={formData.visibility}
+                    onChange={this.handleInputChange}
+                  >
+                    <option value="private">Privado</option>
+                    <option value="student">Solo el estudiante seleccionado</option>
+                    <option value="students">Todos mis estudiantes</option>
+                    <option value="public">Público</option>
+                  </select>
+                </div>
+              </div>
+
               <div className="form-group">
                 <label>Descripción</label>
                 <textarea
@@ -303,45 +371,90 @@ class TutorVideos extends Component {
 
               <div className="form-row">
                 <div className="form-group">
-                  <label>Archivo de Video *</label>
-                  <input
-                    type="file"
-                    name="videoFile"
-                    onChange={this.handleFileChange}
-                    accept="video/*"
-                    required={!editMode}
-                  />
-                  {this.state.selectedVideoFile && (
-                    <small>Seleccionado: {this.state.selectedVideoFile.name}</small>
-                  )}
-                </div>
-                <div className="form-group">
-                  <label>Imagen de Portada (opcional)</label>
-                  <input
-                    type="file"
-                    name="thumbnailFile"
-                    onChange={this.handleFileChange}
-                    accept="image/*"
-                  />
-                  {this.state.selectedThumbnailFile && (
-                    <small>Seleccionado: {this.state.selectedThumbnailFile.name}</small>
-                  )}
+                  <label>Método de subida</label>
+                  <div className="upload-method-selector">
+                    <label className="radio-option">
+                      <input
+                        type="radio"
+                        name="uploadMethod"
+                        value="file"
+                        checked={this.state.uploadMethod === 'file'}
+                        onChange={(e) => this.setState({ uploadMethod: e.target.value })}
+                      />
+                      📁 Subir archivo
+                    </label>
+                    <label className="radio-option">
+                      <input
+                        type="radio"
+                        name="uploadMethod"
+                        value="url"
+                        checked={this.state.uploadMethod === 'url'}
+                        onChange={(e) => this.setState({ uploadMethod: e.target.value })}
+                      />
+                      🔗 URL de video
+                    </label>
+                  </div>
                 </div>
               </div>
 
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Visibilidad</label>
-                  <select
-                    name="visibility"
-                    value={formData.visibility}
-                    onChange={this.handleInputChange}
-                  >
-                    <option value="private">Privado</option>
-                    <option value="students">Estudiantes</option>
-                    <option value="public">Público</option>
-                  </select>
+              {this.state.uploadMethod === 'file' ? (
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Archivo de Video *</label>
+                    <input
+                      type="file"
+                      name="videoFile"
+                      onChange={this.handleFileChange}
+                      accept="video/*"
+                      required={!this.state.editMode}
+                    />
+                    {this.state.selectedVideoFile && (
+                      <small>Seleccionado: {this.state.selectedVideoFile.name}</small>
+                    )}
+                  </div>
+                  <div className="form-group">
+                    <label>Imagen de Portada (opcional)</label>
+                    <input
+                      type="file"
+                      name="thumbnailFile"
+                      onChange={this.handleFileChange}
+                      accept="image/*"
+                    />
+                    {this.state.selectedThumbnailFile && (
+                      <small>Seleccionado: {this.state.selectedThumbnailFile.name}</small>
+                    )}
+                  </div>
                 </div>
+              ) : (
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>URL del Video *</label>
+                    <input
+                      type="url"
+                      name="videoUrl"
+                      value={this.state.formData.videoUrl}
+                      onChange={this.handleInputChange}
+                      placeholder="https://www.youtube.com/watch?v=... o https://vimeo.com/..."
+                      required
+                    />
+                    <small>Soporta YouTube, Vimeo y enlaces directos a archivos de video</small>
+                  </div>
+                  <div className="form-group">
+                    <label>Imagen de Portada (opcional)</label>
+                    <input
+                      type="file"
+                      name="thumbnailFile"
+                      onChange={this.handleFileChange}
+                      accept="image/*"
+                    />
+                    {this.state.selectedThumbnailFile && (
+                      <small>Seleccionado: {this.state.selectedThumbnailFile.name}</small>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              <div className="form-row">
                 <div className="form-group">
                   <label>Etiquetas</label>
                   <input

@@ -3,73 +3,64 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import logo from '../assets/logo.jpg';
 import './SidebarMenu.css';
 
+// Importar iconos (usando los mismos del estudiante donde sea posible)
+import iconCursos from '../assets/course.png';
+import iconVideos from '../assets/videos.png';
+import iconTutores from '../assets/tutors.png';
+import iconAsesoria from '../assets/asesorias.png';
+import iconNotas from '../assets/notas.png';
+import iconPerfil from '../assets/profile.png';
+import iconConfig from '../assets/settings.png';
+import iconLogout from '../assets/logout.png';
+
 const TutorSidebarMenu = ({ userRole = 'tutor' }) => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const handleLogout = () => {
+  const handleLogout = (e) => {
+    e.preventDefault();
     localStorage.removeItem('token');
     navigate('/login');
   };
 
   const isAdvisor = userRole === 'advisor';
-  const roleTitle = isAdvisor ? 'Panel de Asesor' : 'Panel de Tutor';
 
   const menuItems = [
-    { path: '/dashboard', icon: '🏠', label: 'Dashboard', exact: true },
-    { path: '/dashboard/cursos-tutor', icon: '📚', label: isAdvisor ? 'Mis Asesorías' : 'Mis Cursos/Grupos' },
-    { path: '/dashboard/estudiantes', icon: '👨‍🎓', label: 'Mis Estudiantes' },
-    { path: '/dashboard/agenda', icon: '📅', label: isAdvisor ? 'Agenda de Asesorías' : 'Agenda de Clases' },
-    { path: '/dashboard/materiales', icon: '📄', label: 'Gestión de Materiales' },
-    { path: '/dashboard/videos-tutor', icon: '🎥', label: 'Videos de Clases' },
-    { path: '/dashboard/progreso', icon: '📊', label: 'Progreso Estudiantes' },
-    { path: '/dashboard/notificaciones', icon: '🔔', label: 'Notificaciones' },
-    { path: '/dashboard/perfil-tutor', icon: '👤', label: isAdvisor ? 'Mi Perfil de Asesor' : 'Mi Perfil de Tutor' }
+    { path: '/dashboard/cursos-tutor', icon: iconCursos, label: isAdvisor ? 'Mis Asesorías' : 'Mis Cursos' },
+    { path: '/dashboard/videos-tutor', icon: iconVideos, label: 'Videos de Clases' },
+    { path: '/dashboard/estudiantes', icon: iconTutores, label: 'Mis Estudiantes' },
+    { path: '/dashboard/agenda', icon: iconAsesoria, label: isAdvisor ? 'Agenda de Asesorías' : 'Agenda de Clases' },
+    { path: '/dashboard/materiales', icon: iconNotas, label: 'Materiales' },
+    { path: '/dashboard/progreso', icon: iconConfig, label: 'Progreso' },
+    { path: '/dashboard/perfil-tutor', icon: iconPerfil, label: 'Perfil' },
+    { path: '#', icon: iconLogout, label: 'Salir', isLogout: true }
   ];
 
-  const isActive = (path, exact = false) => {
-    if (exact) {
-      return location.pathname === path;
-    }
-    return location.pathname.startsWith(path);
-  };
+  const isActive = (path) => location.pathname === path;
 
   return (
-    <aside className="sidebar-menu">
-      <div className="sidebar-header">
-        <div className="sidebar-header-content">
-          <img src={logo} alt="Copernico Academy Logo" className="sidebar-logo" />
-          <h3 className="sidebar-title">{roleTitle}</h3>
-        </div>
-      </div>
-
-      <nav className="sidebar-nav">
-        <ul className="menu-list">
-          {menuItems.map((item) => (
-            <li key={item.path} className="menu-item">
-              <Link
-                to={item.path}
-                className={`menu-link ${isActive(item.path, item.exact) ? 'active' : ''}`}
-              >
-                <span className="menu-icon">{item.icon}</span>
-                <span className="menu-label">{item.label}</span>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </nav>
-
-      <div className="sidebar-footer">
-        <div className="tutor-status">
-          <div className="status-indicator online"></div>
-          <span className="status-text">En línea</span>
-        </div>
-        <button onClick={handleLogout} className="logout-btn">
-          <span className="menu-icon">🚪</span>
-          <span className="menu-label">Cerrar Sesión</span>
-        </button>
-      </div>
-    </aside>
+    <nav className="sidebar-menu">
+      {/* El logo ahora es parte integral del flujo, sin cajas oscuras */}
+      <Link to="/dashboard" className="sidebar-logo-container">
+        <img src={logo} alt="Copernico Logo" className="sidebar-logo" />
+        <div className="logo-separator"></div>
+      </Link>
+      
+      <ul className="menu-list">
+        {menuItems.map((item) => (
+          <li key={item.label}>
+            <Link
+              to={item.path}
+              onClick={item.isLogout ? handleLogout : null}
+              className={`menu-link ${isActive(item.path) ? 'active' : ''} ${item.isLogout ? 'logout' : ''}`}
+            >
+              <img src={item.icon} alt={item.label} className="menu-icon-img" />
+              <span className="menu-label">{item.label}</span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </nav>
   );
 };
 

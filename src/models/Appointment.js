@@ -16,7 +16,7 @@ const appointmentSchema = new mongoose.Schema({
   },
   appointmentType: {
     type: String,
-    enum: ['tutoring', 'advising'],
+    enum: ['tutoring', 'advising', 'advisory'],
     required: true
   },
   
@@ -77,8 +77,8 @@ const appointmentSchema = new mongoose.Schema({
   // Estado y seguimiento
   status: {
     type: String,
-    enum: ['scheduled', 'confirmed', 'in-progress', 'completed', 'cancelled', 'no-show'],
-    default: 'scheduled',
+    enum: ['pending', 'scheduled', 'confirmed', 'in-progress', 'completed', 'cancelled', 'no-show'],
+    default: 'pending',
     index: true
   },
   cancellationReason: {

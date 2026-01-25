@@ -15,7 +15,7 @@ const educationalMaterialSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ['document', 'presentation', 'video', 'link', 'exercise', 'worksheet', 'quiz'],
+    enum: ['document', 'image'],
     required: true
   },
   subject: {
@@ -37,6 +37,13 @@ const educationalMaterialSchema = new mongoose.Schema({
     type: String,
     trim: true
   }],
+
+  // Estudiante destinatario específico
+  targetStudentId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    index: true
+  },
   
   // Archivo o recurso
   fileUrl: {
@@ -213,7 +220,7 @@ educationalMaterialSchema.pre('save', function(next) {
   }
   
   // Si es assignment, validar campos requeridos
-  if (this.isAssignment && !this.assignmentDetails.dueDate) {
+  if (this.isAssignment && this.assignmentDetails && !this.assignmentDetails.dueDate) {
     return next(new Error('Assignments must have a due date'));
   }
   

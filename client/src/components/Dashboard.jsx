@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import { Outlet, Navigate } from 'react-router-dom';
 import SidebarMenu from './SidebarMenu';
 import TutorDashboard from './TutorDashboard';
+import StudentHome from './StudentHome';
 import apiClient from '../utils/axiosConfig';
 import './Dashboard.css';
 

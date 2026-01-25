@@ -13,14 +13,14 @@ const router = Router();
 // Aplicar autenticación a todas las rutas
 router.use(authenticateToken);
 
-router.get("/notes", getNotes);
+router.get("/", getNotes);
 
-router.post("/notes", createNote);
+router.post("/", createNote);
 
-router.get("/notes/:id", getNote);
+router.get("/:id", getNote);
 
-router.delete("/notes/:id", deleteNote);
+router.delete("/:id", deleteNote);
 
-router.put("/notes/:id", updateNote);
+router.put("/:id", updateNote);
 
 export default router;

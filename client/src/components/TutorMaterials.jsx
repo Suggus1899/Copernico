@@ -6,10 +6,12 @@ import './Dashboard.css';
 class TutorMaterials extends Component {
   state = {
     materials: [],
+    students: [], // Lista de estudiantes del tutor
     loading: false,
     uploading: false,
     showForm: false,
     selectedFile: null,
+    userRole: 'tutor', // Agregar rol del usuario
     filter: {
       subject: '',
       type: '',
@@ -23,15 +25,39 @@ class TutorMaterials extends Component {
       type: 'document',
       difficulty: 'intermediate',
       tags: '',
-      visibility: 'students'
+      visibility: 'students', // Automáticamente dirigido al estudiante seleccionado
+      targetStudentId: ''
     },
     editMode: false,
     editingId: null
   };
 
   componentDidMount() {
+    this.loadUserProfile();
     this.loadMaterials();
+    this.loadStudents();
   }
+
+  loadUserProfile = async () => {
+    try {
+      const response = await apiClient.get('/auth/profile');
+      const userData = response.data.data || response.data;
+      this.setState({ userRole: userData.role });
+    } catch (error) {
+      console.error('Error loading user profile:', error);
+    }
+  };
+
+  loadStudents = async () => {
+    try {
+      const response = await apiClient.get('/appointments/my-students');
+      this.setState({
+        students: response.data.data || []
+      });
+    } catch (error) {
+      console.error('Error loading students:', error);
+    }
+  };
 
   loadMaterials = async () => {
     try {
@@ -77,47 +103,68 @@ class TutorMaterials extends Component {
   handleSubmit = async (e) => {
     e.preventDefault();
 
+    console.log('=== FRONTEND: Iniciando envío ===');
+    console.log('Estado del formulario:', this.state.formData);
+    console.log('Archivo seleccionado:', this.state.selectedFile);
+
     if (!this.state.selectedFile && !this.state.editMode) {
       alert('Por favor selecciona un archivo');
+      return;
+    }
+
+    if (!this.state.formData.title || !this.state.formData.subject || !this.state.formData.targetStudentId) {
+      alert('Por favor completa todos los campos requeridos (Título, Materia, Estudiante)');
       return;
     }
 
     try {
       this.setState({ uploading: true });
 
-      const materialData = {
-        ...this.state.formData,
-        tags: this.state.formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag)
-      };
+      // Crear FormData de manera más simple
+      const formData = new FormData();
+      
+      // Agregar campos básicos
+      formData.append('title', this.state.formData.title);
+      formData.append('subject', this.state.formData.subject);
+      formData.append('type', this.state.formData.type);
+      formData.append('difficulty', this.state.formData.difficulty);
+      formData.append('targetStudentId', this.state.formData.targetStudentId);
+      
+      // Agregar campos opcionales solo si tienen valor
+      if (this.state.formData.description) {
+        formData.append('description', this.state.formData.description);
+      }
+      if (this.state.formData.topic) {
+        formData.append('topic', this.state.formData.topic);
+      }
+      if (this.state.formData.tags) {
+        formData.append('tags', this.state.formData.tags);
+      }
 
-      const formDataToSend = new FormData();
+      // Agregar archivo
+      if (this.state.selectedFile) {
+        formData.append('file', this.state.selectedFile);
+      }
 
-      // Agregar datos del formulario
-      Object.keys(materialData).forEach(key => {
-        if (key === 'tags') {
-          formDataToSend.append(key, JSON.stringify(materialData[key]));
-        } else {
-          formDataToSend.append(key, materialData[key]);
+      console.log('=== FRONTEND: FormData preparado ===');
+      for (let [key, value] of formData.entries()) {
+        console.log(`${key}:`, value);
+      }
+
+      console.log('=== FRONTEND: Enviando petición ===');
+      
+      const response = await apiClient.post('/materials', formData, {
+        headers: {
+          // Dejar que el navegador establezca el Content-Type automáticamente
         }
       });
 
-      // Agregar archivo si existe
-      if (this.state.selectedFile) {
-        formDataToSend.append('file', this.state.selectedFile);
-      }
+      console.log('=== FRONTEND: Respuesta recibida ===');
+      console.log('Response:', response.data);
 
-      const config = {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      };
+      alert('Material subido exitosamente!');
 
-      if (this.state.editMode) {
-        await apiClient.put(`/materials/${this.state.editingId}`, formDataToSend, config);
-      } else {
-        await apiClient.post('/materials', formDataToSend, config);
-      }
-
+      // Limpiar formulario
       this.setState({
         showForm: false,
         editMode: false,
@@ -131,14 +178,26 @@ class TutorMaterials extends Component {
           type: 'document',
           difficulty: 'intermediate',
           tags: '',
-          visibility: 'students'
+          visibility: 'students', // Fixed: should be 'students' not 'student'
+          targetStudentId: ''
         }
       });
 
       this.loadMaterials();
+
     } catch (error) {
-      console.error('Error saving material:', error);
-      alert('Error al subir el material. Por favor intenta nuevamente.');
+      console.error('=== FRONTEND: Error completo ===');
+      console.error('Error:', error);
+      console.error('Response data:', error.response?.data);
+      console.error('Response status:', error.response?.status);
+      console.error('Response headers:', error.response?.headers);
+      
+      const errorMessage = error.response?.data?.error || 
+                          error.response?.data?.message || 
+                          error.message || 
+                          'Error desconocido al subir el material';
+      
+      alert(`Error al subir el material: ${errorMessage}`);
     } finally {
       this.setState({ uploading: false });
     }
@@ -157,7 +216,8 @@ class TutorMaterials extends Component {
         type: material.type,
         difficulty: material.difficulty,
         tags: material.tags ? material.tags.join(', ') : '',
-        visibility: material.visibility
+        visibility: material.visibility,
+        targetStudentId: material.targetStudentId || ''
       }
     });
   };
@@ -201,17 +261,18 @@ class TutorMaterials extends Component {
 
   getFileIcon = (type) => {
     const icons = {
+      document: '📄',
+      image: '🖼️',
+      // Mantener compatibilidad con tipos específicos de archivo
       pdf: '📄',
       docx: '📝',
       doc: '📝',
-      xlsx: '📊',
-      xls: '📊',
-      pptx: '📊',
-      ppt: '📊',
       txt: '📝',
-      video: '🎥',
-      image: '🖼️',
-      document: '📄'
+      jpg: '🖼️',
+      jpeg: '🖼️',
+      png: '🖼️',
+      gif: '🖼️',
+      webp: '🖼️'
     };
     return icons[type] || '📄';
   };
@@ -229,17 +290,17 @@ class TutorMaterials extends Component {
   };
 
   render() {
-    const { loading, uploading, showForm, formData, editMode, filter } = this.state;
+    const { loading, uploading, showForm, formData, editMode, filter, userRole } = this.state;
     const filteredMaterials = this.getFilteredMaterials();
     const uniqueSubjects = this.getUniqueSubjects();
 
     return (
       <div className="dashboard-container">
-        <TutorSidebarMenu />
+        <TutorSidebarMenu userRole={userRole} />
         <div className="dashboard-content">
           <div className="materials-header">
             <h2>📄 Gestión de Materiales</h2>
-            <p>Sube documentos, PDFs, presentaciones y otros recursos educativos</p>
+            <p>Sube documentos e imágenes educativas para tus estudiantes</p>
             <button
               className="btn btn-primary"
               onClick={() => this.setState({ showForm: !showForm, editMode: false, editingId: null })}
@@ -279,6 +340,42 @@ class TutorMaterials extends Component {
                     </div>
                   </div>
 
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label>👨‍🎓 Estudiante Destinatario *</label>
+                      <select
+                        name="targetStudentId"
+                        value={formData.targetStudentId}
+                        onChange={this.handleInputChange}
+                        required
+                      >
+                        <option value="">Seleccionar estudiante</option>
+                        {this.state.students.map(student => {
+                          const studentName = `${student.personalInfo?.firstName || ''} ${student.personalInfo?.lastName || ''}`.trim() || student.email;
+                          return (
+                            <option key={student._id} value={student._id}>
+                              {studentName} - {student.stats.subjects.join(', ')}
+                            </option>
+                          );
+                        })}
+                      </select>
+                      <small style={{ color: '#666', fontSize: '0.8rem' }}>
+                        Solo aparecen estudiantes con citas confirmadas contigo
+                      </small>
+                    </div>
+                    <div className="form-group">
+                      <label>Tipo de Material</label>
+                      <select
+                        name="type"
+                        value={formData.type}
+                        onChange={this.handleInputChange}
+                      >
+                        <option value="document">📄 Documento</option>
+                        <option value="image">🖼️ Imagen</option>
+                      </select>
+                    </div>
+                  </div>
+
                   <div className="form-group">
                     <label>Descripción</label>
                     <textarea
@@ -302,31 +399,15 @@ class TutorMaterials extends Component {
                       />
                     </div>
                     <div className="form-group">
-                      <label>Tipo</label>
-                      <select
-                        name="type"
-                        value={formData.type}
-                        onChange={this.handleInputChange}
-                      >
-                        <option value="document">Documento</option>
-                        <option value="presentation">Presentación</option>
-                        <option value="worksheet">Hoja de Trabajo</option>
-                        <option value="exercise">Ejercicio</option>
-                        <option value="quiz">Cuestionario</option>
-                        <option value="video">Video</option>
-                        <option value="image">Imagen</option>
-                      </select>
-                    </div>
-                    <div className="form-group">
                       <label>Dificultad</label>
                       <select
                         name="difficulty"
                         value={formData.difficulty}
                         onChange={this.handleInputChange}
                       >
-                        <option value="beginner">Principiante</option>
-                        <option value="intermediate">Intermedio</option>
-                        <option value="advanced">Avanzado</option>
+                        <option value="beginner">🟢 Principiante</option>
+                        <option value="intermediate">🟡 Intermedio</option>
+                        <option value="advanced">🔴 Avanzado</option>
                       </select>
                     </div>
                   </div>
@@ -338,24 +419,17 @@ class TutorMaterials extends Component {
                         type="file"
                         name="file"
                         onChange={this.handleFileChange}
-                        accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.jpg,.jpeg,.png,.gif,.mp4,.avi,.mov"
+                        accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.gif,.webp"
                         required={!editMode}
                       />
+                      <small style={{ color: '#666', fontSize: '0.8rem' }}>
+                        Documentos: PDF, Word, TXT | Imágenes: JPG, PNG, GIF, WebP
+                      </small>
                       {this.state.selectedFile && (
-                        <small>Seleccionado: {this.state.selectedFile.name}</small>
+                        <small style={{ color: '#28a745', display: 'block', marginTop: '5px' }}>
+                          ✅ Seleccionado: {this.state.selectedFile.name}
+                        </small>
                       )}
-                    </div>
-                    <div className="form-group">
-                      <label>Visibilidad</label>
-                      <select
-                        name="visibility"
-                        value={formData.visibility}
-                        onChange={this.handleInputChange}
-                      >
-                        <option value="private">Privado</option>
-                        <option value="students">Estudiantes</option>
-                        <option value="public">Público</option>
-                      </select>
                     </div>
                   </div>
 
@@ -404,13 +478,8 @@ class TutorMaterials extends Component {
                 className="type-select"
               >
                 <option value="">Todos los tipos</option>
-                <option value="document">Documentos</option>
-                <option value="presentation">Presentaciones</option>
-                <option value="worksheet">Hojas de Trabajo</option>
-                <option value="exercise">Ejercicios</option>
-                <option value="quiz">Cuestionarios</option>
-                <option value="video">Videos</option>
-                <option value="image">Imágenes</option>
+                <option value="document">📄 Documentos</option>
+                <option value="image">🖼️ Imágenes</option>
               </select>
             </div>
             <div className="filter-group">
@@ -432,7 +501,7 @@ class TutorMaterials extends Component {
           <div className="materials-stats">
             <div className="stat-item">
               <span className="stat-number">{filteredMaterials.length}</span>
-              <span className="stat-label">Materiales</span>
+              <span className="stat-label">Total Materiales</span>
             </div>
             <div className="stat-item">
               <span className="stat-number">{filteredMaterials.reduce((sum, m) => sum + (m.downloads || 0), 0)}</span>
@@ -440,7 +509,11 @@ class TutorMaterials extends Component {
             </div>
             <div className="stat-item">
               <span className="stat-number">{filteredMaterials.filter(m => m.type === 'document').length}</span>
-              <span className="stat-label">Documentos</span>
+              <span className="stat-label">📄 Documentos</span>
+            </div>
+            <div className="stat-item">
+              <span className="stat-number">{filteredMaterials.filter(m => m.type === 'image').length}</span>
+              <span className="stat-label">🖼️ Imágenes</span>
             </div>
           </div>
 
@@ -516,7 +589,7 @@ class TutorMaterials extends Component {
               <div className="empty-icon">📄</div>
               <h3>No se encontraron materiales</h3>
               <p>{this.state.materials.length === 0 ?
-                  'Aún no has subido ningún material educativo.' :
+                  'Aún no has subido ningún material educativo para tus estudiantes.' :
                   'Intenta con otros filtros de búsqueda.'}
               </p>
               <button

@@ -10,7 +10,6 @@ import iconTutores from '../assets/tutors.png';
 import iconAsesoria from '../assets/asesorias.png';
 import iconNotas from '../assets/notas.png';
 import iconPerfil from '../assets/profile.png';
-import iconConfig from '../assets/settings.png';
 import iconLogout from '../assets/logout.png';
 
 
@@ -29,9 +28,8 @@ const SidebarMenu = () => {
     { path: '/dashboard/videos', icon: iconVideos, label: 'Clases' },
     { path: '/dashboard/tutores', icon: iconTutores, label: 'Tutores' },
     { path: '/dashboard/asesoria', icon: iconAsesoria, label: 'Asesoría' },
-    { path: '/dashboard/notas', icon: iconNotas, label: 'Notas' },
+    { path: '/dashboard/notas', icon: iconNotas, label: 'Apuntes' },
     { path: '/dashboard/perfil', icon: iconPerfil, label: 'Perfil' },
-    { path: '/dashboard/configuracion', icon: iconConfig, label: 'Ajustes' },
     { path: '#', icon: iconLogout, label: 'Salir', isLogout: true }
   ];
 

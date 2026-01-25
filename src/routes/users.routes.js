@@ -6,7 +6,10 @@ import {
   updateUser, 
   deleteUser,
   getUserProfile,
-  updateUserProfile
+  updateUserProfile,
+  uploadAvatar,
+  updateUserAvatar,
+  deleteUserAvatar
 } from '../controllers/user.controller.js';
 import { schemaValidator } from '../middlewares/schemaValidator.js';
 // IMPORTAR LOS NOMBRES CORRECTOS que sí existen:
@@ -25,8 +28,12 @@ router.use(authenticateToken);
 router.get('/profile', getUserProfile);
 router.put('/profile', schemaValidator(updateUserSchema), updateUserProfile);
 
+// Rutas para avatar del usuario autenticado
+router.post('/profile/avatar', uploadAvatar, updateUserAvatar);
+router.delete('/profile/avatar', deleteUserAvatar);
+
 // Rutas administrativas
-router.get('/', requireRole(['admin', 'tutor', 'advisor']), getUsers);
+router.get('/', requireRole(['admin', 'tutor', 'advisor', 'student']), getUsers);
 router.get('/:id', validateObjectIdParam('id'), requireRole(['admin', 'tutor', 'advisor']), getUserById);
 
 // Solo admin puede crear usuarios
