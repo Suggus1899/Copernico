@@ -175,7 +175,7 @@ export const updateAssignment = async (req, res, next) => {
 
     // Verificar permisos - solo asignador o admin puede editar
     if (assignment.assignedBy.toString() !== req.user.id && req.user.role !== 'admin') {
-      const error = new Error("Not authorized to update this assignment");
+      const error = new Error("No autorizado para editar esta tarea");
       error.status = 403;
       throw error;
     }
@@ -197,7 +197,7 @@ export const updateAssignment = async (req, res, next) => {
 
     res.json({
       success: true,
-      message: "Assignment updated successfully",
+      message: "Tarea actualizada exitosamente",
       data: updatedAssignment
     });
   } catch (error) {
@@ -211,21 +211,21 @@ export const submitAssignment = async (req, res, next) => {
     const assignment = await Assignment.findById(req.params.id);
 
     if (!assignment) {
-      const error = new Error("Assignment not found");
+      const error = new Error("Tarea no encontrada");
       error.status = 404;
       throw error;
     }
 
     // Verificar que el estudiante es el dueño de la tarea
     if (assignment.studentId.toString() !== req.user.id) {
-      const error = new Error("Not authorized to submit this assignment");
+      const error = new Error("No autorizado para enviar esta tarea");
       error.status = 403;
       throw error;
     }
 
     // Verificar que no esté ya calificada
     if (assignment.status === 'graded') {
-      const error = new Error("Cannot submit already graded assignment");
+      const error = new Error("No se puede enviar una tarea ya calificada");
       error.status = 400;
       throw error;
     }
@@ -238,7 +238,7 @@ export const submitAssignment = async (req, res, next) => {
 
     res.json({
       success: true,
-      message: "Assignment submitted successfully",
+      message: "Tarea enviada exitosamente",
       data: updatedAssignment
     });
   } catch (error) {
@@ -252,21 +252,21 @@ export const gradeAssignment = async (req, res, next) => {
     const assignment = await Assignment.findById(req.params.id);
 
     if (!assignment) {
-      const error = new Error("Assignment not found");
+      const error = new Error("Tarea no encontrada");
       error.status = 404;
       throw error;
     }
 
     // Verificar permisos - solo asignador o admin puede calificar
     if (assignment.assignedBy.toString() !== req.user.id && req.user.role !== 'admin') {
-      const error = new Error("Not authorized to grade this assignment");
+      const error = new Error("No autorizado para calificar esta tarea");
       error.status = 403;
       throw error;
     }
 
     // Verificar que esté enviada para calificar
     if (!assignment.submission?.submittedAt) {
-      const error = new Error("Assignment must be submitted before grading");
+      const error = new Error("La tarea debe ser enviada antes de calificar");
       error.status = 400;
       throw error;
     }
@@ -280,7 +280,7 @@ export const gradeAssignment = async (req, res, next) => {
 
     res.json({
       success: true,
-      message: "Assignment graded successfully",
+      message: "Tarea calificada exitosamente",
       data: updatedAssignment
     });
   } catch (error) {
@@ -294,7 +294,7 @@ export const addComment = async (req, res, next) => {
     const assignment = await Assignment.findById(req.params.id);
 
     if (!assignment) {
-      const error = new Error("Assignment not found");
+      const error = new Error("Tarea no encontrada");
       error.status = 404;
       throw error;
     }
@@ -306,7 +306,7 @@ export const addComment = async (req, res, next) => {
       req.user.role === 'admin';
 
     if (!canComment) {
-      const error = new Error("Not authorized to comment on this assignment");
+      const error = new Error("No autorizado para comentar en esta tarea");
       error.status = 403;
       throw error;
     }
@@ -318,7 +318,7 @@ export const addComment = async (req, res, next) => {
 
     res.json({
       success: true,
-      message: "Comment added successfully",
+      message: "Comentario agregado exitosamente",
       data: updatedAssignment.comments
     });
   } catch (error) {
@@ -372,14 +372,14 @@ export const requestExtension = async (req, res, next) => {
     const assignment = await Assignment.findById(req.params.id);
 
     if (!assignment) {
-      const error = new Error("Assignment not found");
+      const error = new Error("Tarea no encontrada");
       error.status = 404;
       throw error;
     }
 
     // Verificar que el estudiante es el dueño
     if (assignment.studentId.toString() !== req.user.id) {
-      const error = new Error("Not authorized to request extension for this assignment");
+      const error = new Error("No autorizado para solicitar extensión para esta tarea");
       error.status = 403;
       throw error;
     }
@@ -391,7 +391,7 @@ export const requestExtension = async (req, res, next) => {
 
     res.json({
       success: true,
-      message: "Extension requested successfully",
+      message: "Extensión solicitada exitosamente",
       data: updatedAssignment.extensions
     });
   } catch (error) {
@@ -405,20 +405,20 @@ export const approveExtension = async (req, res, next) => {
     const assignment = await Assignment.findById(req.params.id);
 
     if (!assignment) {
-      const error = new Error("Assignment not found");
+      const error = new Error("Tarea no encontrada");
       error.status = 404;
       throw error;
     }
 
     // Verificar permisos - solo asignador o admin puede aprobar
     if (assignment.assignedBy.toString() !== req.user.id && req.user.role !== 'admin') {
-      const error = new Error("Not authorized to approve extensions");
+      const error = new Error("No autorizado para aprobar extensiones");
       error.status = 403;
       throw error;
     }
 
     if (!assignment.extensions[extensionIndex]) {
-      const error = new Error("Extension request not found");
+      const error = new Error("Solicitud de extensión no encontrada");
       error.status = 404;
       throw error;
     }
@@ -433,7 +433,7 @@ export const approveExtension = async (req, res, next) => {
 
     res.json({
       success: true,
-      message: "Extension approved successfully",
+      message: "Extensión aprobada exitosamente",
       data: assignment
     });
   } catch (error) {

@@ -73,14 +73,14 @@ export const getNotificationById = async (req, res, next) => {
       .populate('createdBy', 'personalInfo');
 
     if (!notification) {
-      const error = new Error("Notification not found");
+      const error = new Error("Notificación no encontrada");
       error.status = 404;
       throw error;
     }
 
     // Verificar que el usuario es el destinatario
     if (notification.userId.toString() !== req.user.id && req.user.role !== 'admin') {
-      const error = new Error("Access denied to this notification");
+      const error = new Error("Acceso denegado a esta notificación");
       error.status = 403;
       throw error;
     }
@@ -101,14 +101,14 @@ export const createNotification = async (req, res, next) => {
     // Verificar que el usuario destinatario existe
     const user = await User.findById(notificationData.userId);
     if (!user) {
-      const error = new Error("User not found");
+      const error = new Error("Usuario no encontrado");
       error.status = 404;
       throw error;
     }
 
     // Verificar permisos para crear notificaciones
     if (!['tutor', 'advisor', 'admin'].includes(req.user.role)) {
-      const error = new Error("Only tutors, advisors and admins can create notifications");
+      const error = new Error("Solo tutores, asesores y administradores pueden crear notificaciones");
       error.status = 403;
       throw error;
     }
@@ -117,7 +117,7 @@ export const createNotification = async (req, res, next) => {
     if (notificationData.relatedAppointment) {
       const appointment = await Appointment.findById(notificationData.relatedAppointment);
       if (!appointment) {
-        const error = new Error("Related appointment not found");
+        const error = new Error("Cita relacionada no encontrada");
         error.status = 404;
         throw error;
       }
@@ -126,7 +126,7 @@ export const createNotification = async (req, res, next) => {
     if (notificationData.relatedAssignment) {
       const assignment = await Assignment.findById(notificationData.relatedAssignment);
       if (!assignment) {
-        const error = new Error("Related assignment not found");
+        const error = new Error("Tarea relacionada no encontrada");
         error.status = 404;
         throw error;
       }
@@ -149,7 +149,7 @@ export const createNotification = async (req, res, next) => {
 
     res.status(201).json({
       success: true,
-      message: "Notification created successfully",
+      message: "Notificación creada exitosamente",
       data: populatedNotification
     });
   } catch (error) {
@@ -162,14 +162,14 @@ export const markAsRead = async (req, res, next) => {
     const notification = await Notification.findById(req.params.id);
 
     if (!notification) {
-      const error = new Error("Notification not found");
+      const error = new Error("Notificación no encontrada");
       error.status = 404;
       throw error;
     }
 
     // Verificar que el usuario es el destinatario
     if (notification.userId.toString() !== req.user.id) {
-      const error = new Error("Not authorized to mark this notification as read");
+      const error = new Error("No autorizado para marcar esta notificación como leída");
       error.status = 403;
       throw error;
     }
@@ -183,7 +183,7 @@ export const markAsRead = async (req, res, next) => {
 
     res.json({
       success: true,
-      message: "Notification marked as read",
+      message: "Notificación marcada como leída",
       unreadCount
     });
   } catch (error) {
@@ -211,7 +211,7 @@ export const markAllAsRead = async (req, res, next) => {
 
     res.json({
       success: true,
-      message: "All notifications marked as read"
+      message: "Todas las notificaciones marcadas como leídas"
     });
   } catch (error) {
     next(error);
@@ -223,14 +223,14 @@ export const recordClick = async (req, res, next) => {
     const notification = await Notification.findById(req.params.id);
 
     if (!notification) {
-      const error = new Error("Notification not found");
+      const error = new Error("Notificación no encontrada");
       error.status = 404;
       throw error;
     }
 
     // Verificar que el usuario es el destinatario
     if (notification.userId.toString() !== req.user.id) {
-      const error = new Error("Not authorized to interact with this notification");
+      const error = new Error("No autorizado para interactuar con esta notificación");
       error.status = 403;
       throw error;
     }
@@ -239,7 +239,7 @@ export const recordClick = async (req, res, next) => {
 
     res.json({
       success: true,
-      message: "Click recorded"
+      message: "Click registrado"
     });
   } catch (error) {
     next(error);
@@ -252,21 +252,21 @@ export const respondToNotification = async (req, res, next) => {
     const notification = await Notification.findById(req.params.id);
 
     if (!notification) {
-      const error = new Error("Notification not found");
+      const error = new Error("Notificación no encontrada");
       error.status = 404;
       throw error;
     }
 
     // Verificar que el usuario es el destinatario
     if (notification.userId.toString() !== req.user.id) {
-      const error = new Error("Not authorized to respond to this notification");
+      const error = new Error("No autorizado para responder a esta notificación");
       error.status = 403;
       throw error;
     }
 
     // Verificar que permite respuesta
     if (!notification.allowResponse) {
-      const error = new Error("This notification does not allow responses");
+      const error = new Error("Esta notificación no permite respuestas");
       error.status = 400;
       throw error;
     }
@@ -274,7 +274,7 @@ export const respondToNotification = async (req, res, next) => {
     // Verificar que la respuesta es válida
     if (notification.responseOptions.length > 0 && 
         !notification.responseOptions.includes(response)) {
-      const error = new Error("Invalid response. Available options: " + notification.responseOptions.join(', '));
+      const error = new Error("Respuesta inválida. Opciones disponibles: " + notification.responseOptions.join(', '));
       error.status = 400;
       throw error;
     }
@@ -286,7 +286,7 @@ export const respondToNotification = async (req, res, next) => {
 
     res.json({
       success: true,
-      message: "Response recorded successfully",
+      message: "Respuesta registrada exitosamente",
       data: notification
     });
   } catch (error) {
@@ -300,7 +300,7 @@ export const createBulkNotifications = async (req, res, next) => {
 
     // Verificar permisos
     if (!['tutor', 'advisor', 'admin'].includes(req.user.role)) {
-      const error = new Error("Only tutors, advisors and admins can create bulk notifications");
+      const error = new Error("Solo tutores, asesores y administradores pueden crear notificaciones en lote");
       error.status = 403;
       throw error;
     }
@@ -308,7 +308,7 @@ export const createBulkNotifications = async (req, res, next) => {
     // Verificar que los usuarios existen
     const existingUsers = await User.find({ _id: { $in: users } });
     if (existingUsers.length !== users.length) {
-      const error = new Error("Some users not found");
+      const error = new Error("Algunos usuarios no fueron encontrados");
       error.status = 404;
       throw error;
     }
@@ -337,7 +337,7 @@ export const createBulkNotifications = async (req, res, next) => {
 
     res.status(201).json({
       success: true,
-      message: `${createdNotifications.length} notifications created successfully`,
+      message: `${createdNotifications.length} notificaciones creadas exitosamente`,
       data: {
         count: createdNotifications.length,
         batchId: batchId || `bulk_${Date.now()}`
@@ -369,14 +369,14 @@ export const deleteNotification = async (req, res, next) => {
     const notification = await Notification.findById(req.params.id);
 
     if (!notification) {
-      const error = new Error("Notification not found");
+      const error = new Error("Notificación no encontrada");
       error.status = 404;
       throw error;
     }
 
     // Verificar que el usuario es el destinatario o admin
     if (notification.userId.toString() !== req.user.id && req.user.role !== 'admin') {
-      const error = new Error("Not authorized to delete this notification");
+      const error = new Error("No autorizado para eliminar esta notificación");
       error.status = 403;
       throw error;
     }
@@ -390,7 +390,7 @@ export const deleteNotification = async (req, res, next) => {
 
     res.json({
       success: true,
-      message: "Notification deleted successfully",
+      message: "Notificación eliminada exitosamente",
       unreadCount
     });
   } catch (error) {
@@ -525,7 +525,7 @@ export const generateSystemNotifications = async () => {
       gradeNotifications: recentGradedAssignments.length
     };
   } catch (error) {
-    console.error('Error generating system notifications:', error);
+    console.error('Error al generar notificaciones del sistema:', error);
     throw error;
   }
 };

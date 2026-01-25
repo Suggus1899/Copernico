@@ -98,7 +98,7 @@ export const getAppointmentById = async (req, res, next) => {
       appointment.professionalId._id.toString() === req.user.id;
 
     if (!canView) {
-      const error = new Error("Access denied");
+      const error = new Error("Acceso denegado");
       error.status = 403;
       throw error;
     }
@@ -123,26 +123,26 @@ export const createAppointment = async (req, res, next) => {
     ]);
 
     if (!student) {
-      const error = new Error("Student not found");
+      const error = new Error("Estudiante no encontrado");
       error.status = 404;
       throw error;
     }
 
     if (!professional) {
-      const error = new Error("Professional not found");
+      const error = new Error("Profesional no encontrado");
       error.status = 404;
       throw error;
     }
 
     // Verificar roles
     if (!['tutor', 'advisor'].includes(professional.role)) {
-      const error = new Error("Professional must be a tutor or advisor");
+      const error = new Error("El profesional debe ser un tutor o asesor");
       error.status = 400;
       throw error;
     }
 
     if (professional.role !== appointmentData.appointmentType.slice(0, -3)) { // 'tutoring' -> 'tutor'
-      const error = new Error("Appointment type doesn't match professional role");
+      const error = new Error("El tipo de cita no coincide con el rol del profesional");
       error.status = 400;
       throw error;
     }
@@ -151,7 +151,7 @@ export const createAppointment = async (req, res, next) => {
     if (appointmentData.availabilitySlotId) {
       const availabilitySlot = await AvailabilitySlot.findById(appointmentData.availabilitySlotId);
       if (!availabilitySlot || availabilitySlot.status !== 'available') {
-        const error = new Error("Selected time slot is not available");
+        const error = new Error("El horario seleccionado no está disponible");
         error.status = 400;
         throw error;
       }
@@ -163,7 +163,7 @@ export const createAppointment = async (req, res, next) => {
         { studentId: appointmentData.studentId },
         { professionalId: appointmentData.professionalId }
       ],
-      status: { $in: ['scheduled', 'confirmed', 'in-progress'] },
+      status: { $in: ['programada', 'confirmada', 'en progreso'] },
       scheduledDate: {
         $gte: new Date(new Date(appointmentData.scheduledDate).getTime() - (appointmentData.duration * 60000)),
         $lte: new Date(new Date(appointmentData.scheduledDate).getTime() + (appointmentData.duration * 60000))
@@ -171,7 +171,7 @@ export const createAppointment = async (req, res, next) => {
     });
 
     if (conflictingAppointment) {
-      const error = new Error("Time conflict with existing appointment");
+      const error = new Error("Conflicto de horario con una cita existente");
       error.status = 409;
       throw error;
     }
@@ -199,12 +199,12 @@ export const createAppointment = async (req, res, next) => {
       if (appointmentData.availabilitySlotId) {
         // Marcar el slot como 'booked' sólo si sigue 'available'
         const updatedSlot = await AvailabilitySlot.findOneAndUpdate(
-          { _id: appointmentData.availabilitySlotId, status: 'available' },
-          { $set: { status: 'booked' } },
+          { _id: appointmentData.availabilitySlotId, status: 'disponible' },
+          { $set: { status: 'reservado' } },
           { new: true, session }
         );
         if (!updatedSlot) {
-          const error = new Error('Selected time slot was just booked by someone else');
+          const error = new Error('El horario seleccionado fue reservado por otra persona');
           error.status = 409;
           throw error;
         }
@@ -223,7 +223,7 @@ export const createAppointment = async (req, res, next) => {
 
       return res.status(201).json({
         success: true,
-        message: "Appointment created successfully",
+        message: "Cita creada exitosamente",
         data: populatedAppointment
       });
     } catch (txErr) {
@@ -255,14 +255,14 @@ export const updateAppointment = async (req, res, next) => {
     .populate('availabilitySlotId', 'subject topic duration');
 
     if (!appointment) {
-      const error = new Error("Appointment not found");
+      const error = new Error("Cita no encontrada");
       error.status = 404;
       throw error;
     }
 
     res.json({
       success: true,
-      message: "Appointment updated successfully",
+      message: "Cita actualizada exitosamente",
       data: appointment
     });
   } catch (error) {
@@ -289,7 +289,7 @@ export const cancelAppointment = async (req, res, next) => {
     .populate('availabilitySlotId');
 
     if (!appointment) {
-      const error = new Error("Appointment not found");
+      const error = new Error("Cita no encontrada");
       error.status = 404;
       throw error;
     }
@@ -298,13 +298,13 @@ export const cancelAppointment = async (req, res, next) => {
     if (appointment.availabilitySlotId) {
       await AvailabilitySlot.findByIdAndUpdate(
         appointment.availabilitySlotId,
-        { status: 'available' }
+        { status: 'disponible' }
       );
     }
 
     res.json({
       success: true,
-      message: "Appointment cancelled successfully",
+      message: "Cita cancelada exitosamente",
       data: appointment
     });
   } catch (error) {
@@ -318,7 +318,7 @@ export const addInternalNote = async (req, res, next) => {
     const appointment = await Appointment.findById(req.params.id);
 
     if (!appointment) {
-      const error = new Error("Appointment not found");
+      const error = new Error("Cita no encontrada");
       error.status = 404;
       throw error;
     }
@@ -330,7 +330,7 @@ export const addInternalNote = async (req, res, next) => {
 
     res.json({
       success: true,
-      message: "Internal note added successfully",
+      message: "Nota interna agregada exitosamente",
       data: updatedAppointment.internalNotes
     });
   } catch (error) {
@@ -344,14 +344,14 @@ export const rateAppointment = async (req, res, next) => {
     const appointment = await Appointment.findById(req.params.id);
 
     if (!appointment) {
-      const error = new Error("Appointment not found");
+      const error = new Error("Cita no encontrada");
       error.status = 404;
       throw error;
     }
 
     // Verificar que la cita esté completada
     if (appointment.status !== 'completed') {
-      const error = new Error("Can only rate completed appointments");
+      const error = new Error("Solo se pueden calificar citas completadas");
       error.status = 400;
       throw error;
     }
@@ -363,7 +363,7 @@ export const rateAppointment = async (req, res, next) => {
     } else if (appointment.professionalId.toString() === req.user.id) {
       raterRole = 'professional';
     } else {
-      const error = new Error("Not authorized to rate this appointment");
+      const error = new Error("No autorizado para calificar esta cita");
       error.status = 403;
       throw error;
     }
@@ -372,7 +372,7 @@ export const rateAppointment = async (req, res, next) => {
 
     res.json({
       success: true,
-      message: "Appointment rated successfully",
+      message: "Cita calificada exitosamente",
       data: appointment
     });
   } catch (error) {
@@ -395,7 +395,7 @@ export const getUpcomingAppointments = async (req, res, next) => {
     } else if (['tutor', 'advisor'].includes(req.user.role)) {
       filter.professionalId = req.user.id;
     } else if (req.user.role !== 'admin') {
-      const error = new Error("Access denied");
+      const error = new Error("Acceso denegado");
       error.status = 403;
       throw error;
     }

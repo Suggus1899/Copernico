@@ -79,7 +79,7 @@ export const createUser = async (req, res, next) => {
     });
 
     if (userFound) {
-      const error = new Error("The user already exists");
+      const error = new Error("El usuario con este correo electrónico ya existe");
       error.status = 409;
       throw error;
     }
@@ -102,7 +102,7 @@ export const createUser = async (req, res, next) => {
 
     res.status(201).json({
       success: true,
-      message: "User created successfully",
+      message: "Usuario creado exitosamente",
       data: userResponse
     });
   } catch (error) {
@@ -126,14 +126,14 @@ export const updateUser = async (req, res, next) => {
     ).select('-password -verificationToken -passwordResetToken');
 
     if (!user || user.status === 'deleted') {
-      const error = new Error("User not found");
+      const error = new Error("Usuario no encontrado");
       error.status = 404;
       throw error;
     }
 
     res.json({
       success: true,
-      message: "User updated successfully",
+      message: "Usuario actualizado exitosamente",
       data: user
     });
   } catch (error) {
@@ -157,14 +157,14 @@ export const deleteUser = async (req, res, next) => {
     ).select('-password -verificationToken -passwordResetToken');
 
     if (!userDeleted) {
-      const error = new Error("User not found");
+      const error = new Error("Usuario no encontrado");
       error.status = 404;
       throw error;
     }
 
     res.json({
       success: true,
-      message: "User deleted successfully",
+      message: "Usuario eliminado exitosamente",
       data: userDeleted
     });
   } catch (error) {
@@ -178,7 +178,7 @@ export const getUserProfile = async (req, res, next) => {
       .select('-password -verificationToken -passwordResetToken');
     
     if (!user || user.status === 'deleted') {
-      const error = new Error("User not found");
+      const error = new Error("Usuario no encontrado");
       error.status = 404;
       throw error;
     }
@@ -218,7 +218,7 @@ export const updateUserProfile = async (req, res, next) => {
 
     res.json({
       success: true,
-      message: "Profile updated successfully",
+      message: "Perfil actualizado exitosamente",
       data: user
     });
   } catch (error) {
@@ -232,7 +232,7 @@ export const changeUserStatus = async (req, res, next) => {
     const { status } = req.body;
 
     if (!['active', 'inactive', 'suspended'].includes(status)) {
-      const error = new Error("Invalid status");
+      const error = new Error("Estado inválido");
       error.status = 400;
       throw error;
     }
@@ -247,7 +247,7 @@ export const changeUserStatus = async (req, res, next) => {
     ).select('-password -verificationToken -passwordResetToken');
 
     if (!user) {
-      const error = new Error("User not found");
+      const error = new Error("Usuario no encontrado");
       error.status = 404;
       throw error;
     }

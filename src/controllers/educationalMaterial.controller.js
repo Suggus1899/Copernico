@@ -152,14 +152,14 @@ export const getEducationalMaterialById = async (req, res, next) => {
       .populate('reviewedBy', 'personalInfo');
 
     if (!material) {
-      const error = new Error("Educational material not found");
+      const error = new Error("Material educativo no encontrado");
       error.status = 404;
       throw error;
     }
 
     // Verificar permisos de acceso
     if (!material.canAccess(req.user)) {
-      const error = new Error("Access denied to this educational material");
+      const error = new Error("Acceso denegado a este material educativo");
       error.status = 403;
       throw error;
     }
@@ -185,7 +185,7 @@ export const createEducationalMaterial = async (req, res, next) => {
 
     // Verificar permisos para crear materiales
     if (!['tutor', 'advisor', 'admin'].includes(req.user.role)) {
-      const error = new Error("Only tutors, advisors and admins can create educational materials");
+      const error = new Error("Solo tutores, asesores y administradores pueden crear materiales educativos");
       error.status = 403;
       throw error;
     }
@@ -217,7 +217,7 @@ export const createEducationalMaterial = async (req, res, next) => {
 
     res.status(201).json({
       success: true,
-      message: "Educational material created successfully",
+      message: "Material educativo creado exitosamente",
       data: populatedMaterial
     });
   } catch (error) {
@@ -230,14 +230,14 @@ export const updateEducationalMaterial = async (req, res, next) => {
     const material = await EducationalMaterial.findById(req.params.id);
     
     if (!material) {
-      const error = new Error("Educational material not found");
+      const error = new Error("Material educativo no encontrado");
       error.status = 404;
       throw error;
     }
 
     // Verificar permisos - solo creador o admin puede editar
     if (material.createdBy.toString() !== req.user.id && req.user.role !== 'admin') {
-      const error = new Error("Not authorized to update this material");
+      const error = new Error("No autorizado para actualizar este material");
       error.status = 403;
       throw error;
     }
@@ -258,7 +258,7 @@ export const updateEducationalMaterial = async (req, res, next) => {
 
     res.json({
       success: true,
-      message: "Educational material updated successfully",
+      message: "Material educativo actualizado exitosamente",
       data: updatedMaterial
     });
   } catch (error) {
@@ -271,14 +271,14 @@ export const deleteEducationalMaterial = async (req, res, next) => {
     const material = await EducationalMaterial.findById(req.params.id);
     
     if (!material) {
-      const error = new Error("Educational material not found");
+      const error = new Error("Material educativo no encontrado");
       error.status = 404;
       throw error;
     }
 
     // Verificar permisos - solo creador o admin puede eliminar
     if (material.createdBy.toString() !== req.user.id && req.user.role !== 'admin') {
-      const error = new Error("Not authorized to delete this material");
+      const error = new Error("No autorizado para eliminar este material");
       error.status = 403;
       throw error;
     }
@@ -287,7 +287,7 @@ export const deleteEducationalMaterial = async (req, res, next) => {
 
     res.json({
       success: true,
-      message: "Educational material deleted successfully"
+      message: "Material educativo eliminado exitosamente"
     });
   } catch (error) {
     next(error);
@@ -300,21 +300,21 @@ export const rateEducationalMaterial = async (req, res, next) => {
     const material = await EducationalMaterial.findById(req.params.id);
 
     if (!material) {
-      const error = new Error("Educational material not found");
+      const error = new Error("Material educativo no encontrado");
       error.status = 404;
       throw error;
     }
 
     // Verificar que el usuario puede acceder al material
     if (!material.canAccess(req.user)) {
-      const error = new Error("Access denied to this educational material");
+      const error = new Error("Acceso denegado a este material educativo");
       error.status = 403;
       throw error;
     }
 
     // Verificar que el usuario no sea el creador
     if (material.createdBy.toString() === req.user.id) {
-      const error = new Error("Cannot rate your own educational material");
+      const error = new Error("No puedes calificar tu propio material educativo");
       error.status = 400;
       throw error;
     }
@@ -326,7 +326,7 @@ export const rateEducationalMaterial = async (req, res, next) => {
 
     res.json({
       success: true,
-      message: "Material rated successfully",
+      message: "Material calificado exitosamente",
       data: updatedMaterial.ratings
     });
   } catch (error) {
@@ -339,14 +339,14 @@ export const incrementDownloads = async (req, res, next) => {
     const material = await EducationalMaterial.findById(req.params.id);
 
     if (!material) {
-      const error = new Error("Educational material not found");
+      const error = new Error("Material educativo no encontrado");
       error.status = 404;
       throw error;
     }
 
     // Verificar que el usuario puede acceder al material
     if (!material.canAccess(req.user)) {
-      const error = new Error("Access denied to this educational material");
+      const error = new Error("Acceso denegado a este material educativo");
       error.status = 403;
       throw error;
     }
@@ -355,7 +355,7 @@ export const incrementDownloads = async (req, res, next) => {
 
     res.json({
       success: true,
-      message: "Download count incremented",
+      message: "Conteo de descargas incrementado exitosamente",
       downloads: material.downloads + 1
     });
   } catch (error) {
@@ -369,14 +369,14 @@ export const shareEducationalMaterial = async (req, res, next) => {
     const material = await EducationalMaterial.findById(req.params.id);
 
     if (!material) {
-      const error = new Error("Educational material not found");
+      const error = new Error("Material educativo no encontrado");
       error.status = 404;
       throw error;
     }
 
     // Verificar permisos - solo creador o admin puede compartir
     if (material.createdBy.toString() !== req.user.id && req.user.role !== 'admin') {
-      const error = new Error("Not authorized to share this material");
+      const error = new Error("No autorizado para compartir este material");
       error.status = 403;
       throw error;
     }
@@ -407,7 +407,7 @@ export const shareEducationalMaterial = async (req, res, next) => {
 
     res.json({
       success: true,
-      message: "Material sharing settings updated successfully",
+      message: "Configuración de compartición de material actualizada exitosamente",
       data: updatedMaterial
     });
   } catch (error) {
@@ -444,14 +444,14 @@ export const changeMaterialStatus = async (req, res, next) => {
     const material = await EducationalMaterial.findById(req.params.id);
 
     if (!material) {
-      const error = new Error("Educational material not found");
+      const error = new Error("Material educativo no encontrado");
       error.status = 404;
       throw error;
     }
 
     // Solo admin o el creador pueden cambiar el estado
     if (material.createdBy.toString() !== req.user.id && req.user.role !== 'admin') {
-      const error = new Error("Not authorized to change status of this material");
+      const error = new Error("No autorizado para cambiar el estado de este material");
       error.status = 403;
       throw error;
     }

@@ -134,14 +134,14 @@ export const getClassVideoById = async (req, res, next) => {
       .populate('updatedBy', 'personalInfo');
 
     if (!video) {
-      const error = new Error("Class video not found");
+      const error = new Error("Video de clase no encontrado");
       error.status = 404;
       throw error;
     }
 
     // Verificar permisos de acceso
     if (!video.canAccess(req.user)) {
-      const error = new Error("Access denied to this class video");
+      const error = new Error("Acceso denegado a este video de clase");
       error.status = 403;
       throw error;
     }
@@ -173,7 +173,7 @@ export const createClassVideo = async (req, res, next) => {
     // Verificar permisos para subir videos
     if (!['tutor', 'advisor', 'admin'].includes(req.user.role)) {
       console.log('User role not allowed:', req.user.role);
-      const error = new Error("Only tutors, advisors and admins can upload class videos");
+      const error = new Error("Solo tutores, asesores y administradores pueden subir videos de clase");
       error.status = 403;
       throw error;
     }
@@ -187,7 +187,7 @@ export const createClassVideo = async (req, res, next) => {
         videoData.fileSize = req.files.videoFile[0].size;
         console.log('Video file processed:', req.files.videoFile[0].filename);
       } else {
-        console.log('No video file found in req.files');
+        console.log('No se encontró archivo de video en req.files');
       }
 
       if (req.files.thumbnailFile && req.files.thumbnailFile[0]) {
@@ -197,7 +197,7 @@ export const createClassVideo = async (req, res, next) => {
         console.log('Thumbnail file processed:', req.files.thumbnailFile[0].filename);
       }
     } else {
-      console.log('No files found in request');
+      console.log('No se encontraron archivos en la solicitud');
     }
 
     // Parsear tags si vienen como string
@@ -206,7 +206,7 @@ export const createClassVideo = async (req, res, next) => {
         videoData.tags = JSON.parse(videoData.tags);
         console.log('Tags parsed:', videoData.tags);
       } catch (e) {
-        console.log('Could not parse tags, keeping as string');
+        console.log('No se pudo parsear tags, se mantiene como string');
         // Si no es JSON, mantener como string y dejar que el modelo lo maneje
       }
     }
@@ -226,7 +226,7 @@ export const createClassVideo = async (req, res, next) => {
 
     res.status(201).json({
       success: true,
-      message: "Class video uploaded successfully",
+      message: "Video de clase subido exitosamente",
       data: populatedVideo
     });
   } catch (error) {
@@ -240,14 +240,14 @@ export const updateClassVideo = async (req, res, next) => {
     const video = await ClassVideo.findById(req.params.id);
 
     if (!video) {
-      const error = new Error("Class video not found");
+      const error = new Error("Video de clase no encontrado");
       error.status = 404;
       throw error;
     }
 
     // Verificar permisos - solo uploader o admin puede editar
     if (video.uploadedBy.toString() !== req.user.id && req.user.role !== 'admin') {
-      const error = new Error("Not authorized to update this video");
+      const error = new Error("No autorizado para actualizar este video");
       error.status = 403;
       throw error;
     }
@@ -268,7 +268,7 @@ export const updateClassVideo = async (req, res, next) => {
 
     res.json({
       success: true,
-      message: "Class video updated successfully",
+      message: "Video de clase actualizado exitosamente",
       data: updatedVideo
     });
   } catch (error) {
@@ -281,14 +281,14 @@ export const deleteClassVideo = async (req, res, next) => {
     const video = await ClassVideo.findById(req.params.id);
 
     if (!video) {
-      const error = new Error("Class video not found");
+      const error = new Error("Video de clase no encontrado");
       error.status = 404;
       throw error;
     }
 
     // Verificar permisos - solo uploader o admin puede eliminar
     if (video.uploadedBy.toString() !== req.user.id && req.user.role !== 'admin') {
-      const error = new Error("Not authorized to delete this video");
+      const error = new Error("No autorizado para eliminar este video");
       error.status = 403;
       throw error;
     }
@@ -297,7 +297,7 @@ export const deleteClassVideo = async (req, res, next) => {
 
     res.json({
       success: true,
-      message: "Class video deleted successfully"
+      message: "Video de clase eliminado exitosamente"
     });
   } catch (error) {
     next(error);
@@ -309,21 +309,21 @@ export const toggleLikeVideo = async (req, res, next) => {
     const video = await ClassVideo.findById(req.params.id);
 
     if (!video) {
-      const error = new Error("Class video not found");
+      const error = new Error("Video de clase no encontrado");
       error.status = 404;
       throw error;
     }
 
     // Verificar que el usuario puede acceder al video
     if (!video.canAccess(req.user)) {
-      const error = new Error("Access denied to this class video");
+      const error = new Error("Acceso denegado a este video de clase");
       error.status = 403;
       throw error;
     }
 
     // Verificar que el usuario no sea el uploader
     if (video.uploadedBy.toString() === req.user.id) {
-      const error = new Error("Cannot like your own video");
+      const error = new Error("No puedes dar like a tu propio video");
       error.status = 400;
       throw error;
     }
@@ -335,7 +335,7 @@ export const toggleLikeVideo = async (req, res, next) => {
 
     res.json({
       success: true,
-      message: "Video like toggled successfully",
+      message: "Like del video toggled exitosamente",
       data: {
         likes: updatedVideo.likes,
         likedBy: updatedVideo.likedBy,

@@ -30,7 +30,7 @@ export const getNote = async (req, res, next) => {
     const note = await Note.findById(req.params.id);
 
     if (!note) {
-      const error = new Error("Note does not exists");
+      const error = new Error("La nota no existe");
       error.status = 404;
       throw error;
     }
@@ -46,7 +46,7 @@ export const deleteNote = async (req, res, next) => {
     const deletedNote = await Note.findByIdAndDelete(req.params.id);
 
     if (!deletedNote) {
-      const error = new Error("Note does not exists");
+      const error = new Error("La nota no existe");
       error.status = 404;
       throw error;
     }

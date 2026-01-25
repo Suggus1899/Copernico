@@ -97,7 +97,7 @@ export const getReportById = async (req, res, next) => {
       .populate('filters.users', 'personalInfo email');
 
     if (!report) {
-      const error = new Error("Report not found");
+      const error = new Error("Reporte no encontrado");
       error.status = 404;
       throw error;
     }
@@ -113,7 +113,7 @@ export const getReportById = async (req, res, next) => {
       report.forRole === req.user.role;
 
     if (!canAccess) {
-      const error = new Error("Access denied to this report");
+      const error = new Error("Acceso denegado a este reporte");
       error.status = 403;
       throw error;
     }
@@ -135,7 +135,7 @@ export const createReport = async (req, res, next) => {
     if (reportData.forUser) {
       const forUser = await User.findById(reportData.forUser);
       if (!forUser) {
-        const error = new Error("Target user not found");
+        const error = new Error("Usuario destinatario no encontrado");
         error.status = 404;
         throw error;
       }
@@ -145,7 +145,7 @@ export const createReport = async (req, res, next) => {
     if (reportData.allowedUsers && reportData.allowedUsers.length > 0) {
       const allowedUsers = await User.find({ _id: { $in: reportData.allowedUsers } });
       if (allowedUsers.length !== reportData.allowedUsers.length) {
-        const error = new Error("Some allowed users not found");
+        const error = new Error("Algunos usuarios permitidos no fueron encontrados");
         error.status = 404;
         throw error;
       }
@@ -190,7 +190,7 @@ export const createReport = async (req, res, next) => {
 
     res.status(201).json({
       success: true,
-      message: "Report created successfully",
+      message: "Reporte creado exitosamente",
       data: populatedReport
     });
   } catch (error) {
@@ -204,14 +204,14 @@ export const generateReportData = async (req, res, next) => {
     const report = await Report.findById(req.params.id);
 
     if (!report) {
-      const error = new Error("Report not found");
+      const error = new Error("Reporte no encontrado");
       error.status = 404;
       throw error;
     }
 
     // Verificar permisos
     if (report.generatedBy.toString() !== req.user.id && req.user.role !== 'admin') {
-      const error = new Error("Not authorized to generate this report");
+      const error = new Error("No autorizado para generar este reporte");
       error.status = 403;
       throw error;
     }
@@ -220,7 +220,7 @@ export const generateReportData = async (req, res, next) => {
     if (report.status === 'generated' && !forceRegenerate) {
       return res.json({
         success: true,
-        message: "Report already generated",
+        message: "Reporte ya generado",
         data: report
       });
     }
@@ -232,7 +232,7 @@ export const generateReportData = async (req, res, next) => {
 
     try {
       // Generar datos según el tipo de reporte
-      await report.addGenerationLog('start', 'Starting report data generation');
+      await report.addGenerationLog('start', 'Iniciando generación de datos del reporte');
       
       let reportData;
       switch (report.type) {
@@ -254,23 +254,23 @@ export const generateReportData = async (req, res, next) => {
 
       report.data = reportData;
       report.status = 'generated';
-      await report.addGenerationLog('complete', 'Report data generation completed', 1000);
+      await report.addGenerationLog('complete', 'Generación de datos del reporte completada', 1000);
 
       const updatedReport = await Report.findById(report._id)
         .populate('generatedBy', 'personalInfo email');
 
       res.json({
         success: true,
-        message: "Report data generated successfully",
+        message: "Datos del reporte generados exitosamente",
         data: updatedReport
       });
 
     } catch (genError) {
       report.status = 'failed';
-      await report.addGenerationLog('error', `Generation failed: ${genError.message}`);
+      await report.addGenerationLog('error', `Error en la generación: ${genError.message}`);
       await report.save();
       
-      const error = new Error(`Report generation failed: ${genError.message}`);
+      const error = new Error(`Error en la generación del reporte: ${genError.message}`);
       error.status = 500;
       throw error;
     }
@@ -361,7 +361,7 @@ const generateTutorPerformanceReport = async (report) => {
   const { period, filters } = report;
   
   const tutorId = report.forUser || filters.users?.[0];
-  if (!tutorId) throw new Error("Tutor ID required for performance report");
+  if (!tutorId) throw new Error("ID de tutor requerido para el reporte de desempeño");
 
   // Obtener citas del tutor
   const appointments = await Appointment.find({
@@ -549,7 +549,7 @@ const generateCustomReport = async (report) => {
   // Reporte personalizado - estructura básica
   return {
     customData: {
-      message: "Custom report data would be generated based on specific requirements",
+      message: "Los datos del reporte personalizado se generarían según los requisitos específicos",
       generatedAt: new Date().toISOString(),
       parameters: report.filters
     },
@@ -568,21 +568,21 @@ export const deliverReport = async (req, res, next) => {
     const report = await Report.findById(req.params.id);
 
     if (!report) {
-      const error = new Error("Report not found");
+      const error = new Error("Reporte no encontrado");
       error.status = 404;
       throw error;
     }
 
     // Verificar que el reporte esté generado
     if (report.status !== 'generated') {
-      const error = new Error("Report must be generated before delivery");
+      const error = new Error("El reporte debe estar generado antes de la entrega");
       error.status = 400;
       throw error;
     }
 
     // Verificar permisos
     if (report.generatedBy.toString() !== req.user.id && req.user.role !== 'admin') {
-      const error = new Error("Not authorized to deliver this report");
+      const error = new Error("No autorizado para entregar este reporte");
       error.status = 403;
       throw error;
     }
@@ -602,7 +602,7 @@ export const deliverReport = async (req, res, next) => {
 
     res.json({
       success: true,
-      message: `Report delivered via ${method}`,
+      message: `Reporte entregado vía ${method}`,
       data: report
     });
   } catch (error) {
@@ -614,29 +614,29 @@ export const getReportTemplates = async (req, res, next) => {
   try {
     const templates = {
       student_progress: {
-        name: "Student Progress Report",
-        description: "Comprehensive report on student academic progress",
+        name: "Reporte de Progreso Estudiantil",
+        description: "Reporte integral sobre el progreso académico del estudiante",
         defaultPeriod: "monthly",
         availableVisualizations: ["summary", "detailed", "charts"],
         requiredFilters: ["student"]
       },
       tutor_performance: {
-        name: "Tutor Performance Report",
-        description: "Performance metrics and student outcomes for tutors",
+        name: "Reporte de Desempeño del Tutor",
+        description: "Métricas de desempeño y resultados de estudiantes para tutores",
         defaultPeriod: "quarterly",
         availableVisualizations: ["summary", "charts", "tables"],
         requiredFilters: ["tutor"]
       },
       system_usage: {
-        name: "System Usage Report",
-        description: "Platform usage statistics and activity metrics",
+        name: "Reporte de Uso del Sistema",
+        description: "Estadísticas de uso de la plataforma y métricas de actividad",
         defaultPeriod: "monthly",
         availableVisualizations: ["charts", "summary"],
         requiredFilters: []
       },
       assignment_completion: {
-        name: "Assignment Completion Report",
-        description: "Tracking assignment submission and completion rates",
+        name: "Reporte de Finalización de Tareas",
+        description: "Seguimiento de las tasas de entrega y finalización de tareas",
         defaultPeriod: "weekly",
         availableVisualizations: ["tables", "charts"],
         requiredFilters: []
@@ -657,14 +657,14 @@ export const deleteReport = async (req, res, next) => {
     const report = await Report.findById(req.params.id);
 
     if (!report) {
-      const error = new Error("Report not found");
+      const error = new Error("Reporte no encontrado");
       error.status = 404;
       throw error;
     }
 
     // Verificar permisos
     if (report.generatedBy.toString() !== req.user.id && req.user.role !== 'admin') {
-      const error = new Error("Not authorized to delete this report");
+      const error = new Error("No autorizado para eliminar este reporte");
       error.status = 403;
       throw error;
     }
@@ -673,7 +673,7 @@ export const deleteReport = async (req, res, next) => {
 
     res.json({
       success: true,
-      message: "Report deleted successfully"
+      message: "Reporte eliminado exitosamente"
     });
   } catch (error) {
     next(error);

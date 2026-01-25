@@ -75,7 +75,7 @@ export const getAvailabilitySlotById = async (req, res, next) => {
       .populate('updatedBy', 'personalInfo');
 
     if (!slot) {
-      const error = new Error("Availability slot not found");
+      const error = new Error("Disponibilidad no encontrada");
       error.status = 404;
       throw error;
     }
@@ -96,20 +96,20 @@ export const createAvailabilitySlot = async (req, res, next) => {
     // Verificar que el usuario existe y tiene el rol correcto
     const user = await User.findById(slotData.userId);
     if (!user) {
-      const error = new Error("User not found");
+      const error = new Error("Usuario no encontrado");
       error.status = 404;
       throw error;
     }
 
     if (!['tutor', 'advisor'].includes(user.role)) {
-      const error = new Error("User must be a tutor or advisor to create availability slots");
+      const error = new Error("El usuario debe ser tutor o asesor para crear franjas de disponibilidad");
       error.status = 400;
       throw error;
     }
 
     // Verificar que userRole coincide con el rol real del usuario
     if (user.role !== slotData.userRole) {
-      const error = new Error("User role mismatch");
+      const error = new Error("El rol del usuario no coincide");
       error.status = 400;
       throw error;
     }
@@ -137,7 +137,7 @@ export const createAvailabilitySlot = async (req, res, next) => {
     });
 
     if (overlappingSlot) {
-      const error = new Error("Time slot overlaps with existing availability");
+      const error = new Error("La franja horaria se superpone con una disponibilidad existente");
       error.status = 409;
       throw error;
     }
@@ -157,7 +157,7 @@ export const createAvailabilitySlot = async (req, res, next) => {
 
     res.status(201).json({
       success: true,
-      message: "Availability slot created successfully",
+      message: "Franja de disponibilidad creada exitosamente",
       data: populatedSlot
     });
   } catch (error) {
@@ -181,14 +181,14 @@ export const updateAvailabilitySlot = async (req, res, next) => {
     ).populate('userId', 'personalInfo email role');
 
     if (!slot) {
-      const error = new Error("Availability slot not found");
+      const error = new Error("Franja de disponibilidad no encontrada");
       error.status = 404;
       throw error;
     }
 
     res.json({
       success: true,
-      message: "Availability slot updated successfully",
+      message: "Franja de disponibilidad actualizada exitosamente",
       data: slot
     });
   } catch (error) {
@@ -203,14 +203,14 @@ export const deleteAvailabilitySlot = async (req, res, next) => {
     const slot = await AvailabilitySlot.findByIdAndDelete(id);
 
     if (!slot) {
-      const error = new Error("Availability slot not found");
+      const error = new Error("Franja de disponibilidad no encontrada");
       error.status = 404;
       throw error;
     }
 
     res.json({
       success: true,
-      message: "Availability slot deleted successfully"
+      message: "Franja de disponibilidad eliminada exitosamente"
     });
   } catch (error) {
     next(error);
@@ -244,7 +244,7 @@ export const getAvailableSlotsForSubject = async (req, res, next) => {
     const { subject, date, userRole = 'tutor' } = req.query;
     
     if (!subject) {
-      const error = new Error("Subject is required");
+      const error = new Error("El asunto es obligatorio");
       error.status = 400;
       throw error;
     }
@@ -293,13 +293,13 @@ export const bulkUpdateAvailabilityStatus = async (req, res, next) => {
     const { slotIds, status } = req.body;
 
     if (!Array.isArray(slotIds) || slotIds.length === 0) {
-      const error = new Error("slotIds array is required");
+      const error = new Error("El array slotIds es obligatorio");
       error.status = 400;
       throw error;
     }
 
     if (!['available', 'booked', 'cancelled', 'completed'].includes(status)) {
-      const error = new Error("Invalid status");
+      const error = new Error("Estado inválido");
       error.status = 400;
       throw error;
     }
@@ -314,7 +314,7 @@ export const bulkUpdateAvailabilityStatus = async (req, res, next) => {
 
     res.json({
       success: true,
-      message: `${result.modifiedCount} availability slots updated to ${status}`,
+      message: `${result.modifiedCount} franjas de disponibilidad actualizadas a ${status}`,
       modifiedCount: result.modifiedCount
     });
   } catch (error) {

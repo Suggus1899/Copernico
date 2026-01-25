@@ -28,7 +28,7 @@ export const signup = async (req, res, next) => {
     if (userExists) {
       return res.status(400).json({ 
         success: false,
-        error: "User already exists" 
+        error: "Usuario ya registrado" 
       });
     }
 
@@ -62,7 +62,7 @@ export const signup = async (req, res, next) => {
     if (!finalPersonalInfo || !finalPersonalInfo.firstName) {
       return res.status(400).json({
         success: false,
-        error: "First name and last name are required"
+        error: "Se requieren nombre y apellido"
       });
     }
 
@@ -86,7 +86,7 @@ export const signup = async (req, res, next) => {
     if (!passwordPolicy.test(password || '')) {
       return res.status(400).json({
         success: false,
-        error: 'Password must be at least 8 chars, include upper, lower and number.'
+        error: 'La contraseña debe tener al menos 8 caracteres, incluir mayúsculas, minúsculas y números.'
       });
     }
 
@@ -127,7 +127,7 @@ export const signup = async (req, res, next) => {
     if (error.code === 11000) {
       return res.status(400).json({ 
         success: false,
-        error: "Email already registered" 
+        error: "Usuario ya registrado" 
       });
     }
     next(error);
@@ -144,7 +144,7 @@ export const signin = async (req, res, next) => {
     if (!user) {
       return res.status(400).json({ 
         success: false,
-        error: "Invalid credentials" 
+        error: "Credenciales inválidas" 
       });
     }
 
@@ -180,7 +180,7 @@ export const signin = async (req, res, next) => {
       
       return res.status(400).json({ 
         success: false,
-        error: "Invalid credentials" 
+        error: "Credenciales inválidas" 
       });
     }
 
@@ -223,7 +223,7 @@ export const forgotPassword = async (req, res, next) => {
     if (!email) {
       return res.status(400).json({
         success: false,
-        error: "Email is required"
+        error: "Se requiere el correo electrónico"
       });
     }
 
@@ -263,7 +263,7 @@ export const profile = async (req, res, next) => {
     if (!userFound) {
       return res.status(404).json({
         success: false,
-        error: "User not found"
+        error: "Usuario no encontrado"
       });
     }
 

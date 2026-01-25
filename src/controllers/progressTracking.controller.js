@@ -82,7 +82,7 @@ export const getProgressTrackingById = async (req, res, next) => {
       .populate('updatedBy', 'personalInfo');
 
     if (!progressTracking) {
-      const error = new Error("Progress tracking record not found");
+      const error = new Error("Progreso no encontrado");
       error.status = 404;
       throw error;
     }
@@ -94,7 +94,7 @@ export const getProgressTrackingById = async (req, res, next) => {
       progressTracking.trackedBy._id.toString() === req.user.id;
 
     if (!canView) {
-      const error = new Error("Access denied to this progress tracking record");
+      const error = new Error("Acceso denegado a este registro de progreso");
       error.status = 403;
       throw error;
     }
@@ -115,7 +115,7 @@ export const createProgressTracking = async (req, res, next) => {
     // Verificar que el estudiante existe
     const student = await User.findById(progressData.studentId);
     if (!student || student.role !== 'student') {
-      const error = new Error("Student not found or invalid role");
+      const error = new Error("Estudiante no encontrado o rol inválido");
       error.status = 404;
       throw error;
     }
@@ -123,14 +123,14 @@ export const createProgressTracking = async (req, res, next) => {
     // Verificar que el tracker existe y tiene permisos
     const tracker = await User.findById(progressData.trackedBy);
     if (!tracker || !['tutor', 'advisor', 'admin'].includes(tracker.role)) {
-      const error = new Error("Tracker must be a tutor, advisor or admin");
+      const error = new Error("El tracker debe ser un tutor, asesor o administrador");
       error.status = 400;
       throw error;
     }
 
     // Verificar permisos para crear seguimiento
     if (!['tutor', 'advisor', 'admin'].includes(req.user.role)) {
-      const error = new Error("Only tutors, advisors and admins can create progress tracking");
+      const error = new Error("Solo tutores, asesores y administradores pueden crear seguimientos de progreso");
       error.status = 403;
       throw error;
     }
@@ -139,7 +139,7 @@ export const createProgressTracking = async (req, res, next) => {
     if (progressData.appointmentId) {
       const appointment = await Appointment.findById(progressData.appointmentId);
       if (!appointment) {
-        const error = new Error("Appointment not found");
+        const error = new Error("Cita no encontrada");
         error.status = 404;
         throw error;
       }
@@ -160,7 +160,7 @@ export const createProgressTracking = async (req, res, next) => {
 
     res.status(201).json({
       success: true,
-      message: "Progress tracking created successfully",
+      message: "Seguimiento de progreso creado exitosamente",
       data: populatedProgress
     });
   } catch (error) {
@@ -173,14 +173,14 @@ export const updateProgressTracking = async (req, res, next) => {
     const progressTracking = await ProgressTracking.findById(req.params.id);
     
     if (!progressTracking) {
-      const error = new Error("Progress tracking record not found");
+      const error = new Error("Progreso no encontrado");
       error.status = 404;
       throw error;
     }
 
     // Verificar permisos - solo tracker o admin puede editar
     if (progressTracking.trackedBy.toString() !== req.user.id && req.user.role !== 'admin') {
-      const error = new Error("Not authorized to update this progress tracking");
+      const error = new Error("No autorizado para actualizar este seguimiento de progreso");
       error.status = 403;
       throw error;
     }
@@ -202,7 +202,7 @@ export const updateProgressTracking = async (req, res, next) => {
 
     res.json({
       success: true,
-      message: "Progress tracking updated successfully",
+      message: "Progreso actualizado exitosamente",
       data: updatedProgress
     });
   } catch (error) {
@@ -216,14 +216,14 @@ export const addProgressHistory = async (req, res, next) => {
     const progressTracking = await ProgressTracking.findById(req.params.id);
 
     if (!progressTracking) {
-      const error = new Error("Progress tracking record not found");
+      const error = new Error("Progreso no encontrado");
       error.status = 404;
       throw error;
     }
 
     // Verificar permisos - solo tracker o admin puede agregar historial
     if (progressTracking.trackedBy.toString() !== req.user.id && req.user.role !== 'admin') {
-      const error = new Error("Not authorized to add progress history");
+      const error = new Error("No autorizado para agregar historial de progreso");
       error.status = 403;
       throw error;
     }
@@ -235,7 +235,7 @@ export const addProgressHistory = async (req, res, next) => {
 
     res.json({
       success: true,
-      message: "Progress history added successfully",
+      message: "Historial de progreso agregado exitosamente",
       data: updatedProgress.progressHistory
     });
   } catch (error) {
@@ -249,7 +249,7 @@ export const updateGoalStatus = async (req, res, next) => {
     const progressTracking = await ProgressTracking.findById(req.params.id);
 
     if (!progressTracking) {
-      const error = new Error("Progress tracking record not found");
+      const error = new Error("Progreso no encontrado");
       error.status = 404;
       throw error;
     }
@@ -261,7 +261,7 @@ export const updateGoalStatus = async (req, res, next) => {
       req.user.role === 'admin';
 
     if (!canUpdate) {
-      const error = new Error("Not authorized to update goals");
+      const error = new Error("No autorizado para actualizar metas");
       error.status = 403;
       throw error;
     }
@@ -282,7 +282,7 @@ export const updateGoalStatus = async (req, res, next) => {
         progressTracking.goals.customGoals[customGoalIndex].progress = progress;
       }
     } else {
-      const error = new Error("Invalid goal type or index");
+      const error = new Error("Tipo de meta o índice inválido");
       error.status = 400;
       throw error;
     }
@@ -294,7 +294,7 @@ export const updateGoalStatus = async (req, res, next) => {
 
     res.json({
       success: true,
-      message: "Goal status updated successfully",
+      message: "Estado de la meta actualizado exitosamente",
       data: updatedProgress.goals
     });
   } catch (error) {
@@ -312,7 +312,7 @@ export const getStudentProgress = async (req, res, next) => {
     if (req.user.role === 'student') {
       targetStudentId = req.user.id;
     } else if (!studentId && !['tutor', 'advisor', 'admin'].includes(req.user.role)) {
-      const error = new Error("Student ID is required");
+      const error = new Error("Se requiere ID del estudiante");
       error.status = 400;
       throw error;
     }
@@ -323,7 +323,7 @@ export const getStudentProgress = async (req, res, next) => {
       return res.json({
         success: true,
         data: null,
-        message: "No progress tracking found for this student and subject"
+        message: "No se encontró seguimiento de progreso para este estudiante y materia"
       });
     }
 
@@ -444,7 +444,7 @@ export const createBaselineAssessment = async (req, res, next) => {
 
     // Verificar permisos
     if (!['tutor', 'advisor', 'admin'].includes(req.user.role)) {
-      const error = new Error("Only tutors, advisors and admins can create baseline assessments");
+      const error = new Error("Solo tutores, asesores y administradores pueden crear evaluaciones base");
       error.status = 403;
       throw error;
     }
@@ -457,7 +457,7 @@ export const createBaselineAssessment = async (req, res, next) => {
     });
 
     if (existingBaseline) {
-      const error = new Error("Baseline assessment already exists for this student and subject");
+      const error = new Error("Ya existe una evaluación base para este estudiante y materia");
       error.status = 409;
       throw error;
     }
@@ -473,7 +473,7 @@ export const createBaselineAssessment = async (req, res, next) => {
         understandingLevel: 1,
         completionRate: 0
       },
-      observations: "Initial baseline assessment",
+      observations: "Evaluación base inicial",
       competencyLevel: 'beginner',
       confidenceLevel: 1,
       trackingPeriod: {
@@ -494,7 +494,7 @@ export const createBaselineAssessment = async (req, res, next) => {
 
     res.status(201).json({
       success: true,
-      message: "Baseline assessment created successfully",
+      message: "Evaluación base creada exitosamente",
       data: populatedBaseline
     });
   } catch (error) {
