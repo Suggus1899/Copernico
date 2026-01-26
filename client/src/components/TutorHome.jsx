@@ -158,29 +158,29 @@ class TutorHome extends Component {
     return (
       <>
         {/* Estadísticas rápidas */}
-        <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px', marginBottom: '30px' }}>
-          <div className="stat-card" style={{ background: 'white', padding: '20px', borderRadius: '15px', boxShadow: '0 4px 15px rgba(0, 0, 0, 0.1)', display: 'flex', alignItems: 'center', gap: '15px' }}>
+        <div className="stats-grid" style={{ display: 'grid', gap: '20px', marginBottom: '600px', position: 'relative',top: '150px' }}>
+          <div className="stat-card" style={{ background: 'white', height: '100px', padding: '20px', borderRadius: '15px', boxShadow: '0 4px 15px rgba(0, 0, 0, 0.1)', display: 'flex', alignItems: 'center', gap: '15px' }}>
             <div className="stat-icon" style={{ fontSize: '2rem' }}>📅</div>
             <div className="stat-content">
               <h3 style={{ margin: '0', fontSize: '2rem', fontWeight: '700', color: '#2c3e50' }}>{stats.todayClasses}</h3>
               <p style={{ margin: '0', color: '#666' }}>{isAdvisor ? 'Asesorías hoy' : 'Clases hoy'}</p>
             </div>
           </div>
-          <div className="stat-card" style={{ background: 'white', padding: '20px', borderRadius: '15px', boxShadow: '0 4px 15px rgba(0, 0, 0, 0.1)', display: 'flex', alignItems: 'center', gap: '15px' }}>
+          <div className="stat-card" style={{ background: 'white', height: '100px' , padding: '20px', borderRadius: '15px', boxShadow: '0 4px 15px rgba(0, 0, 0, 0.1)', display: 'flex', alignItems: 'center', gap: '15px' }}>
             <div className="stat-icon" style={{ fontSize: '2rem' }}>📚</div>
             <div className="stat-content">
               <h3 style={{ margin: '0', fontSize: '2rem', fontWeight: '700', color: '#2c3e50' }}>{stats.upcomingClasses}</h3>
               <p style={{ margin: '0', color: '#666' }}>{isAdvisor ? 'Próximas asesorías' : 'Próximas clases'}</p>
             </div>
           </div>
-          <div className="stat-card" style={{ background: 'white', padding: '20px', borderRadius: '15px', boxShadow: '0 4px 15px rgba(0, 0, 0, 0.1)', display: 'flex', alignItems: 'center', gap: '15px' }}>
+          <div className="stat-card" style={{ background: 'white', height: '100px', padding: '20px', borderRadius: '15px', boxShadow: '0 4px 15px rgba(0, 0, 0, 0.1)', display: 'flex', alignItems: 'center', gap: '15px' }}>
             <div className="stat-icon" style={{ fontSize: '2rem' }}>👨‍🎓</div>
             <div className="stat-content">
               <h3 style={{ margin: '0', fontSize: '2rem', fontWeight: '700', color: '#2c3e50' }}>{stats.totalStudents}</h3>
               <p style={{ margin: '0', color: '#666' }}>Mis estudiantes</p>
             </div>
           </div>
-          <div className="stat-card" style={{ background: 'white', padding: '20px', borderRadius: '15px', boxShadow: '0 4px 15px rgba(0, 0, 0, 0.1)', display: 'flex', alignItems: 'center', gap: '15px' }}>
+          <div className="stat-card" style={{ background: 'white', height: '100px', padding: '20px', borderRadius: '15px', boxShadow: '0 4px 15px rgba(0, 0, 0, 0.1)', display: 'flex', alignItems: 'center', gap: '15px' }}>
             <div className="stat-icon" style={{ fontSize: '2rem' }}>📄</div>
             <div className="stat-content">
               <h3 style={{ margin: '0', fontSize: '2rem', fontWeight: '700', color: '#2c3e50' }}>{stats.pendingMaterials}</h3>
@@ -189,14 +189,14 @@ class TutorHome extends Component {
           </div>
         </div>
 
-        <div className="dashboard-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '30px' }}>
+        <div className="dashboard-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '30px', position: 'relative',top: '150px' }}>
           {/* Próximas clases/asesorías */}
-          <div className="dashboard-card" style={{ background: 'white', padding: '25px', borderRadius: '15px', boxShadow: '0 4px 15px rgba(0, 0, 0, 0.1)' }}>
-            <h2 style={{ margin: '0 0 20px 0', color: '#2c3e50', fontSize: '1.5rem' }}>{isAdvisor ? 'Próximas Asesorías' : 'Próximas Clases'}</h2>
-            <div className="upcoming-classes">
+          <div className="dashboard-card" style={{ background: 'white', height: '140px',padding: '25px', borderRadius: '15px', boxShadow: '0 4px 15px rgba(0, 0, 0, 0.1)' }}>
+            <h2 style={{ position: 'relative',bottom: '7px',margin: '0 0 20px 0', color: '#2c3e50', fontSize: '1rem' }}>{isAdvisor ? 'Próximas Asesorías' : 'Próximas Clases'}</h2>
+            <div className="upcoming-classes" style={{position: 'relative', bottom: '15px'}}>
               {upcomingClasses.length > 0 ? (
                 upcomingClasses.slice(0, 3).map((classItem) => (
-                  <div key={classItem.id} className="class-item" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '15px 0', borderBottom: '1px solid #eee' }}>
+                  <div key={classItem.id} className="class-item" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '15px 0',borderBottom: '1px solid #eee' }}>
                     <div className="class-info">
                       <h4 style={{ margin: '0 0 5px 0', color: '#2c3e50' }}>{classItem.subject}</h4>
                       <p style={{ margin: '0', color: '#666', fontSize: '0.9rem' }}>Estudiante: {classItem.student}</p>
@@ -209,17 +209,17 @@ class TutorHome extends Component {
                 <p>No hay clases programadas próximamente.</p>
               )}
             </div>
-            <Link to="/dashboard/agenda" className="view-all-link" style={{ display: 'inline-block', marginTop: '15px', color: '#2c3e50', textDecoration: 'none', fontWeight: '500' }}>Ver agenda completa →</Link>
+            <Link to="/dashboard/agenda" className="view-all-link" style={{ position: 'relative', bottom: '12px', left:'330px',display: 'inline-block', marginTop: '15px', color: '#2c3e50', textDecoration: 'none', fontWeight: '500' }}>Ver agenda completa →</Link>
           </div>
 
           {/* Actividad reciente */}
-          <div className="dashboard-card" style={{ background: 'white', padding: '25px', borderRadius: '15px', boxShadow: '0 4px 15px rgba(0, 0, 0, 0.1)' }}>
-            <h2 style={{ margin: '0 0 20px 0', color: '#2c3e50', fontSize: '1.5rem' }}>Actividad Reciente</h2>
-            <div className="recent-activity">
+          <div className="dashboard-card" style={{ background: 'white',position: 'relative', bottom: '35px', height: '140px', padding: '20px', borderRadius: '15px', boxShadow: '0 4px 15px rgba(0, 0, 0, 0.1)' }}>
+            <h2 style={{ margin: '0 0 2px 0', color: '#2c3e50', fontSize: '1rem' }}>Actividad Reciente</h2>
+            <div className="recent-activity" style={{position: 'relative', top: '15px'}}>
               {recentActivities.length > 0 ? (
                 recentActivities.map((activity) => (
                   <div key={activity.id} className="activity-item" style={{ display: 'flex', alignItems: 'center', gap: '15px', padding: '15px 0', borderBottom: '1px solid #eee' }}>
-                    <div className="activity-icon" style={{ fontSize: '1.5rem' }}>
+                    <div className="activity-icon" style={{ fontSize: '1rem' }}>
                       {activity.type === 'class' && '📚'}
                       {activity.type === 'material' && '📄'}
                       {activity.type === 'student' && '👨‍🎓'}
@@ -237,9 +237,9 @@ class TutorHome extends Component {
           </div>
 
           {/* Notificaciones */}
-          <div className="dashboard-card" style={{ background: 'white', padding: '25px', borderRadius: '15px', boxShadow: '0 4px 15px rgba(0, 0, 0, 0.1)' }}>
-            <h2 style={{ margin: '0 0 20px 0', color: '#2c3e50', fontSize: '1.5rem' }}>Notificaciones</h2>
-            <div className="notifications">
+          <div className="dashboard-card" style={{ background: 'white',position: 'relative', bottom: '70px', height: '140px', padding: '20px', borderRadius: '15px', boxShadow: '0 4px 15px rgba(0, 0, 0, 0.1)' }}>
+            <h2 style={{ margin: '0 0 20px 0', color: '#2c3e50', fontSize: '1rem' }}>Notificaciones</h2>
+            <div className="notifications" style={{position: 'relative', bottom: '5px'}}>
               {notifications.length > 0 ? (
                 notifications.slice(0, 4).map((notification) => (
                   <div key={notification.id} className={`notification-item ${notification.unread ? 'unread' : ''}`} style={{ display: 'flex', alignItems: 'center', gap: '15px', padding: '15px 0', borderBottom: '1px solid #eee', backgroundColor: notification.unread ? '#f8f9fa' : 'transparent' }}>
@@ -257,13 +257,13 @@ class TutorHome extends Component {
                 <p>No hay notificaciones.</p>
               )}
             </div>
-            <Link to="/dashboard/notificaciones" className="view-all-link" style={{ display: 'inline-block', marginTop: '15px', color: '#2c3e50', textDecoration: 'none', fontWeight: '500' }}>Ver todas las notificaciones →</Link>
+            <Link to="/dashboard/notificaciones" className="view-all-link" style={{ position: 'relative', bottom: '7px', left: '285px', display: 'inline-block', marginTop: '15px', color: '#2c3e50', textDecoration: 'none', fontWeight: '500' }}>Ver todas las notificaciones →</Link>
           </div>
 
           {/* Avisos importantes */}
-          <div className="dashboard-card" style={{ background: 'white', padding: '25px', borderRadius: '15px', boxShadow: '0 4px 15px rgba(0, 0, 0, 0.1)' }}>
-            <h2 style={{ margin: '0 0 20px 0', color: '#2c3e50', fontSize: '1.5rem' }}>Avisos Importantes</h2>
-            <div className="announcements">
+          <div className="dashboard-card" style={{ position: 'relative',bottom: '330px', right: '590px', height: '200px',background: 'white', padding: '25px', borderRadius: '15px', boxShadow: '0 4px 15px rgba(0, 0, 0, 0.1)' }}>
+            <h2 style={{ margin: '0 0 20px 0', color: '#2c3e50', fontSize: '1rem' }}>Avisos Importantes</h2>
+            <div className="announcements" style={{position: 'relative', bottom: '23px'}} >
               <div className="announcement-item" style={{ display: 'flex', alignItems: 'flex-start', gap: '15px', padding: '15px 0', borderBottom: '1px solid #eee' }}>
                 <div className="announcement-icon" style={{ fontSize: '1.5rem' }}>📢</div>
                 <div className="announcement-content">

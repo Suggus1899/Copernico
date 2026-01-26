@@ -10,6 +10,7 @@
 
 /* Login and Signup pages should maintain their centered layout */
 .login-container,
+
 .signup-container {
   min-height: calc(100vh - 80px);
   display: flex;
