@@ -5,6 +5,8 @@ import {
   getNote,
   deleteNote,
   updateNote,
+  shareNote,
+  unshareNote
 } from "../controllers/notes.controller.js";
 import { authenticateToken } from "../middlewares/auth.middleware.js";
 
@@ -22,5 +24,9 @@ router.get("/:id", getNote);
 router.delete("/:id", deleteNote);
 
 router.put("/:id", updateNote);
+
+// Nuevas rutas de compartido
+router.post("/:id/share", shareNote);
+router.delete("/:id/share/:userId", unshareNote);
 
 export default router;

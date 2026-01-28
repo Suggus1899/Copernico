@@ -8,8 +8,8 @@ const noteSchema = new mongoose.Schema(
       trim: true,
       maxlength: 200
     },
-    content: { 
-      type: String, 
+    content: {
+      type: String,
       required: true,
       trim: true
     },
@@ -23,15 +23,30 @@ const noteSchema = new mongoose.Schema(
       trim: true,
       lowercase: true
     }],
-    author: { 
-      type: String, 
-      required: true 
+    author: {
+      type: String,
+      required: true
     },
     userId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
       index: true
     },
+    sharedWith: [{
+      user: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+      },
+      permission: {
+        type: String,
+        enum: ['read', 'write'],
+        default: 'read'
+      },
+      sharedAt: {
+        type: Date,
+        default: Date.now
+      }
+    }],
     isFavorite: {
       type: Boolean,
       default: false
@@ -51,5 +66,6 @@ const noteSchema = new mongoose.Schema(
 noteSchema.index({ userId: 1, createdAt: -1 });
 noteSchema.index({ subject: 1 });
 noteSchema.index({ tags: 1 });
+noteSchema.index({ "sharedWith.user": 1 });
 
 export default mongoose.model("Note", noteSchema);
