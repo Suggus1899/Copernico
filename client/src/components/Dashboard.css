@@ -104,6 +104,8 @@
 }
 
 .dashboard-main {
+  position: relative;
+  bottom: 190px;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 30px;
