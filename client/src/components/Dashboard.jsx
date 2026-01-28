@@ -66,10 +66,7 @@ class Dashboard extends Component {
       <div className="dashboard-container">
         <SidebarMenu />
         <div className="dashboard-content">
-          <div className="dashboard-header">
-            <h1>Bienvenido a Copernico Academy</h1>
-            <p>Tu plataforma de aprendizaje y tutorías</p>
-          </div>
+          
           <div className="dashboard-main">
             {/* Renderiza vistas específicas dentro del layout del Dashboard */}
             <Outlet />

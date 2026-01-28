@@ -248,11 +248,11 @@ const TutorProfile = () => {
   return (
     <div className="dashboard-container">
       <TutorSidebarMenu userRole={user.role} />
-      <div className="dashboard-content">
+      <div className="dashboard-content" style={{position: 'relative', top: '30px', right: '25px'}}>
         <div className="profile-page">
           <div className="profile-header">
             <div className="profile-avatar-section">
-              <div className="profile-avatar-container">
+              <div className="profile-avatar-container" style={{position: 'relative', top: '-5px', right: '350px'}}>
                 <div className="profile-avatar">
                   <div className="avatar-circle large">
                     {user.personalInfo?.avatar ? (
@@ -276,7 +276,7 @@ const TutorProfile = () => {
                   </button>
                 </div>
               </div>
-              <div className="profile-basic-info">
+              <div className="profile-basic-info" style={{position: 'relative', bottom: '180px', width: '800px', left: '150px'}}>
                 <h2 className="profile-name">{getFullName(user)}</h2>
                 <p className="profile-email">📧 {user.email}</p>
                 <div className="profile-role">
@@ -303,18 +303,21 @@ const TutorProfile = () => {
                   <button 
                     className="btn btn-primary"
                     onClick={() => setEditMode(true)}
+                    style={{position: 'relative', bottom: '-150px', right: '840px',width: '170px'}}
                   >
                     ✏️ Editar Perfil
                   </button>
                   <button 
                     className="btn btn-outline" 
                     onClick={() => navigate('/account/change-email')}
+                    style={{position: 'relative', top: '92px',left: '-660px', width: '170px'}}
                   >
                     📧 Cambiar Email
                   </button>
                   <button 
                     className="btn btn-outline" 
                     onClick={() => navigate('/account/change-password')}
+                    style={{position: 'relative', top: '35px', right: '480px', width: '220px'}}
                   >
                     🔒 Cambiar Contraseña
                   </button>
@@ -325,11 +328,13 @@ const TutorProfile = () => {
                     className="btn btn-primary"
                     onClick={handleEditSubmit}
                     disabled={saving}
+                    style={{position: 'relative', top: '130px', width: '320px', right: '450px'}}
                   >
                     {saving ? '💾 Guardando...' : '💾 Guardar Cambios'}
                   </button>
                   <button 
                     className="btn btn-secondary"
+                    style={{position: 'relative', top: '72px', right: '800px', width: '320px'}}
                     onClick={() => {
                       setEditMode(false);
                       setEditForm({
@@ -354,10 +359,10 @@ const TutorProfile = () => {
 
           {/* Estadísticas del tutor/asesor */}
           {stats && !editMode && (
-            <div className="profile-stats">
+            <div className="profile-stats" style={{position: 'relative', bottom: '360px', left: '620px', width:'540px', height: '300px'}}>
               <h3>📊 {isAdvisor ? 'Estadísticas de Asesorías' : 'Estadísticas de Tutorías'}</h3>
               <div className="stats-grid">
-                <div className="stat-card">
+                <div className="stat-card"  style={{height: '80px'}}>
                   <div className="stat-icon">{isAdvisor ? '🎯' : '📚'}</div>
                   <div className="stat-content">
                     <span className="stat-number">{stats.totalSessions}</span>
@@ -366,21 +371,21 @@ const TutorProfile = () => {
                     </span>
                   </div>
                 </div>
-                <div className="stat-card">
+                <div className="stat-card"  style={{height: '80px'}}>
                   <div className="stat-icon">✅</div>
                   <div className="stat-content">
                     <span className="stat-number">{stats.completedSessions}</span>
                     <span className="stat-label">Sesiones Completadas</span>
                   </div>
                 </div>
-                <div className="stat-card">
+                <div className="stat-card"  style={{height: '80px'}}>
                   <div className="stat-icon">📅</div>
                   <div className="stat-content">
                     <span className="stat-number">{stats.upcomingSessions}</span>
                     <span className="stat-label">Sesiones Programadas</span>
                   </div>
                 </div>
-                <div className="stat-card">
+                <div className="stat-card"  style={{height: '80px'}}>
                   <div className="stat-icon">👨‍🎓</div>
                   <div className="stat-content">
                     <span className="stat-number">{stats.totalStudents}</span>
@@ -390,9 +395,9 @@ const TutorProfile = () => {
               </div>
               
               {stats.subjects.length > 0 && (
-                <div className="subjects-section">
+                <div className="subjects-section"  style={{position: 'relative', bottom: '30px'}}>
                   <h4>📚 {isAdvisor ? 'Áreas de Asesoría' : 'Materias Impartidas'}</h4>
-                  <div className="subjects-list">
+                  <div className="subjects-list"  style={{position: 'relative', bottom: '40px', left: '300px'}}>
                     {stats.subjects.map((subject, index) => (
                       <span key={index} className="subject-tag">
                         {subject}
@@ -517,7 +522,7 @@ const TutorProfile = () => {
                 </div>
               </form>
             ) : (
-              <div className="profile-details">
+              <div className="profile-details"  style={{position: 'relative', bottom: '330px',borderRadius: '12px',padding: '20px', background: '#F8F9FA', border: '1px solid #eee' }}>
                 <div className="details-section">
                   <h3>👤 Información Personal</h3>
                   <div className="details-grid">

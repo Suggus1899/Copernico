@@ -190,24 +190,28 @@ const TutorCourses = () => {
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="search-input"
+                    style={{position: 'relative', top: '9px', left: '520px',width: '140px', height: '50px'}}
                   />
                 </div>
                 <div className="filter-buttons">
                   <button
                     className={`filter-btn ${filterStatus === 'all' ? 'active' : ''}`}
                     onClick={() => setFilterStatus('all')}
+                    style={{position: 'relative', bottom: '40px',width: '160px', height: '50px'}}
                   >
                     Todos ({courses.length})
                   </button>
                   <button
                     className={`filter-btn ${filterStatus === 'active' ? 'active' : ''}`}
                     onClick={() => setFilterStatus('active')}
+                    style={{position: 'relative', bottom: '40px',width: '160px', height: '50px'}}
                   >
                     Activos ({courses.filter(c => c.status === 'active').length})
                   </button>
                   <button
                     className={`filter-btn ${filterStatus === 'completed' ? 'active' : ''}`}
                     onClick={() => setFilterStatus('completed')}
+                    style={{position: 'relative', bottom: '40px',width: '160px', height: '50px'}}
                   >
                     Completados ({courses.filter(c => c.status === 'completed').length})
                   </button>
@@ -216,19 +220,19 @@ const TutorCourses = () => {
 
               {/* Estadísticas */}
               <div className="courses-stats">
-                <div className="stat-item">
+                <div className="stat-item" style={{position: 'relative', bottom: '110px',left: '790px', width: '300px'}}>
                   <span className="stat-number">{courses.filter(c => c.status === 'active').length}</span>
                   <span className="stat-label">Cursos activos</span>
                 </div>
-                <div className="stat-item">
+                <div className="stat-item" style={{position: 'relative', bottom: '100px',left: '790px', width: '300px'}}>
                   <span className="stat-number">{courses.reduce((acc, c) => acc + c.completedSessions, 0)}</span>
                   <span className="stat-label">Sesiones completadas</span>
                 </div>
-                <div className="stat-item">
+                <div className="stat-item" style={{position: 'relative', bottom: '90px',left: '790px', width: '300px'}}>
                   <span className="stat-number">{courses.reduce((acc, c) => acc + c.upcomingSessions, 0)}</span>
                   <span className="stat-label">Sesiones programadas</span>
                 </div>
-                <div className="stat-item">
+                <div className="stat-item" style={{position: 'relative', bottom: '80px',left: '790px', width: '300px'}}>
                   <span className="stat-number">{Math.round(courses.reduce((acc, c) => acc + c.progress, 0) / courses.length) || 0}%</span>
                   <span className="stat-label">Progreso promedio</span>
                 </div>
@@ -237,7 +241,7 @@ const TutorCourses = () => {
           )}
 
           {filteredCourses.length === 0 ? (
-            <div className="empty-state">
+            <div className="empty-state" style={{position: 'relative', left:'200px', width: '600px'}}>
               <div className="empty-icon">📚</div>
               <h3>
                 {courses.length === 0 
@@ -264,7 +268,7 @@ const TutorCourses = () => {
               )}
             </div>
           ) : (
-            <div className="courses-grid">
+            <div className="courses-grid" style={{position: 'relative', bottom: '400px',width: '300px', height: '200px'}}>
               {filteredCourses.map((course) => {
                 const statusBadge = getStatusBadge(course.status);
                 return (
