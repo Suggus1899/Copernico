@@ -7,10 +7,10 @@ import {
   deleteUser,
   getUserProfile,
   updateUserProfile,
-  uploadAvatar,
   updateUserAvatar,
   deleteUserAvatar
 } from '../controllers/user.controller.js';
+import { uploadAvatar } from '../middlewares/uploadAvatar.middleware.js';
 import { schemaValidator } from '../middlewares/schemaValidator.js';
 // IMPORTAR LOS NOMBRES CORRECTOS que sí existen:
 import { registerSchema as createUserSchema, updateProfileSchema as updateUserSchema } from '../schemas/user.schema.js';

@@ -1,7 +1,43 @@
+
 import User from "../models/User.js";
 import { JWT_SECRET, JWT_EXPIRES_IN } from "../config.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+
+// Actualiza el perfil del usuario autenticado (básico)
+export const updateProfile = async (req, res, next) => {
+  try {
+    const allowedFields = [
+      'personalInfo', 'academicProfile', 'studentProfile', 
+      'tutorProfile', 'advisorProfile', 'communicationSettings'
+    ];
+    const updateData = {};
+    allowedFields.forEach(field => {
+      if (req.body[field]) {
+        updateData[field] = req.body[field];
+      }
+    });
+    updateData.updatedBy = req.user._id;
+    const user = await User.findByIdAndUpdate(
+      req.user._id,
+      updateData,
+      { new: true, runValidators: true }
+    ).select('-password -verificationToken -passwordResetToken');
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: 'Usuario no encontrado'
+      });
+    }
+    res.json({
+      success: true,
+      message: 'Perfil actualizado exitosamente',
+      data: user
+    });
+  } catch (error) {
+    next(error);
+  }
+};
 
 export const signup = async (req, res, next) => {
   try {

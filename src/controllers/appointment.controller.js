@@ -1,3 +1,36 @@
+// Obtener estudiantes de un tutor/asesor (solo citas confirmadas)
+export const getTutorStudents = async (req, res, next) => {
+  try {
+    // Solo para tutor o advisor
+    if (!['tutor', 'advisor'].includes(req.user.role)) {
+      const error = new Error('Acceso denegado');
+      error.status = 403;
+      throw error;
+    }
+
+    // Buscar citas confirmadas donde el profesional es el usuario actual
+    const appointments = await Appointment.find({
+      professionalId: req.user.id,
+      status: 'confirmed'
+    }).populate('studentId', 'personalInfo email studentProfile');
+
+    // Extraer estudiantes únicos
+    const studentsMap = {};
+    appointments.forEach(app => {
+      if (app.studentId && app.studentId._id) {
+        studentsMap[app.studentId._id] = app.studentId;
+      }
+    });
+    const students = Object.values(studentsMap);
+
+    res.json({
+      success: true,
+      data: students
+    });
+  } catch (error) {
+    next(error);
+  }
+};
 import Appointment from "../models/Appointment.js";
 import User from "../models/User.js";
 import AvailabilitySlot from "../models/AvailabilitySlot.js";

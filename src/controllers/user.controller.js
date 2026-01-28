@@ -226,6 +226,89 @@ export const updateUserProfile = async (req, res, next) => {
   }
 };
 
+
+import fs from 'fs';
+import path from 'path';
+
+export const updateUserAvatar = async (req, res, next) => {
+  try {
+    // El middleware uploadAvatar debe haber guardado el archivo y puesto req.file
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: 'No se subió ningún archivo.'
+      });
+    }
+
+    const user = await User.findById(req.user.id);
+    if (!user || user.status === 'deleted') {
+      const error = new Error('Usuario no encontrado');
+      error.status = 404;
+      throw error;
+    }
+
+    // Si ya tenía avatar, eliminar el anterior
+    if (user.avatar) {
+      const oldAvatarPath = path.join(process.cwd(), 'uploads', 'avatars', user.avatar);
+      if (fs.existsSync(oldAvatarPath)) {
+        fs.unlinkSync(oldAvatarPath);
+      }
+    }
+
+    // Guardar el nuevo nombre de archivo
+    user.avatar = req.file.filename;
+    user.updatedBy = req.user.id;
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'Avatar actualizado exitosamente.',
+      avatar: user.avatar
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const deleteUserAvatar = async (req, res, next) => {
+  try {
+    // Buscar usuario autenticado
+    const user = await User.findById(req.user.id);
+    if (!user || user.status === 'deleted') {
+      const error = new Error('Usuario no encontrado');
+      error.status = 404;
+      throw error;
+    }
+
+    // Si no hay avatar, responder OK
+    if (!user.avatar) {
+      return res.status(200).json({
+        success: true,
+        message: 'El usuario no tiene avatar para eliminar.'
+      });
+    }
+
+    // Ruta absoluta del archivo de avatar
+    const avatarPath = path.join(process.cwd(), 'uploads', 'avatars', user.avatar);
+    // Eliminar archivo si existe
+    if (fs.existsSync(avatarPath)) {
+      fs.unlinkSync(avatarPath);
+    }
+
+    // Limpiar campo avatar en la base de datos
+    user.avatar = undefined;
+    user.updatedBy = req.user.id;
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'Avatar eliminado exitosamente.'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const changeUserStatus = async (req, res, next) => {
   try {
     const { id } = req.params;
