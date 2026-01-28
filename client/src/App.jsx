@@ -9,6 +9,7 @@ import Dashboard from "./components/Dashboard";
 import MyCourses from "./components/MyCourses";
 import Advisories from "./components/Advisories";
 import Tutors from "./components/Tutors";
+import AdvisorsList from "./components/AdvisorsList";
 import NotesList from "./components/NotesList";
 import UserProfile from "./components/UserProfile";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -74,6 +75,7 @@ function App() {
               <Route path="cursos" element={<MyCourses />} />
               <Route path="videos" element={<VideosList />} />
               <Route path="tutores" element={<Tutors />} />
+              <Route path="asesores" element={<AdvisorsList />} />
               <Route path="asesoria" element={<Advisories />} />
               <Route path="notas" element={<NotesList />} />
               <Route path="perfil" element={<UserProfile />} />

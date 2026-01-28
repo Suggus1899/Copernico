@@ -8,8 +8,8 @@ const noteSchema = new mongoose.Schema(
       trim: true,
       maxlength: 200
     },
-    content: {
-      type: String,
+    content: { 
+      type: String, 
       required: true,
       trim: true
     },
@@ -23,9 +23,9 @@ const noteSchema = new mongoose.Schema(
       trim: true,
       lowercase: true
     }],
-    author: {
-      type: String,
-      required: true
+    author: { 
+      type: String, 
+      required: true 
     },
     userId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -39,15 +39,6 @@ const noteSchema = new mongoose.Schema(
     date: {
       type: Date,
       default: Date.now
-    },
-    sharedWith: [{
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User'
-    }],
-    visibility: {
-      type: String,
-      enum: ['private', 'shared', 'public'],
-      default: 'private'
     }
   },
   {

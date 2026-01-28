@@ -6,44 +6,41 @@ import path from 'path';
 // Configuración de multer para subida de archivos
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
+    console.log('Multer: Configurando destino para archivo');
     cb(null, 'uploads/materials/');
   },
   filename: (req, file, cb) => {
+    console.log('Multer: Generando nombre para archivo:', file.originalname);
     // Generar nombre único para evitar conflictos
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, 'material-' + uniqueSuffix + path.extname(file.originalname));
+    const filename = 'material-' + uniqueSuffix + path.extname(file.originalname);
+    console.log('Multer: Nombre generado:', filename);
+    cb(null, filename);
   }
 });
 
 const fileFilter = (req, file, cb) => {
-  // Permitir archivos de documentos, presentaciones, imágenes, etc.
+  console.log('Multer: Validando tipo de archivo:', file.mimetype);
+  // Permitir solo documentos e imágenes
   const allowedMimes = [
     // Documentos
     'application/pdf',
     'application/msword',
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     'text/plain',
-    // Hojas de cálculo
-    'application/vnd.ms-excel',
-    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    // Presentaciones
-    'application/vnd.ms-powerpoint',
-    'application/vnd.openxmlformats-officedocument.presentationml.presentation',
     // Imágenes
     'image/jpeg',
     'image/png',
     'image/gif',
-    'image/webp',
-    // Videos (por si acaso)
-    'video/mp4',
-    'video/avi',
-    'video/quicktime'
+    'image/webp'
   ];
 
   if (allowedMimes.includes(file.mimetype)) {
+    console.log('Multer: Tipo de archivo permitido');
     cb(null, true);
   } else {
-    cb(new Error(`Tipo de archivo no permitido: ${file.mimetype}. Solo se permiten documentos PDF, Word, Excel, PowerPoint, imágenes y videos.`), false);
+    console.log('Multer: Tipo de archivo NO permitido:', file.mimetype);
+    cb(new Error(`Tipo de archivo no permitido: ${file.mimetype}. Solo se permiten documentos (PDF, Word, TXT) e imágenes (JPG, PNG, GIF, WebP).`), false);
   }
 };
 
@@ -56,7 +53,42 @@ const upload = multer({
 });
 
 // Middleware para subida de archivos
-export const uploadMaterialFile = upload.single('file');
+export const uploadMaterialFile = (req, res, next) => {
+  console.log('=== MULTER MIDDLEWARE INICIADO ===');
+  console.log('Content-Type:', req.headers['content-type']);
+  
+  const uploadSingle = upload.single('file');
+  
+  uploadSingle(req, res, (err) => {
+    if (err) {
+      console.error('=== ERROR EN MULTER ===');
+      console.error('Error:', err.message);
+      console.error('Code:', err.code);
+      
+      if (err instanceof multer.MulterError) {
+        if (err.code === 'LIMIT_FILE_SIZE') {
+          return res.status(400).json({
+            success: false,
+            error: 'El archivo es demasiado grande. Máximo 50MB permitido.'
+          });
+        }
+        return res.status(400).json({
+          success: false,
+          error: `Error de subida: ${err.message}`
+        });
+      }
+      
+      return res.status(400).json({
+        success: false,
+        error: err.message
+      });
+    }
+    
+    console.log('=== MULTER COMPLETADO EXITOSAMENTE ===');
+    console.log('Archivo procesado:', req.file ? req.file.filename : 'No file');
+    next();
+  });
+};
 
 export const getEducationalMaterials = async (req, res, next) => {
   try {
@@ -152,14 +184,14 @@ export const getEducationalMaterialById = async (req, res, next) => {
       .populate('reviewedBy', 'personalInfo');
 
     if (!material) {
-      const error = new Error("Material educativo no encontrado");
+      const error = new Error("Educational material not found");
       error.status = 404;
       throw error;
     }
 
     // Verificar permisos de acceso
     if (!material.canAccess(req.user)) {
-      const error = new Error("Acceso denegado a este material educativo");
+      const error = new Error("Access denied to this educational material");
       error.status = 403;
       throw error;
     }
@@ -178,50 +210,143 @@ export const getEducationalMaterialById = async (req, res, next) => {
 
 export const createEducationalMaterial = async (req, res, next) => {
   try {
-    const materialData = { ...req.body };
-
-    // Asignar createdBy al usuario actual
-    materialData.createdBy = req.user.id;
-
-    // Verificar permisos para crear materiales
+    console.log('=== CREAR MATERIAL EDUCATIVO - INICIO ===');
+    console.log('Body recibido:', req.body);
+    console.log('Archivo recibido:', req.file ? {
+      filename: req.file.filename,
+      originalname: req.file.originalname,
+      mimetype: req.file.mimetype,
+      size: req.file.size,
+      path: req.file.path
+    } : 'No file');
+    console.log('Usuario:', req.user?.id, req.user?.role);
+    
+    // Verificar permisos básicos
     if (!['tutor', 'advisor', 'admin'].includes(req.user.role)) {
-      const error = new Error("Solo tutores, asesores y administradores pueden crear materiales educativos");
-      error.status = 403;
-      throw error;
+      console.log('Error: Usuario sin permisos');
+      return res.status(403).json({
+        success: false,
+        error: "Only tutors, advisors and admins can create educational materials"
+      });
     }
 
-    // Procesar archivo subido
-    if (req.file) {
-      materialData.fileUrl = `/uploads/materials/${req.file.filename}`;
-      materialData.fileSize = req.file.size;
-      materialData.originalFileName = req.file.originalname;
-      materialData.mimeType = req.file.mimetype;
+    // Verificar campos básicos
+    if (!req.body.title || !req.body.subject) {
+      console.log('Error: Faltan campos requeridos');
+      console.log('Title:', req.body.title);
+      console.log('Subject:', req.body.subject);
+      return res.status(400).json({
+        success: false,
+        error: "Title and subject are required"
+      });
     }
 
-    // Parsear tags si vienen como string
-    if (materialData.tags && typeof materialData.tags === 'string') {
+    // Verificar que hay archivo
+    if (!req.file) {
+      console.log('Error: No se recibió archivo');
+      return res.status(400).json({
+        success: false,
+        error: "File is required"
+      });
+    }
+
+    // Crear objeto básico con valores seguros
+    const materialData = {
+      title: req.body.title.trim(),
+      subject: req.body.subject.trim(),
+      type: req.body.type || 'document',
+      difficulty: req.body.difficulty || 'intermediate',
+      status: 'published',
+      visibility: 'students', // Fixed: should be 'students' not 'student'
+      createdBy: req.user.id,
+      tags: []
+    };
+
+    // Agregar campos opcionales solo si existen
+    if (req.body.description && req.body.description.trim()) {
+      materialData.description = req.body.description.trim();
+    }
+    
+    if (req.body.topic && req.body.topic.trim()) {
+      materialData.topic = req.body.topic.trim();
+    }
+
+    // Procesar archivo
+    materialData.fileUrl = `/uploads/materials/${req.file.filename}`;
+    materialData.fileSize = req.file.size;
+    materialData.originalFileName = req.file.originalname;
+    materialData.mimeType = req.file.mimetype;
+
+    // Procesar estudiante destinatario
+    if (req.body.targetStudentId && req.body.targetStudentId.trim()) {
+      materialData.targetStudentId = req.body.targetStudentId.trim();
+      materialData.allowedStudents = [req.body.targetStudentId.trim()];
+    }
+
+    // Procesar tags de manera segura
+    if (req.body.tags) {
       try {
-        materialData.tags = JSON.parse(materialData.tags);
+        let tagsArray = [];
+        if (typeof req.body.tags === 'string') {
+          if (req.body.tags.startsWith('[')) {
+            // Es JSON
+            tagsArray = JSON.parse(req.body.tags);
+          } else {
+            // Es string separado por comas
+            tagsArray = req.body.tags.split(',').map(tag => tag.trim()).filter(tag => tag);
+          }
+        } else if (Array.isArray(req.body.tags)) {
+          tagsArray = req.body.tags;
+        }
+        materialData.tags = tagsArray;
       } catch (e) {
-        // Si no es JSON, mantener como string y dejar que el modelo lo maneje
+        console.log('Error procesando tags, usando array vacío:', e.message);
+        materialData.tags = [];
       }
     }
 
+    console.log('Datos finales a guardar:', materialData);
+
+    // Crear y guardar el material
     const newMaterial = new EducationalMaterial(materialData);
     const materialSaved = await newMaterial.save();
+    
+    console.log('Material guardado exitosamente con ID:', materialSaved._id);
 
-    // Populate para la respuesta
-    const populatedMaterial = await EducationalMaterial.findById(materialSaved._id)
-      .populate('createdBy', 'personalInfo email tutorProfile advisorProfile')
-      .populate('allowedStudents', 'personalInfo email');
-
+    // Respuesta exitosa
     res.status(201).json({
       success: true,
-      message: "Material educativo creado exitosamente",
-      data: populatedMaterial
+      message: "Educational material created successfully",
+      data: {
+        _id: materialSaved._id,
+        title: materialSaved.title,
+        type: materialSaved.type,
+        subject: materialSaved.subject,
+        fileUrl: materialSaved.fileUrl
+      }
     });
+
   } catch (error) {
-    next(error);
+    console.error('=== ERROR EN CREAR MATERIAL ===');
+    console.error('Mensaje:', error.message);
+    console.error('Stack:', error.stack);
+    
+    // Manejar errores de validación de Mongoose
+    if (error.name === 'ValidationError') {
+      const validationErrors = Object.values(error.errors).map(err => err.message);
+      return res.status(400).json({
+        success: false,
+        error: 'Validation error',
+        details: validationErrors
+      });
+    }
+    
+    // Error genérico
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Internal server error',
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 };
 
@@ -230,14 +355,14 @@ export const updateEducationalMaterial = async (req, res, next) => {
     const material = await EducationalMaterial.findById(req.params.id);
     
     if (!material) {
-      const error = new Error("Material educativo no encontrado");
+      const error = new Error("Educational material not found");
       error.status = 404;
       throw error;
     }
 
     // Verificar permisos - solo creador o admin puede editar
     if (material.createdBy.toString() !== req.user.id && req.user.role !== 'admin') {
-      const error = new Error("No autorizado para actualizar este material");
+      const error = new Error("Not authorized to update this material");
       error.status = 403;
       throw error;
     }
@@ -258,7 +383,7 @@ export const updateEducationalMaterial = async (req, res, next) => {
 
     res.json({
       success: true,
-      message: "Material educativo actualizado exitosamente",
+      message: "Educational material updated successfully",
       data: updatedMaterial
     });
   } catch (error) {
@@ -271,14 +396,14 @@ export const deleteEducationalMaterial = async (req, res, next) => {
     const material = await EducationalMaterial.findById(req.params.id);
     
     if (!material) {
-      const error = new Error("Material educativo no encontrado");
+      const error = new Error("Educational material not found");
       error.status = 404;
       throw error;
     }
 
     // Verificar permisos - solo creador o admin puede eliminar
     if (material.createdBy.toString() !== req.user.id && req.user.role !== 'admin') {
-      const error = new Error("No autorizado para eliminar este material");
+      const error = new Error("Not authorized to delete this material");
       error.status = 403;
       throw error;
     }
@@ -287,7 +412,7 @@ export const deleteEducationalMaterial = async (req, res, next) => {
 
     res.json({
       success: true,
-      message: "Material educativo eliminado exitosamente"
+      message: "Educational material deleted successfully"
     });
   } catch (error) {
     next(error);
@@ -300,21 +425,21 @@ export const rateEducationalMaterial = async (req, res, next) => {
     const material = await EducationalMaterial.findById(req.params.id);
 
     if (!material) {
-      const error = new Error("Material educativo no encontrado");
+      const error = new Error("Educational material not found");
       error.status = 404;
       throw error;
     }
 
     // Verificar que el usuario puede acceder al material
     if (!material.canAccess(req.user)) {
-      const error = new Error("Acceso denegado a este material educativo");
+      const error = new Error("Access denied to this educational material");
       error.status = 403;
       throw error;
     }
 
     // Verificar que el usuario no sea el creador
     if (material.createdBy.toString() === req.user.id) {
-      const error = new Error("No puedes calificar tu propio material educativo");
+      const error = new Error("Cannot rate your own educational material");
       error.status = 400;
       throw error;
     }
@@ -326,7 +451,7 @@ export const rateEducationalMaterial = async (req, res, next) => {
 
     res.json({
       success: true,
-      message: "Material calificado exitosamente",
+      message: "Material rated successfully",
       data: updatedMaterial.ratings
     });
   } catch (error) {
@@ -339,14 +464,14 @@ export const incrementDownloads = async (req, res, next) => {
     const material = await EducationalMaterial.findById(req.params.id);
 
     if (!material) {
-      const error = new Error("Material educativo no encontrado");
+      const error = new Error("Educational material not found");
       error.status = 404;
       throw error;
     }
 
     // Verificar que el usuario puede acceder al material
     if (!material.canAccess(req.user)) {
-      const error = new Error("Acceso denegado a este material educativo");
+      const error = new Error("Access denied to this educational material");
       error.status = 403;
       throw error;
     }
@@ -355,7 +480,7 @@ export const incrementDownloads = async (req, res, next) => {
 
     res.json({
       success: true,
-      message: "Conteo de descargas incrementado exitosamente",
+      message: "Download count incremented",
       downloads: material.downloads + 1
     });
   } catch (error) {
@@ -369,14 +494,14 @@ export const shareEducationalMaterial = async (req, res, next) => {
     const material = await EducationalMaterial.findById(req.params.id);
 
     if (!material) {
-      const error = new Error("Material educativo no encontrado");
+      const error = new Error("Educational material not found");
       error.status = 404;
       throw error;
     }
 
     // Verificar permisos - solo creador o admin puede compartir
     if (material.createdBy.toString() !== req.user.id && req.user.role !== 'admin') {
-      const error = new Error("No autorizado para compartir este material");
+      const error = new Error("Not authorized to share this material");
       error.status = 403;
       throw error;
     }
@@ -407,7 +532,7 @@ export const shareEducationalMaterial = async (req, res, next) => {
 
     res.json({
       success: true,
-      message: "Configuración de compartición de material actualizada exitosamente",
+      message: "Material sharing settings updated successfully",
       data: updatedMaterial
     });
   } catch (error) {
@@ -444,14 +569,14 @@ export const changeMaterialStatus = async (req, res, next) => {
     const material = await EducationalMaterial.findById(req.params.id);
 
     if (!material) {
-      const error = new Error("Material educativo no encontrado");
+      const error = new Error("Educational material not found");
       error.status = 404;
       throw error;
     }
 
     // Solo admin o el creador pueden cambiar el estado
     if (material.createdBy.toString() !== req.user.id && req.user.role !== 'admin') {
-      const error = new Error("No autorizado para cambiar el estado de este material");
+      const error = new Error("Not authorized to change status of this material");
       error.status = 403;
       throw error;
     }

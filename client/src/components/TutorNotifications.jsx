@@ -13,12 +13,28 @@ class TutorNotifications extends Component {
 
   componentDidMount() {
     this.fetchNotifications();
+    
+    // Configurar actualización automática cada 30 segundos
+    this.notificationInterval = setInterval(() => {
+      this.fetchNotifications();
+    }, 30000);
+  }
+
+  componentWillUnmount() {
+    // Limpiar el intervalo cuando el componente se desmonte
+    if (this.notificationInterval) {
+      clearInterval(this.notificationInterval);
+    }
   }
 
   fetchNotifications = async () => {
     try {
-      this.setState({ loading: true });
+      this.setState({ loading: true, error: null });
+      console.log('Obteniendo notificaciones...');
+      
       const response = await apiClient.get('/notifications');
+      console.log('Notificaciones obtenidas:', response.data.data?.length || 0);
+      console.log('Datos de notificaciones:', response.data.data);
       
       this.setState({
         notifications: response.data.data || [],
@@ -26,6 +42,8 @@ class TutorNotifications extends Component {
       });
     } catch (error) {
       console.error('Error fetching notifications:', error);
+      console.error('Error response:', error.response?.data);
+      
       this.setState({
         error: 'Error al cargar las notificaciones',
         loading: false
@@ -220,6 +238,13 @@ class TutorNotifications extends Component {
           <div className="dashboard-header">
             <h1>Notificaciones</h1>
             <p>Mantente al día con todas tus actividades y actualizaciones</p>
+            <button 
+              className="btn btn-primary"
+              onClick={this.fetchNotifications}
+              disabled={loading}
+            >
+              {loading ? '🔄 Actualizando...' : '🔄 Actualizar'}
+            </button>
           </div>
 
           {error && <div className="alert alert-danger">{error}</div>}

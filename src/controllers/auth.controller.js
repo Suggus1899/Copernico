@@ -1,43 +1,7 @@
-
 import User from "../models/User.js";
 import { JWT_SECRET, JWT_EXPIRES_IN } from "../config.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-
-// Actualiza el perfil del usuario autenticado (básico)
-export const updateProfile = async (req, res, next) => {
-  try {
-    const allowedFields = [
-      'personalInfo', 'academicProfile', 'studentProfile', 
-      'tutorProfile', 'advisorProfile', 'communicationSettings'
-    ];
-    const updateData = {};
-    allowedFields.forEach(field => {
-      if (req.body[field]) {
-        updateData[field] = req.body[field];
-      }
-    });
-    updateData.updatedBy = req.user._id;
-    const user = await User.findByIdAndUpdate(
-      req.user._id,
-      updateData,
-      { new: true, runValidators: true }
-    ).select('-password -verificationToken -passwordResetToken');
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        error: 'Usuario no encontrado'
-      });
-    }
-    res.json({
-      success: true,
-      message: 'Perfil actualizado exitosamente',
-      data: user
-    });
-  } catch (error) {
-    next(error);
-  }
-};
 
 export const signup = async (req, res, next) => {
   try {
@@ -64,7 +28,7 @@ export const signup = async (req, res, next) => {
     if (userExists) {
       return res.status(400).json({ 
         success: false,
-        error: "Usuario ya registrado" 
+        error: "User already exists" 
       });
     }
 
@@ -98,7 +62,7 @@ export const signup = async (req, res, next) => {
     if (!finalPersonalInfo || !finalPersonalInfo.firstName) {
       return res.status(400).json({
         success: false,
-        error: "Se requieren nombre y apellido"
+        error: "First name and last name are required"
       });
     }
 
@@ -122,7 +86,7 @@ export const signup = async (req, res, next) => {
     if (!passwordPolicy.test(password || '')) {
       return res.status(400).json({
         success: false,
-        error: 'La contraseña debe tener al menos 8 caracteres, incluir mayúsculas, minúsculas y números.'
+        error: 'Password must be at least 8 chars, include upper, lower and number.'
       });
     }
 
@@ -163,7 +127,7 @@ export const signup = async (req, res, next) => {
     if (error.code === 11000) {
       return res.status(400).json({ 
         success: false,
-        error: "Usuario ya registrado" 
+        error: "Email already registered" 
       });
     }
     next(error);
@@ -180,7 +144,7 @@ export const signin = async (req, res, next) => {
     if (!user) {
       return res.status(400).json({ 
         success: false,
-        error: "Credenciales inválidas" 
+        error: "Invalid credentials" 
       });
     }
 
@@ -216,7 +180,7 @@ export const signin = async (req, res, next) => {
       
       return res.status(400).json({ 
         success: false,
-        error: "Credenciales inválidas" 
+        error: "Invalid credentials" 
       });
     }
 
@@ -259,7 +223,7 @@ export const forgotPassword = async (req, res, next) => {
     if (!email) {
       return res.status(400).json({
         success: false,
-        error: "Se requiere el correo electrónico"
+        error: "Email is required"
       });
     }
 
@@ -299,7 +263,7 @@ export const profile = async (req, res, next) => {
     if (!userFound) {
       return res.status(404).json({
         success: false,
-        error: "Usuario no encontrado"
+        error: "User not found"
       });
     }
 
@@ -308,6 +272,47 @@ export const profile = async (req, res, next) => {
       data: userFound
     });
   } catch (error) {
+    next(error);
+  }
+};
+export const updateProfile = async (req, res, next) => {
+  try {
+    // Campos permitidos para actualizar
+    const allowedFields = [
+      'personalInfo', 'academicProfile', 'studentProfile', 
+      'tutorProfile', 'advisorProfile', 'communicationSettings'
+    ];
+    
+    const updateData = {};
+    allowedFields.forEach(field => {
+      if (req.body[field]) {
+        updateData[field] = req.body[field];
+      }
+    });
+
+    // Agregar información de auditoría
+    updateData.updatedBy = req.user._id;
+
+    const user = await User.findByIdAndUpdate(
+      req.user._id,
+      updateData,
+      { new: true, runValidators: true }
+    ).select('-password -verificationToken -passwordResetToken');
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: "User not found"
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "Profile updated successfully",
+      data: user
+    });
+  } catch (error) {
+    console.error('Update profile error:', error);
     next(error);
   }
 };

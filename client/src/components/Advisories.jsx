@@ -5,33 +5,24 @@ import './Dashboard.css';
 const Advisories = () => {
   const [appointments, setAppointments] = useState([]);
   const [tutors, setTutors] = useState([]);
+  const [advisors, setAdvisors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [showRequestForm, setShowRequestForm] = useState(false);
-  const [selectedTutor, setSelectedTutor] = useState(null);
-  const [requestForm, setRequestForm] = useState({
-    tutorId: '',
-    subject: '',
-    topic: '',
-    date: '',
-    time: '',
-    duration: 60,
-    message: '',
-    type: 'advisory'
-  });
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        // Fetch user's appointments and available tutors
-        const [appointmentsRes, tutorsRes] = await Promise.all([
+        // Fetch user's appointments, tutors and advisors for reference
+        const [appointmentsRes, tutorsRes, advisorsRes] = await Promise.all([
           apiClient.get('/appointments'),
-          apiClient.get('/users', { params: { role: 'tutor' } })
+          apiClient.get('/users', { params: { role: 'tutor' } }),
+          apiClient.get('/users', { params: { role: 'advisor' } })
         ]);
 
         setAppointments(appointmentsRes.data.data || []);
         setTutors(tutorsRes.data.data || []);
+        setAdvisors(advisorsRes.data.data || []);
       } catch (err) {
         setError('No se pudieron cargar los datos');
       } finally {
@@ -41,70 +32,17 @@ const Advisories = () => {
     fetchData();
   }, []);
 
-  const handleRequestSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const appointmentData = {
-        ...requestForm,
-        status: 'pending'
-      };
-
-      console.log('Enviando datos de cita:', appointmentData); // Debug
-
-      const response = await apiClient.post('/appointments', appointmentData);
-      console.log('Respuesta del servidor:', response.data); // Debug
-      
-      alert('Solicitud de asesoría enviada exitosamente');
-
-      setShowRequestForm(false);
-      setRequestForm({
-        tutorId: '',
-        subject: '',
-        topic: '',
-        date: '',
-        time: '',
-        duration: 60,
-        message: '',
-        type: 'advisory'
-      });
-
-      // Refresh appointments
-      const appointmentsRes = await apiClient.get('/appointments');
-      setAppointments(appointmentsRes.data.data || []);
-    } catch (error) {
-      console.error('Error creating appointment:', error);
-      console.error('Error response:', error.response?.data); // Debug adicional
-      
-      let errorMessage = 'Error al enviar la solicitud. Inténtalo nuevamente.';
-      if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      } else if (error.response?.data?.error) {
-        errorMessage = error.response.data.error;
-      }
-      
-      alert(errorMessage);
-    }
-  };
-
-  const handleFormChange = (e) => {
-    const { name, value } = e.target;
-    setRequestForm(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
   const handleCancelAppointment = async (appointmentId) => {
-    if (window.confirm('¿Estás seguro de que deseas cancelar esta asesoría?')) {
+    if (window.confirm('¿Estás seguro de que deseas cancelar esta sesión?')) {
       try {
         await apiClient.patch(`/appointments/${appointmentId}`, { status: 'cancelled' });
         // Refresh appointments
         const appointmentsRes = await apiClient.get('/appointments');
         setAppointments(appointmentsRes.data.data || []);
-        alert('Asesoría cancelada exitosamente');
+        alert('Sesión cancelada exitosamente');
       } catch (error) {
         console.error('Error cancelling appointment:', error);
-        alert('Error al cancelar la asesoría');
+        alert('Error al cancelar la sesión');
       }
     }
   };
@@ -129,139 +67,22 @@ const Advisories = () => {
 
   const pendingAppointments = appointments.filter(apt => apt.status === 'pending');
 
+  // Combine tutors and advisors for reference
+  const allEducators = [...tutors, ...advisors];
+
   return (
     <div className="advisories-page">
       <div className="advisories-header">
-        <h2>💬 Mis Asesorías</h2>
-        <p>Gestiona tus sesiones de asesoramiento académico personalizado</p>
-        <button
-          className={`btn ${showRequestForm ? 'btn-secondary' : 'btn-primary'}`}
-          onClick={() => setShowRequestForm(!showRequestForm)}
-        >
-          {showRequestForm ? '✕ Cancelar' : '+ Solicitar Asesoría'}
-        </button>
+        <h2>📅 Mis Sesiones</h2>
+        <p>Gestiona tus tutorías y asesorías programadas</p>
       </div>
 
       {error && <div className="alert alert-danger">{error}</div>}
 
-      {/* Formulario de solicitud */}
-      {showRequestForm && (
-        <div className="request-form-container">
-          <div className="request-form">
-            <h3>📝 Solicitar Nueva Asesoría</h3>
-            <p>Completa el formulario para solicitar una sesión personalizada con un educador</p>
-            
-            <form onSubmit={handleRequestSubmit}>
-              <div className="form-row">
-                <div className="form-group">
-                  <label>👨‍🏫 Tutor/Asesor *</label>
-                  <select
-                    name="tutorId"
-                    value={requestForm.tutorId}
-                    onChange={handleFormChange}
-                    required
-                  >
-                    <option value="">Seleccionar educador</option>
-                    {tutors.map(tutor => (
-                      <option key={tutor._id} value={tutor._id}>
-                        {tutor.personalInfo?.firstName} {tutor.personalInfo?.lastName} - {tutor.role === 'tutor' ? 'Tutor' : 'Asesor'}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label>📚 Materia *</label>
-                  <input
-                    type="text"
-                    name="subject"
-                    value={requestForm.subject}
-                    onChange={handleFormChange}
-                    placeholder="Ej: Matemáticas, Física, Química"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label>🎯 Tema específico</label>
-                <input
-                  type="text"
-                  name="topic"
-                  value={requestForm.topic}
-                  onChange={handleFormChange}
-                  placeholder="Tema particular que necesitas ayuda (opcional)"
-                />
-              </div>
-
-              <div className="form-row">
-                <div className="form-group">
-                  <label>📅 Fecha *</label>
-                  <input
-                    type="date"
-                    name="date"
-                    value={requestForm.date}
-                    onChange={handleFormChange}
-                    min={new Date().toISOString().split('T')[0]}
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <label>🕐 Hora *</label>
-                  <input
-                    type="time"
-                    name="time"
-                    value={requestForm.time}
-                    onChange={handleFormChange}
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <label>⏱️ Duración</label>
-                  <select
-                    name="duration"
-                    value={requestForm.duration}
-                    onChange={handleFormChange}
-                  >
-                    <option value={30}>30 minutos</option>
-                    <option value={60}>1 hora</option>
-                    <option value={90}>1.5 horas</option>
-                    <option value={120}>2 horas</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label>💬 Mensaje para el educador</label>
-                <textarea
-                  name="message"
-                  value={requestForm.message}
-                  onChange={handleFormChange}
-                  placeholder="Describe qué necesitas ayuda específicamente, tus objetivos para la sesión, o cualquier información relevante..."
-                  rows="4"
-                />
-              </div>
-
-              <div className="form-actions">
-                <button type="submit" className="btn btn-primary">
-                  📤 Enviar Solicitud
-                </button>
-                <button 
-                  type="button" 
-                  className="btn btn-secondary"
-                  onClick={() => setShowRequestForm(false)}
-                >
-                  Cancelar
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
       {loading ? (
         <div className="loading-container">
           <div className="loading-spinner"></div>
-          <p>Cargando asesorías...</p>
+          <p>Cargando sesiones...</p>
         </div>
       ) : (
         <>
@@ -269,11 +90,11 @@ const Advisories = () => {
           <div className="advisories-stats">
             <div className="stat-item">
               <span className="stat-number">{upcomingAppointments.length}</span>
-              <span className="stat-label">Próximas asesorías</span>
+              <span className="stat-label">Próximas sesiones</span>
             </div>
             <div className="stat-item">
               <span className="stat-number">{pastAppointments.length}</span>
-              <span className="stat-label">Asesorías completadas</span>
+              <span className="stat-label">Sesiones completadas</span>
             </div>
             <div className="stat-item">
               <span className="stat-number">{pendingAppointments.length}</span>
@@ -285,16 +106,40 @@ const Advisories = () => {
             </div>
           </div>
 
-          {/* Próximas asesorías */}
+          {/* Enlaces rápidos para solicitar sesiones */}
+          <div className="quick-links">
+            <h3>🔗 Solicitar nuevas sesiones</h3>
+            <div className="quick-links-grid">
+              <div className="quick-link-card">
+                <h4>👨‍🏫 Solicitar Tutoría</h4>
+                <p>Refuerzo académico en materias específicas con tutores especializados</p>
+                <a href="/dashboard/tutores" className="btn btn-primary">
+                  Ver Tutores ({tutors.length})
+                </a>
+              </div>
+              <div className="quick-link-card">
+                <h4>🎓 Solicitar Asesoría</h4>
+                <p>Orientación académica y profesional con asesores expertos</p>
+                <a href="/dashboard/asesores" className="btn btn-primary">
+                  Ver Asesores ({advisors.length})
+                </a>
+              </div>
+            </div>
+          </div>
+
+          {/* Próximas sesiones */}
           {upcomingAppointments.length > 0 && (
             <div className="advisories-section">
-              <h3>📅 Próximas Asesorías</h3>
+              <h3>📅 Próximas Sesiones</h3>
               <div className="appointments-grid">
                 {upcomingAppointments.map(appointment => {
                   const statusBadge = getStatusBadge(appointment.status);
                   const appointmentDate = new Date(appointment.date);
                   const isToday = appointmentDate.toDateString() === new Date().toDateString();
                   const isTomorrow = appointmentDate.toDateString() === new Date(Date.now() + 86400000).toDateString();
+                  const educator = allEducators.find(e => e._id === appointment.tutorId);
+                  const sessionType = appointment.type === 'tutoring' ? 'Tutoría' : 
+                                    appointment.type === 'advisory' ? 'Asesoría' : 'Consulta';
                   
                   return (
                     <div key={appointment._id} className={`appointment-card ${isToday ? 'today' : ''}`}>
@@ -306,7 +151,10 @@ const Advisories = () => {
                           </span>
                         </div>
                         <div className="appointment-tutor">
-                          <span>👨‍🏫 {appointment.tutorId?.personalInfo?.firstName} {appointment.tutorId?.personalInfo?.lastName}</span>
+                          <span>
+                            {educator?.role === 'tutor' ? '👨‍🏫' : '🎓'} {educator?.personalInfo?.firstName} {educator?.personalInfo?.lastName}
+                          </span>
+                          <small>({sessionType})</small>
                         </div>
                       </div>
 
@@ -364,10 +212,14 @@ const Advisories = () => {
           {/* Historial */}
           {pastAppointments.length > 0 && (
             <div className="advisories-section">
-              <h3>📚 Historial de Asesorías</h3>
+              <h3>📚 Historial de Sesiones</h3>
               <div className="appointments-grid">
                 {pastAppointments.slice(0, 10).map(appointment => {
                   const statusBadge = getStatusBadge(appointment.status);
+                  const educator = allEducators.find(e => e._id === appointment.tutorId);
+                  const sessionType = appointment.type === 'tutoring' ? 'Tutoría' : 
+                                    appointment.type === 'advisory' ? 'Asesoría' : 'Consulta';
+                  
                   return (
                     <div key={appointment._id} className="appointment-card past">
                       <div className="appointment-header">
@@ -378,7 +230,10 @@ const Advisories = () => {
                           </span>
                         </div>
                         <div className="appointment-tutor">
-                          <span>👨‍🏫 {appointment.tutorId?.personalInfo?.firstName} {appointment.tutorId?.personalInfo?.lastName}</span>
+                          <span>
+                            {educator?.role === 'tutor' ? '👨‍🏫' : '🎓'} {educator?.personalInfo?.firstName} {educator?.personalInfo?.lastName}
+                          </span>
+                          <small>({sessionType})</small>
                         </div>
                       </div>
 
@@ -414,33 +269,35 @@ const Advisories = () => {
               {pastAppointments.length > 10 && (
                 <div className="show-more">
                   <button className="btn btn-secondary">
-                    Ver más asesorías anteriores
+                    Ver más sesiones anteriores
                   </button>
                 </div>
               )}
             </div>
           )}
 
-          {appointments.length === 0 && !showRequestForm && (
+          {appointments.length === 0 && (
             <div className="empty-state">
-              <div className="empty-icon">💬</div>
-              <h3>No tienes asesorías aún</h3>
-              <p>Las asesorías personalizadas te ayudan a resolver dudas específicas y mejorar tu comprensión de los temas</p>
+              <div className="empty-icon">📅</div>
+              <h3>No tienes sesiones programadas</h3>
+              <p>Aquí aparecerán todas tus tutorías y asesorías una vez que las solicites</p>
               <div className="empty-benefits">
-                <h4>✨ Beneficios de las asesorías:</h4>
+                <h4>✨ Tipos de sesiones disponibles:</h4>
                 <ul>
-                  <li>🎯 Atención personalizada uno a uno</li>
-                  <li>📚 Enfoque en tus necesidades específicas</li>
-                  <li>⏰ Horarios flexibles que se adaptan a ti</li>
-                  <li>🎓 Mejora tu rendimiento académico</li>
+                  <li>🎯 <strong>Tutorías:</strong> Refuerzo académico en materias específicas</li>
+                  <li>💡 <strong>Asesorías:</strong> Orientación académica y profesional</li>
+                  <li>⏰ <strong>Horarios flexibles</strong> que se adaptan a ti</li>
+                  <li>👨‍🏫 <strong>Educadores especializados</strong> en diferentes áreas</li>
                 </ul>
               </div>
-              <button
-                className="btn btn-primary"
-                onClick={() => setShowRequestForm(true)}
-              >
-                📝 Solicitar mi primera asesoría
-              </button>
+              <div className="empty-actions">
+                <a href="/dashboard/tutores" className="btn btn-primary">
+                  👨‍🏫 Ver Tutores
+                </a>
+                <a href="/dashboard/asesores" className="btn btn-primary">
+                  🎓 Ver Asesores
+                </a>
+              </div>
             </div>
           )}
         </>

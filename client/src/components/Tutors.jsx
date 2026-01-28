@@ -4,86 +4,151 @@ import './Dashboard.css';
 
 const Tutors = () => {
   const [tutors, setTutors] = useState([]);
-  const [advisors, setAdvisors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [selectedTutor, setSelectedTutor] = useState(null);
-  const [filter, setFilter] = useState('all'); // all, tutors, advisors
   const [searchTerm, setSearchTerm] = useState('');
   const [showRequestModal, setShowRequestModal] = useState(false);
   const [selectedEducator, setSelectedEducator] = useState(null);
+  const [requestForm, setRequestForm] = useState({
+    tutorId: '',
+    subject: '',
+    topic: '',
+    date: '',
+    time: '',
+    duration: 60,
+    message: '',
+    type: 'tutoring'
+  });
 
   useEffect(() => {
-    const fetchEducators = async () => {
+    const fetchTutors = async () => {
       try {
         setLoading(true);
-        // Fetch both tutors and advisors
-        const [tutorsRes, advisorsRes] = await Promise.all([
-          apiClient.get('/users', { params: { role: 'tutor' } }),
-          apiClient.get('/users', { params: { role: 'advisor' } })
-        ]);
-
-        setTutors(tutorsRes.data.data || []);
-        setAdvisors(advisorsRes.data.data || []);
+        // Usar el nuevo endpoint para obtener solo tutores disponibles (sin citas confirmadas)
+        const tutorsRes = await apiClient.get('/users/available-educators', { 
+          params: { role: 'tutor', limit: 100 } 
+        });
+        const tutorsData = tutorsRes.data.data || [];
+        
+        console.log('✅ Tutores disponibles obtenidos:', tutorsData.length);
+        console.log('📊 Metadata:', tutorsRes.data.meta);
+        if (tutorsRes.data.meta?.excludedEducators > 0) {
+          console.log(`🚫 ${tutorsRes.data.meta.excludedEducators} tutores excluidos por tener citas confirmadas`);
+        }
+        
+        setTutors(tutorsData);
       } catch (err) {
-        setError('No se pudieron cargar los educadores');
+        console.error('❌ Error fetching available tutors:', err);
+        setError('No se pudieron cargar los tutores disponibles');
       } finally {
         setLoading(false);
       }
     };
-    fetchEducators();
+    fetchTutors();
   }, []);
 
-  const getFilteredEducators = () => {
-    let educators = [];
-
-    if (filter === 'tutors') {
-      educators = tutors;
-    } else if (filter === 'advisors') {
-      educators = advisors;
-    } else {
-      educators = [...tutors, ...advisors];
-    }
+  const getFilteredTutors = () => {
+    let filteredTutors = tutors;
 
     if (searchTerm) {
-      educators = educators.filter(educator =>
-        `${educator.personalInfo?.firstName} ${educator.personalInfo?.lastName}`
+      filteredTutors = tutors.filter(tutor =>
+        `${tutor.personalInfo?.firstName} ${tutor.personalInfo?.lastName}`
           .toLowerCase()
           .includes(searchTerm.toLowerCase()) ||
-        educator.personalInfo?.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (educator.tutorProfile?.specialties || []).some(specialty =>
+        (tutor.personalInfo?.email || tutor.email).toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (tutor.tutorProfile?.specialties || []).some(specialty =>
           specialty.toLowerCase().includes(searchTerm.toLowerCase())
         ) ||
-        (educator.advisorProfile?.expertise || []).some(expertise =>
-          expertise.toLowerCase().includes(searchTerm.toLowerCase())
+        (tutor.academicProfile?.skills || []).some(skill =>
+          skill.toLowerCase().includes(searchTerm.toLowerCase())
         )
       );
     }
 
-    return educators;
+    return filteredTutors;
   };
 
-  const handleRequestAdvisory = (educator) => {
-    setSelectedEducator(educator);
+  const handleRequestTutoring = (tutor) => {
+    setSelectedEducator(tutor);
+    setRequestForm(prev => ({
+      ...prev,
+      tutorId: tutor._id,
+      type: 'tutoring'
+    }));
     setShowRequestModal(true);
   };
 
-  const handleSendMessage = (educator) => {
+  const handleRequestSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const appointmentData = {
+        ...requestForm,
+        status: 'pending'
+      };
+
+      console.log('Enviando datos de tutoría:', appointmentData);
+
+      const response = await apiClient.post('/appointments', appointmentData);
+      console.log('Respuesta del servidor:', response.data);
+      
+      alert('Solicitud de tutoría enviada exitosamente');
+
+      setShowRequestModal(false);
+      setRequestForm({
+        tutorId: '',
+        subject: '',
+        topic: '',
+        date: '',
+        time: '',
+        duration: 60,
+        message: '',
+        type: 'tutoring'
+      });
+    } catch (error) {
+      console.error('Error creating appointment:', error);
+      
+      let errorMessage = 'Error al enviar la solicitud. Inténtalo nuevamente.';
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      }
+      
+      alert(errorMessage);
+    }
+  };
+
+  const handleFormChange = (e) => {
+    const { name, value } = e.target;
+    setRequestForm(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSendMessage = (tutor) => {
     // Implementar funcionalidad de mensajería
-    alert(`Función de mensajería con ${educator.personalInfo?.firstName} ${educator.personalInfo?.lastName} próximamente disponible`);
+    alert(`Función de mensajería con ${tutor.personalInfo?.firstName} ${tutor.personalInfo?.lastName} próximamente disponible`);
   };
 
-  const handleViewProfile = (educator) => {
-    setSelectedTutor(selectedTutor?._id === educator._id ? null : educator);
+  const handleViewProfile = (tutor) => {
+    setSelectedTutor(selectedTutor?._id === tutor._id ? null : tutor);
   };
 
-  const filteredEducators = getFilteredEducators();
+  const filteredTutors = getFilteredTutors();
 
   return (
     <div className="tutors-page">
       <div className="tutors-header">
-        <h2>👨‍🏫 Educadores Disponibles</h2>
-        <p>Encuentra tutores y asesores especializados para tu aprendizaje</p>
+        <h2>👨‍🏫 Tutores Disponibles</h2>
+        <p>Encuentra tutores especializados para reforzar tus conocimientos académicos</p>
+        <div className="info-banner">
+          <div className="info-icon">ℹ️</div>
+          <div className="info-content">
+            <strong>Nota:</strong> Solo se muestran tutores disponibles. Los tutores con los que ya tienes citas confirmadas no aparecen en esta lista.
+          </div>
+        </div>
       </div>
 
       {/* Filtros */}
@@ -97,26 +162,6 @@ const Tutors = () => {
             className="search-input"
           />
         </div>
-        <div className="filter-buttons">
-          <button
-            className={`filter-btn ${filter === 'all' ? 'active' : ''}`}
-            onClick={() => setFilter('all')}
-          >
-            Todos ({tutors.length + advisors.length})
-          </button>
-          <button
-            className={`filter-btn ${filter === 'tutors' ? 'active' : ''}`}
-            onClick={() => setFilter('tutors')}
-          >
-            Tutores ({tutors.length})
-          </button>
-          <button
-            className={`filter-btn ${filter === 'advisors' ? 'active' : ''}`}
-            onClick={() => setFilter('advisors')}
-          >
-            Asesores ({advisors.length})
-          </button>
-        </div>
       </div>
 
       {error && <div className="alert alert-danger">{error}</div>}
@@ -124,92 +169,97 @@ const Tutors = () => {
       {loading ? (
         <div className="loading-container">
           <div className="loading-spinner"></div>
-          <p>Cargando educadores...</p>
+          <p>Cargando tutores...</p>
         </div>
       ) : (
         <>
           {/* Estadísticas */}
           <div className="educators-stats">
             <div className="stat-item">
-              <span className="stat-number">{filteredEducators.length}</span>
-              <span className="stat-label">Educadores encontrados</span>
+              <span className="stat-number">{filteredTutors.length}</span>
+              <span className="stat-label">Tutores encontrados</span>
             </div>
             <div className="stat-item">
               <span className="stat-number">{tutors.length}</span>
               <span className="stat-label">Tutores disponibles</span>
             </div>
             <div className="stat-item">
-              <span className="stat-number">{advisors.length}</span>
-              <span className="stat-label">Asesores disponibles</span>
+              <span className="stat-number">
+                {tutors.filter(t => t.tutorProfile?.available).length}
+              </span>
+              <span className="stat-label">Disponibles ahora</span>
             </div>
             <div className="stat-item">
               <span className="stat-number">
-                {[...tutors, ...advisors].filter(e => e.tutorProfile?.availability === 'available' || e.advisorProfile?.availability === 'available').length}
+                {tutors.reduce((sum, t) => sum + (t.tutorProfile?.specialties?.length || 0), 0)}
               </span>
-              <span className="stat-label">Disponibles ahora</span>
+              <span className="stat-label">Especialidades totales</span>
             </div>
           </div>
 
           <div className="educators-grid">
-            {filteredEducators.map((educator) => {
-              const isTutor = educator.role === 'tutor';
-              const profile = isTutor ? educator.tutorProfile : educator.advisorProfile;
-              const specialties = isTutor ? profile?.specialties : profile?.expertise;
+            {filteredTutors.map((tutor) => {
+              const profile = tutor.tutorProfile;
+              const specialties = profile?.specialties || [];
 
               return (
-                <div key={educator._id} className="educator-card">
+                <div key={tutor._id} className="educator-card">
                   <div className="educator-header">
                     <div className="educator-avatar">
                       <div className="avatar-circle">
-                        <span>{educator.personalInfo?.firstName?.[0]}{educator.personalInfo?.lastName?.[0]}</span>
+                        {tutor.personalInfo?.avatar ? (
+                          <img src={tutor.personalInfo.avatar} alt="Avatar" className="avatar-image" />
+                        ) : (
+                          <span>{tutor.personalInfo?.firstName?.[0]}{tutor.personalInfo?.lastName?.[0]}</span>
+                        )}
                       </div>
-                      <div className={`role-badge ${isTutor ? 'tutor' : 'advisor'}`}>
-                        {isTutor ? '👨‍🏫 Tutor' : '🎓 Asesor'}
+                      <div className="role-badge tutor">
+                        👨‍🏫 Tutor
                       </div>
-                      {profile?.availability === 'available' && (
+                      {profile?.available && (
                         <div className="availability-indicator online">
                           <span>🟢 Disponible</span>
                         </div>
                       )}
                     </div>
                     <div className="educator-info">
-                      <h3>{educator.personalInfo?.firstName} {educator.personalInfo?.lastName}</h3>
-                      <p className="educator-email">{educator.personalInfo?.email}</p>
+                      <h3>{tutor.personalInfo?.firstName} {tutor.personalInfo?.lastName}</h3>
+                      <p className="educator-email">{tutor.personalInfo?.email || tutor.email}</p>
                       {profile?.rating && (
                         <div className="educator-rating">
                           <span>⭐ {profile.rating}/5.0</span>
-                          <span>({profile.reviewCount || 0} reseñas)</span>
+                          <span>({profile.totalSessions || 0} sesiones)</span>
                         </div>
                       )}
                     </div>
                   </div>
 
                   <div className="educator-details">
-                    {specialties && specialties.length > 0 && (
+                    {profile?.specialties && profile.specialties.length > 0 && (
                       <div className="specialties">
                         <h4>🎯 Especialidades:</h4>
                         <div className="specialty-tags">
-                          {specialties.slice(0, 3).map((specialty, index) => (
+                          {profile.specialties.slice(0, 3).map((specialty, index) => (
                             <span key={index} className="specialty-tag">{specialty}</span>
                           ))}
-                          {specialties.length > 3 && (
-                            <span className="specialty-more">+{specialties.length - 3} más</span>
+                          {profile.specialties.length > 3 && (
+                            <span className="specialty-more">+{profile.specialties.length - 3} más</span>
                           )}
                         </div>
                       </div>
                     )}
 
                     <div className="educator-stats">
-                      {profile?.experience && (
+                      {tutor.academicProfile?.experienceYears && (
                         <div className="stat-item">
                           <span className="stat-label">📅 Experiencia:</span>
-                          <span className="stat-value">{profile.experience} años</span>
+                          <span className="stat-value">{tutor.academicProfile.experienceYears} años</span>
                         </div>
                       )}
-                      {profile?.studentsCount && (
+                      {profile?.totalSessions && (
                         <div className="stat-item">
-                          <span className="stat-label">👨‍🎓 Estudiantes:</span>
-                          <span className="stat-value">{profile.studentsCount}</span>
+                          <span className="stat-label">👨‍🎓 Sesiones:</span>
+                          <span className="stat-value">{profile.totalSessions}</span>
                         </div>
                       )}
                       {profile?.hourlyRate && (
@@ -220,10 +270,10 @@ const Tutors = () => {
                       )}
                     </div>
 
-                    {profile?.bio && (
+                    {tutor.personalInfo?.bio && (
                       <div className="bio">
                         <h4>📝 Sobre mí:</h4>
-                        <p>{profile.bio.length > 120 ? `${profile.bio.substring(0, 120)}...` : profile.bio}</p>
+                        <p>{tutor.personalInfo.bio.length > 120 ? `${tutor.personalInfo.bio.substring(0, 120)}...` : tutor.personalInfo.bio}</p>
                       </div>
                     )}
                   </div>
@@ -231,82 +281,219 @@ const Tutors = () => {
                   <div className="educator-actions">
                     <button
                       className="btn btn-secondary"
-                      onClick={() => handleViewProfile(educator)}
+                      onClick={() => handleViewProfile(tutor)}
                     >
-                      {selectedTutor?._id === educator._id ? '✕ Menos info' : 'ℹ️ Ver perfil'}
+                      {selectedTutor?._id === tutor._id ? '✕ Menos info' : 'ℹ️ Ver perfil'}
                     </button>
                     <button
                       className="btn btn-outline"
-                      onClick={() => handleSendMessage(educator)}
+                      onClick={() => handleSendMessage(tutor)}
                     >
                       💬 Mensaje
                     </button>
                     <button
                       className="btn btn-primary"
-                      onClick={() => handleRequestAdvisory(educator)}
+                      onClick={() => handleRequestTutoring(tutor)}
                     >
-                      📅 Solicitar {isTutor ? 'tutoría' : 'asesoría'}
+                      📅 Solicitar tutoría
                     </button>
                   </div>
 
-                  {selectedTutor?._id === educator._id && (
+                  {selectedTutor?._id === tutor._id && (
                     <div className="educator-expanded">
                       <div className="expanded-content">
-                        <h4>📋 Información completa</h4>
+                        <h4>📋 Información completa del tutor</h4>
                         
-                        {profile?.education && (
-                          <div className="education">
-                            <h5>🎓 Educación:</h5>
-                            <p>{profile.education}</p>
+                        {/* Información personal */}
+                        <div className="personal-info">
+                          <h5>👤 Información Personal:</h5>
+                          <div className="info-grid">
+                            {tutor.personalInfo?.firstName && (
+                              <div className="info-item">
+                                <span className="info-label">Nombre:</span>
+                                <span className="info-value">{tutor.personalInfo.firstName} {tutor.personalInfo.lastName}</span>
+                              </div>
+                            )}
+                            {tutor.personalInfo?.email && (
+                              <div className="info-item">
+                                <span className="info-label">Email:</span>
+                                <span className="info-value">{tutor.personalInfo.email}</span>
+                              </div>
+                            )}
+                            {tutor.personalInfo?.phone && (
+                              <div className="info-item">
+                                <span className="info-label">Teléfono:</span>
+                                <span className="info-value">{tutor.personalInfo.phone}</span>
+                              </div>
+                            )}
+                            {tutor.personalInfo?.city && (
+                              <div className="info-item">
+                                <span className="info-label">Ciudad:</span>
+                                <span className="info-value">{tutor.personalInfo.city}, {tutor.personalInfo.country}</span>
+                              </div>
+                            )}
+                          </div>
+                          {tutor.personalInfo?.bio && (
+                            <div className="bio-full">
+                              <h6>📝 Biografía:</h6>
+                              <p>{tutor.personalInfo.bio}</p>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Perfil académico */}
+                        {tutor.academicProfile && (
+                          <div className="academic-info">
+                            <h5>🎓 Perfil Académico:</h5>
+                            <div className="info-grid">
+                              {tutor.academicProfile.institution && (
+                                <div className="info-item">
+                                  <span className="info-label">Institución:</span>
+                                  <span className="info-value">{tutor.academicProfile.institution}</span>
+                                </div>
+                              )}
+                              {tutor.academicProfile.department && (
+                                <div className="info-item">
+                                  <span className="info-label">Departamento:</span>
+                                  <span className="info-value">{tutor.academicProfile.department}</span>
+                                </div>
+                              )}
+                              {tutor.academicProfile.title && (
+                                <div className="info-item">
+                                  <span className="info-label">Título:</span>
+                                  <span className="info-value">{tutor.academicProfile.title}</span>
+                                </div>
+                              )}
+                              {tutor.academicProfile.experienceYears && (
+                                <div className="info-item">
+                                  <span className="info-label">Años de experiencia:</span>
+                                  <span className="info-value">{tutor.academicProfile.experienceYears} años</span>
+                                </div>
+                              )}
+                            </div>
+                            {tutor.academicProfile.skills && tutor.academicProfile.skills.length > 0 && (
+                              <div className="skills">
+                                <h6>🛠️ Habilidades:</h6>
+                                <div className="skill-tags">
+                                  {tutor.academicProfile.skills.map((skill, index) => (
+                                    <span key={index} className="skill-tag">{skill}</span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
                           </div>
                         )}
 
-                        {profile?.certifications && profile.certifications.length > 0 && (
-                          <div className="certifications">
-                            <h5>🏆 Certificaciones:</h5>
-                            <ul>
-                              {profile.certifications.map((cert, index) => (
-                                <li key={index}>{cert}</li>
-                              ))}
-                            </ul>
+                        {/* Perfil de tutor */}
+                        {tutor.tutorProfile && (
+                          <div className="tutor-info">
+                            <h5>👨‍🏫 Perfil de Tutor:</h5>
+                            <div className="info-grid">
+                              {tutor.tutorProfile.hourlyRate && (
+                                <div className="info-item">
+                                  <span className="info-label">Tarifa por hora:</span>
+                                  <span className="info-value">${tutor.tutorProfile.hourlyRate}</span>
+                                </div>
+                              )}
+                              {tutor.tutorProfile.maxStudents && (
+                                <div className="info-item">
+                                  <span className="info-label">Máximo estudiantes:</span>
+                                  <span className="info-value">{tutor.tutorProfile.maxStudents}</span>
+                                </div>
+                              )}
+                              {tutor.tutorProfile.totalSessions && (
+                                <div className="info-item">
+                                  <span className="info-label">Sesiones totales:</span>
+                                  <span className="info-value">{tutor.tutorProfile.totalSessions}</span>
+                                </div>
+                              )}
+                              {tutor.tutorProfile.rating && (
+                                <div className="info-item">
+                                  <span className="info-label">Calificación:</span>
+                                  <span className="info-value">⭐ {tutor.tutorProfile.rating}/5.0</span>
+                                </div>
+                              )}
+                              <div className="info-item">
+                                <span className="info-label">Estado:</span>
+                                <span className={`info-value ${tutor.tutorProfile.available ? 'available' : 'unavailable'}`}>
+                                  {tutor.tutorProfile.available ? '🟢 Disponible' : '🔴 No disponible'}
+                                </span>
+                              </div>
+                            </div>
+                            
+                            {tutor.tutorProfile.specialties && tutor.tutorProfile.specialties.length > 0 && (
+                              <div className="specialties-full">
+                                <h6>🎯 Especialidades:</h6>
+                                <div className="specialty-tags">
+                                  {tutor.tutorProfile.specialties.map((specialty, index) => (
+                                    <span key={index} className="specialty-tag">{specialty}</span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {tutor.tutorProfile.teachingMethods && tutor.tutorProfile.teachingMethods.length > 0 && (
+                              <div className="teaching-methods">
+                                <h6>📚 Métodos de enseñanza:</h6>
+                                <div className="method-tags">
+                                  {tutor.tutorProfile.teachingMethods.map((method, index) => (
+                                    <span key={index} className="method-tag">{method}</span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
                           </div>
                         )}
 
-                        {profile?.languages && profile.languages.length > 0 && (
-                          <div className="languages">
-                            <h5>🌍 Idiomas:</h5>
-                            <div className="language-tags">
-                              {profile.languages.map((lang, index) => (
-                                <span key={index} className="language-tag">{lang}</span>
-                              ))}
+                        {/* Información de contacto y disponibilidad */}
+                        <div className="contact-info">
+                          <h5>📞 Contacto y Disponibilidad:</h5>
+                          <div className="contact-grid">
+                            <div className="contact-item">
+                              <span className="contact-label">📧 Email:</span>
+                              <span className="contact-value">{tutor.email}</span>
+                            </div>
+                            <div className="contact-item">
+                              <span className="contact-label">📅 Miembro desde:</span>
+                              <span className="contact-value">
+                                {new Date(tutor.createdAt).toLocaleDateString('es-ES', {
+                                  year: 'numeric',
+                                  month: 'long',
+                                  day: 'numeric'
+                                })}
+                              </span>
+                            </div>
+                            <div className="contact-item">
+                              <span className="contact-label">🔄 Última actualización:</span>
+                              <span className="contact-value">
+                                {new Date(tutor.updatedAt).toLocaleDateString('es-ES', {
+                                  year: 'numeric',
+                                  month: 'long',
+                                  day: 'numeric'
+                                })}
+                              </span>
                             </div>
                           </div>
-                        )}
+                        </div>
 
-                        {profile?.availability && (
-                          <div className="availability">
-                            <h5>📅 Disponibilidad:</h5>
-                            <p>{profile.availability}</p>
-                          </div>
-                        )}
-
-                        {profile?.teachingStyle && (
-                          <div className="teaching-style">
-                            <h5>🎯 Estilo de enseñanza:</h5>
-                            <p>{profile.teachingStyle}</p>
-                          </div>
-                        )}
-
-                        {specialties && specialties.length > 3 && (
-                          <div className="all-specialties">
-                            <h5>🎯 Todas las especialidades:</h5>
-                            <div className="specialty-tags">
-                              {specialties.map((specialty, index) => (
-                                <span key={index} className="specialty-tag">{specialty}</span>
-                              ))}
-                            </div>
-                          </div>
-                        )}
+                        {/* Botones de acción adicionales */}
+                        <div className="profile-actions">
+                          <button
+                            className="btn btn-primary"
+                            onClick={() => {
+                              setSelectedTutor(null);
+                              handleRequestTutoring(tutor);
+                            }}
+                          >
+                            📅 Solicitar Tutoría Ahora
+                          </button>
+                          <button
+                            className="btn btn-outline"
+                            onClick={() => handleSendMessage(tutor)}
+                          >
+                            💬 Enviar Mensaje
+                          </button>
+                        </div>
                       </div>
                     </div>
                   )}
@@ -315,18 +502,32 @@ const Tutors = () => {
             })}
           </div>
 
-          {filteredEducators.length === 0 && (
+          {filteredTutors.length === 0 && !loading && (
             <div className="empty-state">
               <div className="empty-icon">👨‍🏫</div>
-              <h3>No se encontraron educadores</h3>
-              <p>Intenta con otros términos de búsqueda o filtros diferentes.</p>
+              <h3>No se encontraron tutores disponibles</h3>
+              {searchTerm ? (
+                <p>No hay tutores disponibles que coincidan con tu búsqueda.</p>
+              ) : (
+                <p>No hay tutores disponibles en este momento. Los tutores con los que ya tienes citas confirmadas no se muestran aquí.</p>
+              )}
               <div className="empty-suggestions">
                 <h4>💡 Sugerencias:</h4>
                 <ul>
-                  <li>Verifica la ortografía de tu búsqueda</li>
-                  <li>Usa términos más generales</li>
-                  <li>Prueba con diferentes filtros</li>
-                  <li>Busca por materia en lugar de nombre específico</li>
+                  {searchTerm ? (
+                    <>
+                      <li>Verifica la ortografía de tu búsqueda</li>
+                      <li>Usa términos más generales</li>
+                      <li>Busca por materia en lugar de nombre específico</li>
+                    </>
+                  ) : (
+                    <>
+                      <li>Los tutores con citas confirmadas contigo no aparecen en esta lista</li>
+                      <li>Revisa la sección "Mis Cursos" para ver tus tutorías activas</li>
+                      <li>Contacta al administrador si necesitas más tutores</li>
+                    </>
+                  )}
+                  <li>Los tutores se especializan en refuerzo académico</li>
                 </ul>
               </div>
             </div>
@@ -334,28 +535,111 @@ const Tutors = () => {
         </>
       )}
 
-      {/* Modal de solicitud (placeholder) */}
+      {/* Modal de solicitud de tutoría */}
       {showRequestModal && (
         <div className="modal-overlay" onClick={() => setShowRequestModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-content large-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>📅 Solicitar {selectedEducator?.role === 'tutor' ? 'Tutoría' : 'Asesoría'}</h3>
+              <h3>📅 Solicitar Tutoría</h3>
               <button className="modal-close" onClick={() => setShowRequestModal(false)}>✕</button>
             </div>
             <div className="modal-body">
-              <p>Solicitud para: <strong>{selectedEducator?.personalInfo?.firstName} {selectedEducator?.personalInfo?.lastName}</strong></p>
-              <p>Esta funcionalidad se completará en la sección de Asesorías.</p>
-            </div>
-            <div className="modal-actions">
-              <button className="btn btn-secondary" onClick={() => setShowRequestModal(false)}>
-                Cancelar
-              </button>
-              <button className="btn btn-primary" onClick={() => {
-                setShowRequestModal(false);
-                alert('Redirigiendo a la sección de Asesorías...');
-              }}>
-                Ir a Asesorías
-              </button>
+              <div className="tutor-info-header">
+                <p><strong>Tutor seleccionado:</strong> {selectedEducator?.personalInfo?.firstName} {selectedEducator?.personalInfo?.lastName}</p>
+                {selectedEducator?.tutorProfile?.specialties && (
+                  <div className="tutor-specialties">
+                    <h4>🎯 Especialidades:</h4>
+                    <div className="specialty-tags">
+                      {selectedEducator.tutorProfile.specialties.map((specialty, index) => (
+                        <span key={index} className="specialty-tag">{specialty}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <form onSubmit={handleRequestSubmit}>
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>📚 Materia *</label>
+                    <input
+                      type="text"
+                      name="subject"
+                      value={requestForm.subject}
+                      onChange={handleFormChange}
+                      placeholder="Ej: Matemáticas, Física, Química"
+                      required
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>🎯 Tema específico</label>
+                    <input
+                      type="text"
+                      name="topic"
+                      value={requestForm.topic}
+                      onChange={handleFormChange}
+                      placeholder="Tema particular (opcional)"
+                    />
+                  </div>
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>📅 Fecha *</label>
+                    <input
+                      type="date"
+                      name="date"
+                      value={requestForm.date}
+                      onChange={handleFormChange}
+                      min={new Date().toISOString().split('T')[0]}
+                      required
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>🕐 Hora *</label>
+                    <input
+                      type="time"
+                      name="time"
+                      value={requestForm.time}
+                      onChange={handleFormChange}
+                      required
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>⏱️ Duración</label>
+                    <select
+                      name="duration"
+                      value={requestForm.duration}
+                      onChange={handleFormChange}
+                    >
+                      <option value={30}>30 minutos</option>
+                      <option value={60}>1 hora</option>
+                      <option value={90}>1.5 horas</option>
+                      <option value={120}>2 horas</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label>💬 Mensaje para el tutor</label>
+                  <textarea
+                    name="message"
+                    value={requestForm.message}
+                    onChange={handleFormChange}
+                    placeholder="Describe qué necesitas reforzar, tus objetivos para la tutoría, o cualquier información relevante..."
+                    rows="4"
+                  />
+                </div>
+
+                <div className="modal-actions">
+                  <button type="button" className="btn btn-secondary" onClick={() => setShowRequestModal(false)}>
+                    Cancelar
+                  </button>
+                  <button type="submit" className="btn btn-primary">
+                    📤 Enviar Solicitud de Tutoría
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         </div>

@@ -2,15 +2,20 @@ import Note from "../models/Note.js";
 
 export const getNotes = async (req, res, next) => {
   try {
-    const userId = req.user.id;
-    const notes = await Note.find({
-      $or: [
-        { userId: userId },
-        { visibility: 'public' },
-        { sharedWith: userId }
-      ]
-    }).populate('sharedWith', 'personalInfo.firstName personalInfo.lastName');
-    res.json(notes);
+    // Filtrar notas por usuario autenticado
+    const filter = {};
+    if (req.user) {
+      filter.userId = req.user.id;
+    }
+
+    const notes = await Note.find(filter)
+      .sort({ createdAt: -1 })
+      .populate('userId', 'personalInfo email');
+    
+    res.json({
+      success: true,
+      data: notes
+    });
   } catch (error) {
     next(error);
   }
@@ -18,26 +23,38 @@ export const getNotes = async (req, res, next) => {
 
 export const createNote = async (req, res, next) => {
   try {
-    const { title, content, date, tags, visibility, sharedWith } = req.body;
+    const { title, content, subject, tags } = req.body;
+    
+    // Validar campos requeridos
+    if (!title || !content) {
+      const error = new Error("Title and content are required");
+      error.status = 400;
+      throw error;
+    }
 
-    // Get author name from user profile or fall back to generic
-    const authorName = req.user.personalInfo?.firstName
-      ? `${req.user.personalInfo.firstName} ${req.user.personalInfo.lastName}`
-      : 'Unknown';
+    const noteData = {
+      title: title.trim(),
+      content: content.trim(),
+      subject: subject?.trim() || '',
+      tags: Array.isArray(tags) ? tags : [],
+      author: req.user?.personalInfo?.firstName 
+        ? `${req.user.personalInfo.firstName} ${req.user.personalInfo.lastName || ''}`.trim()
+        : req.user?.email || 'Usuario',
+      userId: req.user?.id
+    };
 
-    const newNote = new Note({
-      title,
-      content,
-      date,
-      tags,
-      visibility,
-      sharedWith,
-      author: authorName,
-      userId: req.user.id
-    });
-
+    const newNote = new Note(noteData);
     const savedNote = await newNote.save();
-    return res.json(savedNote);
+    
+    // Populate para la respuesta
+    const populatedNote = await Note.findById(savedNote._id)
+      .populate('userId', 'personalInfo email');
+    
+    res.status(201).json({
+      success: true,
+      message: "Note created successfully",
+      data: populatedNote
+    });
   } catch (error) {
     next(error);
   }
@@ -45,15 +62,26 @@ export const createNote = async (req, res, next) => {
 
 export const getNote = async (req, res, next) => {
   try {
-    const note = await Note.findById(req.params.id);
+    const filter = { _id: req.params.id };
+    
+    // Solo permitir acceso a notas propias (excepto admin)
+    if (req.user && req.user.role !== 'admin') {
+      filter.userId = req.user.id;
+    }
+
+    const note = await Note.findOne(filter)
+      .populate('userId', 'personalInfo email');
 
     if (!note) {
-      const error = new Error("La nota no existe");
+      const error = new Error("Note not found");
       error.status = 404;
       throw error;
     }
 
-    res.json(note);
+    res.json({
+      success: true,
+      data: note
+    });
   } catch (error) {
     next(error);
   }
@@ -61,15 +89,25 @@ export const getNote = async (req, res, next) => {
 
 export const deleteNote = async (req, res, next) => {
   try {
-    const deletedNote = await Note.findByIdAndDelete(req.params.id);
+    const filter = { _id: req.params.id };
+    
+    // Solo permitir eliminar notas propias (excepto admin)
+    if (req.user && req.user.role !== 'admin') {
+      filter.userId = req.user.id;
+    }
+
+    const deletedNote = await Note.findOneAndDelete(filter);
 
     if (!deletedNote) {
-      const error = new Error("La nota no existe");
+      const error = new Error("Note not found");
       error.status = 404;
       throw error;
     }
 
-    return res.sendStatus(204);
+    res.json({
+      success: true,
+      message: "Note deleted successfully"
+    });
   } catch (error) {
     next(error);
   }
@@ -77,34 +115,39 @@ export const deleteNote = async (req, res, next) => {
 
 export const updateNote = async (req, res, next) => {
   try {
-    const { title, content, date, tags, visibility, sharedWith } = req.body;
-
-    // Ensure user owns the note
-    const note = await Note.findById(req.params.id);
-    if (!note) return res.status(404).json({ message: "Note not found" });
-
-    if (note.userId.toString() !== req.user.id) {
-      return res.status(403).json({ message: "Not authorized to update this note" });
+    const { title, content, subject, tags, isFavorite } = req.body;
+    
+    const filter = { _id: req.params.id };
+    
+    // Solo permitir actualizar notas propias (excepto admin)
+    if (req.user && req.user.role !== 'admin') {
+      filter.userId = req.user.id;
     }
 
-    const noteUpdated = await Note.findByIdAndUpdate(
-      req.params.id,
-      {
-        $set: {
-          title,
-          content,
-          date,
-          tags,
-          visibility,
-          sharedWith
-        },
-      },
-      {
-        new: true,
-      }
-    );
+    const updateData = {};
+    if (title !== undefined) updateData.title = title.trim();
+    if (content !== undefined) updateData.content = content.trim();
+    if (subject !== undefined) updateData.subject = subject.trim();
+    if (tags !== undefined) updateData.tags = Array.isArray(tags) ? tags : [];
+    if (isFavorite !== undefined) updateData.isFavorite = isFavorite;
 
-    return res.json(noteUpdated);
+    const noteUpdated = await Note.findOneAndUpdate(
+      filter,
+      updateData,
+      { new: true, runValidators: true }
+    ).populate('userId', 'personalInfo email');
+
+    if (!noteUpdated) {
+      const error = new Error("Note not found");
+      error.status = 404;
+      throw error;
+    }
+
+    res.json({
+      success: true,
+      message: "Note updated successfully",
+      data: noteUpdated
+    });
   } catch (error) {
     next(error);
   }

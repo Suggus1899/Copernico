@@ -3,6 +3,7 @@ import { Link, Outlet, useLocation } from 'react-router-dom';
 import apiClient from '../utils/axiosConfig';
 import TutorSidebarMenu from './TutorSidebarMenu';
 import TutorHome from './TutorHome';
+import NotificationToast from './NotificationToast';
 import './Dashboard.css';
 
 class TutorDashboard extends Component {
@@ -59,12 +60,17 @@ class TutorDashboard extends Component {
       <div className="dashboard-container">
         <TutorSidebarMenu userRole={user?.role} />
         <div className="dashboard-content">
-          
+          <div className="dashboard-header">
+            <h1>Bienvenido a Copernico Academy</h1>
+            <p>Panel de {user?.role === 'advisor' ? 'Asesor' : 'Tutor'} - {user?.personalInfo?.firstName} {user?.personalInfo?.lastName}</p>
+          </div>
           <div className="dashboard-main">
             {/* Mostrar TutorHome por defecto o el componente de la ruta específica */}
             <TutorHomeWrapper />
           </div>
         </div>
+        {/* Notification Toast - Solo para tutores y asesores */}
+        <NotificationToast userRole={user?.role} />
       </div>
     );
   }

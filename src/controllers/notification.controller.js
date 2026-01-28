@@ -73,14 +73,14 @@ export const getNotificationById = async (req, res, next) => {
       .populate('createdBy', 'personalInfo');
 
     if (!notification) {
-      const error = new Error("Notificación no encontrada");
+      const error = new Error("Notification not found");
       error.status = 404;
       throw error;
     }
 
     // Verificar que el usuario es el destinatario
     if (notification.userId.toString() !== req.user.id && req.user.role !== 'admin') {
-      const error = new Error("Acceso denegado a esta notificación");
+      const error = new Error("Access denied to this notification");
       error.status = 403;
       throw error;
     }
@@ -101,14 +101,14 @@ export const createNotification = async (req, res, next) => {
     // Verificar que el usuario destinatario existe
     const user = await User.findById(notificationData.userId);
     if (!user) {
-      const error = new Error("Usuario no encontrado");
+      const error = new Error("User not found");
       error.status = 404;
       throw error;
     }
 
     // Verificar permisos para crear notificaciones
     if (!['tutor', 'advisor', 'admin'].includes(req.user.role)) {
-      const error = new Error("Solo tutores, asesores y administradores pueden crear notificaciones");
+      const error = new Error("Only tutors, advisors and admins can create notifications");
       error.status = 403;
       throw error;
     }
@@ -117,7 +117,7 @@ export const createNotification = async (req, res, next) => {
     if (notificationData.relatedAppointment) {
       const appointment = await Appointment.findById(notificationData.relatedAppointment);
       if (!appointment) {
-        const error = new Error("Cita relacionada no encontrada");
+        const error = new Error("Related appointment not found");
         error.status = 404;
         throw error;
       }
@@ -126,7 +126,7 @@ export const createNotification = async (req, res, next) => {
     if (notificationData.relatedAssignment) {
       const assignment = await Assignment.findById(notificationData.relatedAssignment);
       if (!assignment) {
-        const error = new Error("Tarea relacionada no encontrada");
+        const error = new Error("Related assignment not found");
         error.status = 404;
         throw error;
       }
@@ -149,7 +149,7 @@ export const createNotification = async (req, res, next) => {
 
     res.status(201).json({
       success: true,
-      message: "Notificación creada exitosamente",
+      message: "Notification created successfully",
       data: populatedNotification
     });
   } catch (error) {
@@ -162,14 +162,14 @@ export const markAsRead = async (req, res, next) => {
     const notification = await Notification.findById(req.params.id);
 
     if (!notification) {
-      const error = new Error("Notificación no encontrada");
+      const error = new Error("Notification not found");
       error.status = 404;
       throw error;
     }
 
     // Verificar que el usuario es el destinatario
     if (notification.userId.toString() !== req.user.id) {
-      const error = new Error("No autorizado para marcar esta notificación como leída");
+      const error = new Error("Not authorized to mark this notification as read");
       error.status = 403;
       throw error;
     }
@@ -183,7 +183,7 @@ export const markAsRead = async (req, res, next) => {
 
     res.json({
       success: true,
-      message: "Notificación marcada como leída",
+      message: "Notification marked as read",
       unreadCount
     });
   } catch (error) {
@@ -211,7 +211,7 @@ export const markAllAsRead = async (req, res, next) => {
 
     res.json({
       success: true,
-      message: "Todas las notificaciones marcadas como leídas"
+      message: "All notifications marked as read"
     });
   } catch (error) {
     next(error);
@@ -223,14 +223,14 @@ export const recordClick = async (req, res, next) => {
     const notification = await Notification.findById(req.params.id);
 
     if (!notification) {
-      const error = new Error("Notificación no encontrada");
+      const error = new Error("Notification not found");
       error.status = 404;
       throw error;
     }
 
     // Verificar que el usuario es el destinatario
     if (notification.userId.toString() !== req.user.id) {
-      const error = new Error("No autorizado para interactuar con esta notificación");
+      const error = new Error("Not authorized to interact with this notification");
       error.status = 403;
       throw error;
     }
@@ -239,7 +239,7 @@ export const recordClick = async (req, res, next) => {
 
     res.json({
       success: true,
-      message: "Click registrado"
+      message: "Click recorded"
     });
   } catch (error) {
     next(error);
@@ -252,21 +252,21 @@ export const respondToNotification = async (req, res, next) => {
     const notification = await Notification.findById(req.params.id);
 
     if (!notification) {
-      const error = new Error("Notificación no encontrada");
+      const error = new Error("Notification not found");
       error.status = 404;
       throw error;
     }
 
     // Verificar que el usuario es el destinatario
     if (notification.userId.toString() !== req.user.id) {
-      const error = new Error("No autorizado para responder a esta notificación");
+      const error = new Error("Not authorized to respond to this notification");
       error.status = 403;
       throw error;
     }
 
     // Verificar que permite respuesta
     if (!notification.allowResponse) {
-      const error = new Error("Esta notificación no permite respuestas");
+      const error = new Error("This notification does not allow responses");
       error.status = 400;
       throw error;
     }
@@ -274,19 +274,89 @@ export const respondToNotification = async (req, res, next) => {
     // Verificar que la respuesta es válida
     if (notification.responseOptions.length > 0 && 
         !notification.responseOptions.includes(response)) {
-      const error = new Error("Respuesta inválida. Opciones disponibles: " + notification.responseOptions.join(', '));
+      const error = new Error("Invalid response. Available options: " + notification.responseOptions.join(', '));
       error.status = 400;
       throw error;
     }
 
     await notification.recordResponse(response, data);
 
-    // Aquí podrías agregar lógica adicional basada en la respuesta
-    // Por ejemplo, confirmar/cancelar cita, etc.
+    // Lógica adicional basada en la respuesta para citas
+    if (notification.type === 'appointment_reminder' && notification.relatedAppointment) {
+      try {
+        const Appointment = (await import('../models/Appointment.js')).default;
+        
+        if (response === 'confirm') {
+          await Appointment.findByIdAndUpdate(
+            notification.relatedAppointment,
+            { 
+              status: 'confirmed',
+              updatedBy: req.user.id
+            }
+          );
+          
+          // Crear notificación para el estudiante
+          const appointment = await Appointment.findById(notification.relatedAppointment)
+            .populate('studentId professionalId');
+          
+          if (appointment && appointment.studentId) {
+            const studentNotification = new Notification({
+              userId: appointment.studentId._id,
+              title: '✅ Solicitud de Asesoría Aceptada',
+              message: `Tu solicitud de asesoría de ${appointment.subject} ha sido aceptada por ${appointment.professionalId.personalInfo?.firstName || 'el tutor/asesor'}.`,
+              type: 'appointment_confirmed',
+              priority: 'high',
+              category: 'appointment',
+              relatedAppointment: appointment._id,
+              actionUrl: `/appointments/${appointment._id}`,
+              actionLabel: 'Ver Detalles',
+              createdBy: req.user.id
+            });
+            
+            await studentNotification.save();
+            await studentNotification.recordDelivery('in_app', 'sent');
+          }
+          
+        } else if (response === 'decline') {
+          await Appointment.findByIdAndUpdate(
+            notification.relatedAppointment,
+            { 
+              status: 'cancelled',
+              cancellationReason: data?.reason || 'Rechazada por el tutor/asesor',
+              cancelledBy: req.user.id,
+              updatedBy: req.user.id
+            }
+          );
+          
+          // Crear notificación para el estudiante
+          const appointment = await Appointment.findById(notification.relatedAppointment)
+            .populate('studentId professionalId');
+          
+          if (appointment && appointment.studentId) {
+            const studentNotification = new Notification({
+              userId: appointment.studentId._id,
+              title: '❌ Solicitud de Asesoría Rechazada',
+              message: `Tu solicitud de asesoría de ${appointment.subject} ha sido rechazada. ${data?.reason ? `Motivo: ${data.reason}` : ''}`,
+              type: 'appointment_cancelled',
+              priority: 'medium',
+              category: 'appointment',
+              relatedAppointment: appointment._id,
+              createdBy: req.user.id
+            });
+            
+            await studentNotification.save();
+            await studentNotification.recordDelivery('in_app', 'sent');
+          }
+        }
+      } catch (appointmentError) {
+        console.error('Error updating appointment:', appointmentError);
+        // No fallar la respuesta de notificación si falla la actualización de la cita
+      }
+    }
 
     res.json({
       success: true,
-      message: "Respuesta registrada exitosamente",
+      message: "Response recorded successfully",
       data: notification
     });
   } catch (error) {
@@ -300,7 +370,7 @@ export const createBulkNotifications = async (req, res, next) => {
 
     // Verificar permisos
     if (!['tutor', 'advisor', 'admin'].includes(req.user.role)) {
-      const error = new Error("Solo tutores, asesores y administradores pueden crear notificaciones en lote");
+      const error = new Error("Only tutors, advisors and admins can create bulk notifications");
       error.status = 403;
       throw error;
     }
@@ -308,7 +378,7 @@ export const createBulkNotifications = async (req, res, next) => {
     // Verificar que los usuarios existen
     const existingUsers = await User.find({ _id: { $in: users } });
     if (existingUsers.length !== users.length) {
-      const error = new Error("Algunos usuarios no fueron encontrados");
+      const error = new Error("Some users not found");
       error.status = 404;
       throw error;
     }
@@ -337,7 +407,7 @@ export const createBulkNotifications = async (req, res, next) => {
 
     res.status(201).json({
       success: true,
-      message: `${createdNotifications.length} notificaciones creadas exitosamente`,
+      message: `${createdNotifications.length} notifications created successfully`,
       data: {
         count: createdNotifications.length,
         batchId: batchId || `bulk_${Date.now()}`
@@ -369,14 +439,14 @@ export const deleteNotification = async (req, res, next) => {
     const notification = await Notification.findById(req.params.id);
 
     if (!notification) {
-      const error = new Error("Notificación no encontrada");
+      const error = new Error("Notification not found");
       error.status = 404;
       throw error;
     }
 
     // Verificar que el usuario es el destinatario o admin
     if (notification.userId.toString() !== req.user.id && req.user.role !== 'admin') {
-      const error = new Error("No autorizado para eliminar esta notificación");
+      const error = new Error("Not authorized to delete this notification");
       error.status = 403;
       throw error;
     }
@@ -390,7 +460,7 @@ export const deleteNotification = async (req, res, next) => {
 
     res.json({
       success: true,
-      message: "Notificación eliminada exitosamente",
+      message: "Notification deleted successfully",
       unreadCount
     });
   } catch (error) {
@@ -525,7 +595,7 @@ export const generateSystemNotifications = async () => {
       gradeNotifications: recentGradedAssignments.length
     };
   } catch (error) {
-    console.error('Error al generar notificaciones del sistema:', error);
+    console.error('Error generating system notifications:', error);
     throw error;
   }
 };

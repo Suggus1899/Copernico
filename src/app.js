@@ -22,8 +22,6 @@ import assignmentRoutes from "./routes/assignment.routes.js";
 import progressTrackingRoutes from "./routes/progressTracking.routes.js";
 import reportRoutes from "./routes/report.routes.js";
 import notificationRoutes from "./routes/notification.routes.js";
-import courseRoutes from "./routes/course.routes.js";
-
 
 // settings
 app.set("port", process.env.PORT || 4002);
@@ -75,7 +73,6 @@ app.use("/api/assignments", assignmentRoutes);
 app.use("/api/progress", progressTrackingRoutes);
 app.use("/api/reports", reportRoutes);
 app.use("/api/notifications", notificationRoutes);
-app.use("/api/courses", courseRoutes);
 console.log('Rutas montadas exitosamente');
 
 // Ruta de salud/status
@@ -119,7 +116,7 @@ app.get("/", (req, res) => {
         profile: "GET/PUT /api/users/profile",
         specific: "GET/PUT/DELETE /api/users/:id"
       },
-
+      
       // Sistema académico principal
       availability: {
         base: "GET/POST /api/availability",
@@ -181,7 +178,7 @@ app.get("/", (req, res) => {
         mark_all_read: "PATCH /api/notifications/read-all",
         respond: "POST /api/notifications/:id/respond"
       },
-
+      
       // Utilidades
       health: "GET /api/health"
     },
@@ -214,10 +211,10 @@ app.use((err, req, res, next) => {
     method: req.method,
     ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
   });
-
+  
   // Determinar status code
   const statusCode = err.status || err.statusCode || 500;
-
+  
   // Respuesta de error
   res.status(statusCode);
   res.json({
@@ -225,7 +222,7 @@ app.use((err, req, res, next) => {
     error: {
       status: statusCode,
       message: err.message || "Internal Server Error",
-      ...(process.env.NODE_ENV === 'development' && {
+      ...(process.env.NODE_ENV === 'development' && { 
         stack: err.stack,
         path: req.originalUrl,
         method: req.method

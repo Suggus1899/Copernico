@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import apiClient from '../utils/axiosConfig';
 import logo from '../assets/logo.jpg';
 import './SidebarMenu.css';
 
@@ -16,6 +17,28 @@ import iconLogout from '../assets/logout.png';
 const TutorSidebarMenu = ({ userRole = 'tutor' }) => {
   const location = useLocation();
   const navigate = useNavigate();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    fetchUnreadCount();
+    
+    // Actualizar contador cada 30 segundos
+    const interval = setInterval(fetchUnreadCount, 30000);
+    
+    return () => clearInterval(interval);
+  }, []);
+
+  const fetchUnreadCount = async () => {
+    try {
+      console.log('📊 Fetching unread count for role:', userRole);
+      const response = await apiClient.get('/notifications/unread-count');
+      const count = response.data.data?.unreadCount || 0;
+      console.log('📊 Unread count received:', count);
+      setUnreadCount(count);
+    } catch (error) {
+      console.error('📊 Error fetching unread count:', error);
+    }
+  };
 
   const handleLogout = (e) => {
     e.preventDefault();
@@ -32,6 +55,13 @@ const TutorSidebarMenu = ({ userRole = 'tutor' }) => {
     { path: '/dashboard/agenda', icon: iconAsesoria, label: isAdvisor ? 'Agenda de Asesorías' : 'Agenda de Clases' },
     { path: '/dashboard/materiales', icon: iconNotas, label: 'Materiales' },
     { path: '/dashboard/progreso', icon: iconConfig, label: 'Progreso' },
+    { 
+      path: '/dashboard/notificaciones', 
+      icon: iconAsesoria, 
+      label: 'Notificaciones',
+      hasNotifications: unreadCount > 0,
+      notificationCount: unreadCount
+    },
     { path: '/dashboard/perfil-tutor', icon: iconPerfil, label: 'Perfil' },
     { path: '#', icon: iconLogout, label: 'Salir', isLogout: true }
   ];
@@ -56,6 +86,11 @@ const TutorSidebarMenu = ({ userRole = 'tutor' }) => {
             >
               <img src={item.icon} alt={item.label} className="menu-icon-img" />
               <span className="menu-label">{item.label}</span>
+              {item.hasNotifications && (
+                <span className="notification-badge">
+                  {item.notificationCount > 99 ? '99+' : item.notificationCount}
+                </span>
+              )}
             </Link>
           </li>
         ))}

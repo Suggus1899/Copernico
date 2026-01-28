@@ -1,39 +1,7 @@
-// Obtener estudiantes de un tutor/asesor (solo citas confirmadas)
-export const getTutorStudents = async (req, res, next) => {
-  try {
-    // Solo para tutor o advisor
-    if (!['tutor', 'advisor'].includes(req.user.role)) {
-      const error = new Error('Acceso denegado');
-      error.status = 403;
-      throw error;
-    }
-
-    // Buscar citas confirmadas donde el profesional es el usuario actual
-    const appointments = await Appointment.find({
-      professionalId: req.user.id,
-      status: 'confirmed'
-    }).populate('studentId', 'personalInfo email studentProfile');
-
-    // Extraer estudiantes únicos
-    const studentsMap = {};
-    appointments.forEach(app => {
-      if (app.studentId && app.studentId._id) {
-        studentsMap[app.studentId._id] = app.studentId;
-      }
-    });
-    const students = Object.values(studentsMap);
-
-    res.json({
-      success: true,
-      data: students
-    });
-  } catch (error) {
-    next(error);
-  }
-};
 import Appointment from "../models/Appointment.js";
 import User from "../models/User.js";
 import AvailabilitySlot from "../models/AvailabilitySlot.js";
+import Notification from "../models/Notification.js";
 
 export const getAppointments = async (req, res, next) => {
   try {
@@ -131,7 +99,7 @@ export const getAppointmentById = async (req, res, next) => {
       appointment.professionalId._id.toString() === req.user.id;
 
     if (!canView) {
-      const error = new Error("Acceso denegado");
+      const error = new Error("Access denied");
       error.status = 403;
       throw error;
     }
@@ -147,7 +115,36 @@ export const getAppointmentById = async (req, res, next) => {
 
 export const createAppointment = async (req, res, next) => {
   try {
-    const appointmentData = req.body;
+    console.log('=== CREAR CITA - INICIO ===');
+    console.log('Datos recibidos:', req.body);
+    console.log('Usuario autenticado:', req.user?.id, req.user?.role);
+    
+    const appointmentData = { ...req.body };
+
+    // Si no se especifica studentId, usar el usuario autenticado (para estudiantes)
+    if (!appointmentData.studentId && req.user.role === 'student') {
+      appointmentData.studentId = req.user.id;
+    }
+
+    // Si no se especifica professionalId pero se especifica tutorId, usar tutorId
+    if (!appointmentData.professionalId && appointmentData.tutorId) {
+      appointmentData.professionalId = appointmentData.tutorId;
+      delete appointmentData.tutorId; // Limpiar el campo tutorId
+    }
+
+    // Mapear type a appointmentType si existe
+    if (appointmentData.type && !appointmentData.appointmentType) {
+      appointmentData.appointmentType = appointmentData.type;
+      delete appointmentData.type;
+    }
+
+    // Convertir fecha y hora en scheduledDate
+    if (appointmentData.date && appointmentData.time && !appointmentData.scheduledDate) {
+      const dateTime = new Date(`${appointmentData.date}T${appointmentData.time}`);
+      appointmentData.scheduledDate = dateTime;
+      delete appointmentData.date;
+      delete appointmentData.time;
+    }
 
     // Verificar que los usuarios existen
     const [student, professional] = await Promise.all([
@@ -156,63 +153,79 @@ export const createAppointment = async (req, res, next) => {
     ]);
 
     if (!student) {
-      const error = new Error("Estudiante no encontrado");
+      const error = new Error("Student not found");
       error.status = 404;
       throw error;
     }
 
     if (!professional) {
-      const error = new Error("Profesional no encontrado");
+      const error = new Error("Professional not found");
       error.status = 404;
       throw error;
     }
 
     // Verificar roles
     if (!['tutor', 'advisor'].includes(professional.role)) {
-      const error = new Error("El profesional debe ser un tutor o asesor");
+      const error = new Error("Professional must be a tutor or advisor");
       error.status = 400;
       throw error;
     }
 
-    if (professional.role !== appointmentData.appointmentType.slice(0, -3)) { // 'tutoring' -> 'tutor'
-      const error = new Error("El tipo de cita no coincide con el rol del profesional");
-      error.status = 400;
-      throw error;
+    // Establecer tipo de cita basado en el rol del profesional si no se especificó
+    if (!appointmentData.appointmentType) {
+      appointmentData.appointmentType = professional.role === 'tutor' ? 'tutoring' : 'advising';
+    }
+
+    // Mapear 'advisory' a 'advising' para compatibilidad con el modelo
+    if (appointmentData.appointmentType === 'advisory') {
+      appointmentData.appointmentType = 'advising';
     }
 
     // Verificar disponibilidad (si se proporciona availabilitySlotId)
     if (appointmentData.availabilitySlotId) {
       const availabilitySlot = await AvailabilitySlot.findById(appointmentData.availabilitySlotId);
       if (!availabilitySlot || availabilitySlot.status !== 'available') {
-        const error = new Error("El horario seleccionado no está disponible");
+        const error = new Error("Selected time slot is not available");
         error.status = 400;
         throw error;
       }
     }
 
     // Verificar conflictos de horario
-    const conflictingAppointment = await Appointment.findOne({
-      $or: [
-        { studentId: appointmentData.studentId },
-        { professionalId: appointmentData.professionalId }
-      ],
-      status: { $in: ['programada', 'confirmada', 'en progreso'] },
-      scheduledDate: {
-        $gte: new Date(new Date(appointmentData.scheduledDate).getTime() - (appointmentData.duration * 60000)),
-        $lte: new Date(new Date(appointmentData.scheduledDate).getTime() + (appointmentData.duration * 60000))
-      }
-    });
+    if (appointmentData.scheduledDate) {
+      const conflictingAppointment = await Appointment.findOne({
+        $or: [
+          { studentId: appointmentData.studentId },
+          { professionalId: appointmentData.professionalId }
+        ],
+        status: { $in: ['scheduled', 'confirmed', 'in-progress'] },
+        scheduledDate: {
+          $gte: new Date(new Date(appointmentData.scheduledDate).getTime() - (appointmentData.duration * 60000)),
+          $lte: new Date(new Date(appointmentData.scheduledDate).getTime() + (appointmentData.duration * 60000))
+        }
+      });
 
-    if (conflictingAppointment) {
-      const error = new Error("Conflicto de horario con una cita existente");
-      error.status = 409;
-      throw error;
+      if (conflictingAppointment) {
+        const error = new Error("Time conflict with existing appointment");
+        error.status = 409;
+        throw error;
+      }
     }
 
     // Agregar información de auditoría
     if (req.user) {
       appointmentData.createdBy = req.user.id;
       appointmentData.updatedBy = req.user.id;
+    }
+
+    // Establecer estado inicial
+    if (!appointmentData.status) {
+      appointmentData.status = 'pending';
+    }
+
+    // Establecer duración por defecto si no se especifica
+    if (!appointmentData.duration) {
+      appointmentData.duration = 60;
     }
 
     // Inicializar participantes para sesiones grupales
@@ -224,29 +237,30 @@ export const createAppointment = async (req, res, next) => {
       }];
     }
 
-    // Transacción para evitar reservas simultáneas (double-booking)
-    const session = await Appointment.startSession();
-    session.startTransaction();
+    // Limpiar campos que no pertenecen al modelo
+    const studentMessage = req.body.message;
+    delete appointmentData.message;
+
+    console.log('Datos transformados para crear cita:', appointmentData);
+
+    // Crear la cita directamente (sin transacciones para desarrollo)
     try {
-      let appointmentSaved;
       if (appointmentData.availabilitySlotId) {
         // Marcar el slot como 'booked' sólo si sigue 'available'
         const updatedSlot = await AvailabilitySlot.findOneAndUpdate(
-          { _id: appointmentData.availabilitySlotId, status: 'disponible' },
-          { $set: { status: 'reservado' } },
-          { new: true, session }
+          { _id: appointmentData.availabilitySlotId, status: 'available' },
+          { $set: { status: 'booked' } },
+          { new: true }
         );
         if (!updatedSlot) {
-          const error = new Error('El horario seleccionado fue reservado por otra persona');
+          const error = new Error('Selected time slot was just booked by someone else');
           error.status = 409;
           throw error;
         }
       }
 
-      appointmentSaved = await Appointment.create([appointmentData], { session }).then(r => r[0]);
-
-      await session.commitTransaction();
-      session.endSession();
+      const appointmentSaved = await Appointment.create(appointmentData);
+      console.log('Cita creada exitosamente:', appointmentSaved._id);
 
       // Populate para la respuesta
       const populatedAppointment = await Appointment.findById(appointmentSaved._id)
@@ -254,23 +268,76 @@ export const createAppointment = async (req, res, next) => {
         .populate('professionalId', 'personalInfo email tutorProfile advisorProfile')
         .populate('availabilitySlotId', 'subject topic duration');
 
+      // Crear notificación para el tutor/asesor
+      try {
+        const studentName = `${student.personalInfo?.firstName || ''} ${student.personalInfo?.lastName || ''}`.trim() || student.email;
+        const appointmentDate = new Date(appointmentData.scheduledDate).toLocaleDateString('es-ES', {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        });
+        const appointmentTime = new Date(appointmentData.scheduledDate).toLocaleTimeString('es-ES', {
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+
+        const notificationData = {
+          userId: professional._id,
+          title: '📅 Nueva Solicitud de Asesoría',
+          message: `${studentName} ha solicitado una asesoría de ${appointmentData.subject} para el ${appointmentDate} a las ${appointmentTime}. ${studentMessage ? `Mensaje: "${studentMessage}"` : ''}`,
+          type: 'appointment_reminder',
+          priority: 'high',
+          category: 'appointment',
+          relatedAppointment: appointmentSaved._id,
+          actionUrl: `/appointments/${appointmentSaved._id}`,
+          actionLabel: 'Ver Solicitud',
+          allowResponse: true,
+          responseOptions: ['confirm', 'decline', 'reschedule'],
+          createdBy: student._id
+        };
+
+        console.log('=== CREANDO NOTIFICACIÓN ===');
+        console.log('Datos de notificación:', notificationData);
+
+        const notification = new Notification(notificationData);
+        const savedNotification = await notification.save();
+        await savedNotification.recordDelivery('in_app', 'sent');
+        
+        console.log('Notificación creada exitosamente con ID:', savedNotification._id);
+        console.log('Para usuario:', professional._id);
+        console.log('Título:', savedNotification.title);
+      } catch (notificationError) {
+        console.error('=== ERROR CREANDO NOTIFICACIÓN ===');
+        console.error('Error completo:', notificationError);
+        console.error('Stack:', notificationError.stack);
+        // No fallar la creación de la cita si falla la notificación
+      }
+
+      console.log('=== CREAR CITA - ÉXITO ===');
       return res.status(201).json({
         success: true,
-        message: "Cita creada exitosamente",
+        message: "Appointment created successfully",
         data: populatedAppointment
       });
-    } catch (txErr) {
-      await session.abortTransaction();
-      session.endSession();
-      throw txErr;
+    } catch (createError) {
+      console.error('Error en createAppointment:', createError);
+      throw createError;
     }
   } catch (error) {
+    console.error('=== CREAR CITA - ERROR ===');
+    console.error('Error completo:', error);
     next(error);
   }
 };
 
 export const updateAppointment = async (req, res, next) => {
   try {
+    console.log('=== ACTUALIZAR CITA ===');
+    console.log('ID de cita:', req.params.id);
+    console.log('Datos a actualizar:', req.body);
+    console.log('Usuario:', req.user?.id, req.user?.role);
+    
     const updateData = { ...req.body };
     
     // Agregar información de auditoría
@@ -288,17 +355,20 @@ export const updateAppointment = async (req, res, next) => {
     .populate('availabilitySlotId', 'subject topic duration');
 
     if (!appointment) {
-      const error = new Error("Cita no encontrada");
+      console.log('Cita no encontrada:', req.params.id);
+      const error = new Error("Appointment not found");
       error.status = 404;
       throw error;
     }
 
+    console.log('Cita actualizada exitosamente:', appointment._id);
     res.json({
       success: true,
-      message: "Cita actualizada exitosamente",
+      message: "Appointment updated successfully",
       data: appointment
     });
   } catch (error) {
+    console.error('Error en updateAppointment:', error);
     next(error);
   }
 };
@@ -322,7 +392,7 @@ export const cancelAppointment = async (req, res, next) => {
     .populate('availabilitySlotId');
 
     if (!appointment) {
-      const error = new Error("Cita no encontrada");
+      const error = new Error("Appointment not found");
       error.status = 404;
       throw error;
     }
@@ -331,13 +401,13 @@ export const cancelAppointment = async (req, res, next) => {
     if (appointment.availabilitySlotId) {
       await AvailabilitySlot.findByIdAndUpdate(
         appointment.availabilitySlotId,
-        { status: 'disponible' }
+        { status: 'available' }
       );
     }
 
     res.json({
       success: true,
-      message: "Cita cancelada exitosamente",
+      message: "Appointment cancelled successfully",
       data: appointment
     });
   } catch (error) {
@@ -351,7 +421,7 @@ export const addInternalNote = async (req, res, next) => {
     const appointment = await Appointment.findById(req.params.id);
 
     if (!appointment) {
-      const error = new Error("Cita no encontrada");
+      const error = new Error("Appointment not found");
       error.status = 404;
       throw error;
     }
@@ -363,7 +433,7 @@ export const addInternalNote = async (req, res, next) => {
 
     res.json({
       success: true,
-      message: "Nota interna agregada exitosamente",
+      message: "Internal note added successfully",
       data: updatedAppointment.internalNotes
     });
   } catch (error) {
@@ -377,14 +447,14 @@ export const rateAppointment = async (req, res, next) => {
     const appointment = await Appointment.findById(req.params.id);
 
     if (!appointment) {
-      const error = new Error("Cita no encontrada");
+      const error = new Error("Appointment not found");
       error.status = 404;
       throw error;
     }
 
     // Verificar que la cita esté completada
     if (appointment.status !== 'completed') {
-      const error = new Error("Solo se pueden calificar citas completadas");
+      const error = new Error("Can only rate completed appointments");
       error.status = 400;
       throw error;
     }
@@ -396,7 +466,7 @@ export const rateAppointment = async (req, res, next) => {
     } else if (appointment.professionalId.toString() === req.user.id) {
       raterRole = 'professional';
     } else {
-      const error = new Error("No autorizado para calificar esta cita");
+      const error = new Error("Not authorized to rate this appointment");
       error.status = 403;
       throw error;
     }
@@ -405,10 +475,91 @@ export const rateAppointment = async (req, res, next) => {
 
     res.json({
       success: true,
-      message: "Cita calificada exitosamente",
+      message: "Appointment rated successfully",
       data: appointment
     });
   } catch (error) {
+    next(error);
+  }
+};
+
+export const getTutorStudents = async (req, res, next) => {
+  try {
+    console.log('=== OBTENER ESTUDIANTES DEL TUTOR ===');
+    console.log('Usuario:', req.user?.id, req.user?.role);
+
+    // Verificar que el usuario sea tutor o asesor
+    if (!['tutor', 'advisor'].includes(req.user.role)) {
+      const error = new Error("Only tutors and advisors can access their students");
+      error.status = 403;
+      throw error;
+    }
+
+    // Buscar todas las citas confirmadas del tutor/asesor
+    const appointments = await Appointment.find({
+      professionalId: req.user.id,
+      status: { $in: ['confirmed', 'completed'] }
+    })
+    .populate('studentId', 'personalInfo email studentProfile')
+    .populate('professionalId', 'personalInfo')
+    .sort({ scheduledDate: -1 });
+
+    console.log('Citas encontradas:', appointments.length);
+
+    // Agrupar estudiantes únicos con su información
+    const studentsMap = new Map();
+    
+    appointments.forEach(appointment => {
+      const student = appointment.studentId;
+      if (student && !studentsMap.has(student._id.toString())) {
+        studentsMap.set(student._id.toString(), {
+          _id: student._id,
+          personalInfo: student.personalInfo,
+          email: student.email,
+          studentProfile: student.studentProfile,
+          appointments: []
+        });
+      }
+      
+      if (student) {
+        studentsMap.get(student._id.toString()).appointments.push({
+          _id: appointment._id,
+          subject: appointment.subject,
+          topic: appointment.topic,
+          scheduledDate: appointment.scheduledDate,
+          status: appointment.status,
+          duration: appointment.duration
+        });
+      }
+    });
+
+    // Convertir Map a Array y agregar estadísticas
+    const students = Array.from(studentsMap.values()).map(student => {
+      const confirmedAppointments = student.appointments.filter(apt => apt.status === 'confirmed');
+      const completedAppointments = student.appointments.filter(apt => apt.status === 'completed');
+      const lastAppointment = student.appointments[0]; // Ya están ordenados por fecha desc
+      
+      return {
+        ...student,
+        stats: {
+          totalAppointments: student.appointments.length,
+          confirmedAppointments: confirmedAppointments.length,
+          completedAppointments: completedAppointments.length,
+          lastAppointmentDate: lastAppointment?.scheduledDate,
+          subjects: [...new Set(student.appointments.map(apt => apt.subject))]
+        }
+      };
+    });
+
+    console.log('Estudiantes únicos encontrados:', students.length);
+
+    res.json({
+      success: true,
+      data: students,
+      total: students.length
+    });
+  } catch (error) {
+    console.error('Error en getTutorStudents:', error);
     next(error);
   }
 };
@@ -428,7 +579,7 @@ export const getUpcomingAppointments = async (req, res, next) => {
     } else if (['tutor', 'advisor'].includes(req.user.role)) {
       filter.professionalId = req.user.id;
     } else if (req.user.role !== 'admin') {
-      const error = new Error("Acceso denegado");
+      const error = new Error("Access denied");
       error.status = 403;
       throw error;
     }

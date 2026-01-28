@@ -5,21 +5,20 @@ const SALT_ROUNDS = 10;
 
 const UserSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true, lowercase: true, trim: true, index: true },
-  password: {
-    type: String,
-    required: true,
+  password: { 
+    type: String, 
+    required: true, 
     select: false,
     validate: {
-      validator: function (v) {
+      validator: function(v) {
         // Mínimo 8 caracteres, al menos una mayúscula, una minúscula y un dígito
         return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d@$!%*?&]{8,}$/.test(v);
       },
       message: 'Password must be at least 8 chars with upper, lower and number.'
     }
   },
-  role: { type: String, enum: ['student', 'tutor', 'advisor', 'admin'], default: 'student', index: true },
-  permissions: [{ type: String }], // Granular permissions beyond role
-  status: { type: String, enum: ['active', 'inactive', 'suspended', 'deleted'], default: 'active', index: true },
+  role: { type: String, enum: ['student','tutor','advisor','admin'], default: 'student', index: true },
+  status: { type: String, enum: ['active','inactive','suspended','deleted'], default: 'active', index: true },
   personalInfo: {
     firstName: String,
     lastName: String,
@@ -53,7 +52,7 @@ const UserSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 // Normalize email and hash password
-UserSchema.pre('save', async function (next) {
+UserSchema.pre('save', async function(next) {
   if (this.isModified('email') && this.email) {
     this.email = this.email.trim().toLowerCase();
   }
@@ -63,7 +62,7 @@ UserSchema.pre('save', async function (next) {
   next();
 });
 
-UserSchema.methods.comparePassword = function (candidate) {
+UserSchema.methods.comparePassword = function(candidate) {
   return bcrypt.compare(candidate, this.password);
 };
 

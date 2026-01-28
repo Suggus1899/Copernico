@@ -7,10 +7,12 @@ import {
   deleteUser,
   getUserProfile,
   updateUserProfile,
+  uploadAvatar,
   updateUserAvatar,
-  deleteUserAvatar
+  deleteUserAvatar,
+  getAvailableEducators,
+  checkEducatorAvailability
 } from '../controllers/user.controller.js';
-import { uploadAvatar } from '../middlewares/uploadAvatar.middleware.js';
 import { schemaValidator } from '../middlewares/schemaValidator.js';
 // IMPORTAR LOS NOMBRES CORRECTOS que sí existen:
 import { registerSchema as createUserSchema, updateProfileSchema as updateUserSchema } from '../schemas/user.schema.js';
@@ -31,6 +33,10 @@ router.put('/profile', schemaValidator(updateUserSchema), updateUserProfile);
 // Rutas para avatar del usuario autenticado
 router.post('/profile/avatar', uploadAvatar, updateUserAvatar);
 router.delete('/profile/avatar', deleteUserAvatar);
+
+// Rutas específicas para estudiantes - obtener educadores disponibles
+router.get('/available-educators', requireRole(['student']), getAvailableEducators);
+router.get('/check-availability/:educatorId', validateObjectIdParam('educatorId'), requireRole(['student']), checkEducatorAvailability);
 
 // Rutas administrativas
 router.get('/', requireRole(['admin', 'tutor', 'advisor', 'student']), getUsers);

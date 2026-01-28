@@ -104,8 +104,6 @@
 }
 
 .dashboard-main {
-  position: relative;
-  bottom: 190px;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 30px;
@@ -431,4 +429,523 @@
 .form-group input[type="url"] {
   font-family: monospace;
   font-size: 13px;
+}
+/* Quick Links Styles */
+.quick-links {
+  margin: 2rem 0;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-radius: 12px;
+  border: 1px solid #dee2e6;
+}
+
+.quick-links h3 {
+  margin: 0 0 1rem 0;
+  color: #495057;
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.quick-links-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.quick-link-card {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.quick-link-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.quick-link-card h4 {
+  margin: 0 0 0.5rem 0;
+  color: #343a40;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.quick-link-card p {
+  margin: 0 0 1rem 0;
+  color: #6c757d;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.quick-link-card .btn {
+  width: 100%;
+  justify-content: center;
+}
+
+/* Avatar image styles */
+.avatar-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+/* Role badge improvements */
+.role-badge.advisor {
+  background: linear-gradient(135deg, #17a2b8, #138496);
+  color: white;
+}
+
+.role-badge.tutor {
+  background: linear-gradient(135deg, #28a745, #1e7e34);
+  color: white;
+}
+
+/* Session type indicators */
+.appointment-tutor small {
+  display: block;
+  font-size: 0.75rem;
+  color: #6c757d;
+  font-weight: normal;
+  margin-top: 2px;
+}
+
+/* Form improvements */
+.form-group small {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.8rem;
+  color: #6c757d;
+}
+
+optgroup {
+  font-weight: bold;
+  color: #495057;
+}
+
+optgroup option {
+  font-weight: normal;
+  color: #212529;
+  padding-left: 1rem;
+}
+
+/* Responsive improvements */
+@media (max-width: 768px) {
+  .quick-links-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .quick-link-card {
+    padding: 1rem;
+  }
+}
+/* Large Modal Styles */
+.large-modal {
+  max-width: 600px;
+  width: 90vw;
+}
+
+.large-modal .modal-body {
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+/* Educator Info Header in Modals */
+.tutor-info-header,
+.advisor-info-header {
+  background: #f8f9fa;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  border-left: 4px solid #007bff;
+}
+
+.tutor-info-header {
+  border-left-color: #28a745;
+}
+
+.advisor-info-header {
+  border-left-color: #17a2b8;
+}
+
+.tutor-specialties,
+.advisor-expertise {
+  margin-top: 0.75rem;
+}
+
+.tutor-specialties h4,
+.advisor-expertise h4 {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.9rem;
+  color: #495057;
+}
+
+/* Empty Actions Styles */
+.empty-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-top: 1.5rem;
+}
+
+.empty-actions .btn {
+  min-width: 150px;
+}
+
+/* Form Improvements */
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group label {
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: #495057;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  padding: 0.75rem;
+  border: 1px solid #ced4da;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+/* Modal Actions */
+.modal-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid #dee2e6;
+}
+
+/* Responsive Modal */
+@media (max-width: 768px) {
+  .large-modal {
+    width: 95vw;
+    max-width: none;
+    margin: 1rem;
+  }
+  
+  .modal-actions {
+    flex-direction: column;
+  }
+  
+  .modal-actions .btn {
+    width: 100%;
+  }
+  
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+  
+  .empty-actions {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .empty-actions .btn {
+    width: 100%;
+    max-width: 250px;
+  }
+}
+/* Enhanced Profile Display Styles */
+.educator-expanded {
+  margin-top: 20px;
+  border-top: 2px solid #e9ecef;
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.expanded-content {
+  padding: 25px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+  border-radius: 12px;
+  margin-top: 15px;
+}
+
+.expanded-content h4 {
+  color: #2c3e50;
+  font-size: 1.4rem;
+  font-weight: 600;
+  margin-bottom: 25px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #3498db;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.personal-info, .academic-info, .tutor-info, .advisor-info, .contact-info {
+  margin-bottom: 25px;
+  padding: 20px;
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  border-left: 4px solid #3498db;
+}
+
+.personal-info h5, .academic-info h5, .tutor-info h5, .advisor-info h5, .contact-info h5 {
+  color: #2c3e50;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.info-grid, .contact-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 15px;
+  margin-bottom: 15px;
+}
+
+.info-item, .contact-item {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.info-label, .contact-label {
+  font-weight: 600;
+  color: #555;
+  font-size: 0.9rem;
+}
+
+.info-value, .contact-value {
+  color: #333;
+  font-size: 1rem;
+  padding: 8px 12px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  border: 1px solid #e9ecef;
+}
+
+.info-value.available {
+  color: #27ae60;
+  font-weight: 600;
+}
+
+.info-value.unavailable {
+  color: #e74c3c;
+  font-weight: 600;
+}
+
+.bio-full {
+  margin-top: 15px;
+}
+
+.bio-full h6 {
+  color: #2c3e50;
+  font-weight: 600;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bio-full p {
+  color: #555;
+  line-height: 1.6;
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border-left: 3px solid #3498db;
+  margin: 0;
+}
+
+.skills, .specialties-full, .specialization-areas, .teaching-methods {
+  margin-top: 15px;
+}
+
+.skills h6, .specialties-full h6, .specialization-areas h6, .teaching-methods h6 {
+  color: #2c3e50;
+  font-weight: 600;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.skill-tags, .specialty-tags, .method-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.skill-tag, .specialty-tag, .method-tag {
+  background: linear-gradient(135deg, #3498db, #2980b9);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  box-shadow: 0 2px 4px rgba(52, 152, 219, 0.3);
+  transition: all 0.2s ease;
+}
+
+.skill-tag:hover, .specialty-tag:hover, .method-tag:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(52, 152, 219, 0.4);
+}
+
+.profile-actions {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+  margin-top: 25px;
+  padding-top: 20px;
+  border-top: 1px solid #e9ecef;
+}
+
+.profile-actions .btn {
+  padding: 12px 24px;
+  font-weight: 600;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.profile-actions .btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.profile-actions .btn-primary {
+  background: linear-gradient(135deg, #3498db, #2980b9);
+  border: none;
+  color: white;
+}
+
+.profile-actions .btn-outline {
+  background: white;
+  border: 2px solid #3498db;
+  color: #3498db;
+}
+
+.profile-actions .btn-outline:hover {
+  background: #3498db;
+  color: white;
+}
+
+/* Responsive design for profile display */
+@media (max-width: 768px) {
+  .info-grid, .contact-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .profile-actions {
+    flex-direction: column;
+  }
+  
+  .expanded-content {
+    padding: 20px 15px;
+  }
+  
+  .personal-info, .academic-info, .tutor-info, .advisor-info, .contact-info {
+    padding: 15px;
+  }
+}
+
+@media (max-width: 480px) {
+  .skill-tags, .specialty-tags, .method-tags {
+    justify-content: center;
+  }
+  
+  .expanded-content h4 {
+    font-size: 1.2rem;
+  }
+  
+  .personal-info h5, .academic-info h5, .tutor-info h5, .advisor-info h5, .contact-info h5 {
+    font-size: 1rem;
+  }
+}
+/* Info Banner Styles */
+.info-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+  border: 1px solid #bbdefb;
+  border-radius: 10px;
+  padding: 15px 20px;
+  margin-top: 15px;
+  box-shadow: 0 2px 8px rgba(33, 150, 243, 0.1);
+}
+
+.info-icon {
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.info-content {
+  color: #1565c0;
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.info-content strong {
+  color: #0d47a1;
+  font-weight: 600;
+}
+
+/* Responsive info banner */
+@media (max-width: 768px) {
+  .info-banner {
+    padding: 12px 16px;
+    margin-top: 12px;
+  }
+  
+  .info-content {
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .info-banner {
+    flex-direction: column;
+    text-align: center;
+    gap: 8px;
+  }
+  
+  .info-icon {
+    font-size: 1.5rem;
+  }
 }
