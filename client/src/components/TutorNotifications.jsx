@@ -235,13 +235,14 @@ class TutorNotifications extends Component {
       <div className="dashboard-container">
         <TutorSidebarMenu />
         <div className="dashboard-content">
-          <div className="dashboard-header">
+          <div className="dashboard-header" style={{width: '200%'}}>
             <h1>Notificaciones</h1>
             <p>Mantente al día con todas tus actividades y actualizaciones</p>
             <button 
               className="btn btn-primary"
               onClick={this.fetchNotifications}
               disabled={loading}
+              style={{position: 'relative', left: '70%'}}
             >
               {loading ? '🔄 Actualizando...' : '🔄 Actualizar'}
             </button>
@@ -256,7 +257,7 @@ class TutorNotifications extends Component {
             </div>
           ) : (
             <div className="dashboard-main">
-              <div className="notifications-controls">
+              <div className="notifications-controls" style={{position: 'relative', top: '30%', left: '370%'}}>
                 <div className="notifications-stats">
                   <span className="unread-count">
                     {unreadCount} sin leer
@@ -282,16 +283,15 @@ class TutorNotifications extends Component {
                 </select>
               </div>
 
-              <div className="notifications-list">
+              <div className="notifications-list" style={{position: 'relative', right: '24%', top: '50%',minHeight: '300px',display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',gap: '20px', margin: '0 auto',padding: '20px',maxWidth: '1200px',}}>
                 {filteredNotifications.length > 0 ? (
                   filteredNotifications.map((notification) => (
                     <div
                       key={notification._id}
                       className={`notification-item ${!notification.read ? 'unread' : ''} ${notification.priority}`}
+                      style={{background: "#d3cdcdff", borderRadius: '12px',border: '1px solid #eee', padding: '20px',boxShadow: '0 4px 6px rgba(0,0,0,0.05)'}}
                     >
-                      <div className="notification-icon">
-                        {this.getNotificationIcon(notification.type)}
-                      </div>
+                      
 
                       <div className="notification-content">
                         <div className="notification-header">
@@ -415,7 +415,7 @@ class TutorNotifications extends Component {
                     </div>
                   ))
                 ) : (
-                  <div className="empty-state">
+                  <div className="empty-state" style={{position: 'relative', top: '10%', left: '90%'}}>
                     <h3>No hay notificaciones</h3>
                     <p>No tienes notificaciones con los filtros seleccionados</p>
                   </div>

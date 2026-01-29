@@ -173,7 +173,7 @@ const UserProfile = () => {
   };
 
   return (
-    <div className="profile-page">
+    <div className="profile-page" style={{position: 'relative', top: '160px', left: '-130px', width: '800px'}}>
       <div className="profile-header">
         <div className="profile-avatar-section">
           <div className="profile-avatar-container">
@@ -200,10 +200,10 @@ const UserProfile = () => {
               </button>
             </div>
           </div>
-          <div className="profile-basic-info">
+          <div className="profile-basic-info" style={{position: 'relative', left: '80%', top: '-175px', width: '400px' }}>
             <h2 className="profile-name">{getFullName(user)}</h2>
             <p className="profile-email">📧 {user.email}</p>
-            <div className="profile-role">
+            <div className="profile-role" style={{position: 'relative', top: '20px', left: '200px'}}>
               <span className={`role-badge ${user.role}`}>
                 {getRoleIcon(user.role)} {getRoleLabel(user.role)}
               </span>
@@ -224,18 +224,21 @@ const UserProfile = () => {
               <button 
                 className="btn btn-primary"
                 onClick={() => setEditMode(true)}
+                style={{position: 'relative', bottom: '-140px', right: '285px',width: '170px'}}
               >
                 ✏️ Editar Perfil
               </button>
               <button 
                 className="btn btn-outline" 
                 onClick={() => navigate('/account/change-email')}
+                style={{position: 'relative', bottom: '-140px', right: '285px',width: '170px'}}
               >
                 📧 Cambiar Email
               </button>
               <button 
                 className="btn btn-outline" 
                 onClick={() => navigate('/account/change-password')}
+                style={{position: 'relative', bottom: '-83px', left: '77px',width: '220px'}}
               >
                 🔒 Cambiar Contraseña
               </button>
@@ -246,10 +249,12 @@ const UserProfile = () => {
                 className="btn btn-primary"
                 onClick={handleEditSubmit}
                 disabled={saving}
+                style={{position: 'relative', bottom: '-150px', left: '105px',width: '320px'}}
               >
                 {saving ? '💾 Guardando...' : '💾 Guardar Cambios'}
               </button>
               <button 
+              style={{position: 'relative', bottom: '-92px', right: '245px',width: '320px'}}
                 className="btn btn-secondary"
                 onClick={() => {
                   setEditMode(false);
@@ -273,7 +278,7 @@ const UserProfile = () => {
         </div>
       </div>
       
-      <div className="profile-content">
+      <div className="profile-content" style={{width: '1200px',position: 'relative', left: '15%',borderRadius: '12px',padding: '20px', background: '#F8F9FA', border: '1px solid #eee'}}>
         {editMode ? (
           <form onSubmit={handleEditSubmit} className="profile-edit-form">
             <div className="form-section">
@@ -386,7 +391,7 @@ const UserProfile = () => {
             </div>
           </form>
         ) : (
-          <div className="profile-details">
+          <div className="profile-details" >
             <div className="details-section">
               <h3>👤 Información Personal</h3>
               <div className="details-grid">

@@ -523,7 +523,7 @@ const TutorProfile = () => {
               </form>
             ) : (
               <div className="profile-details"  style={{position: 'relative', bottom: '330px',borderRadius: '12px',padding: '20px', background: '#F8F9FA', border: '1px solid #eee' }}>
-                <div className="details-section">
+                <div className="details-section" >
                   <h3>👤 Información Personal</h3>
                   <div className="details-grid">
                     <div className="detail-item">

@@ -268,11 +268,11 @@ const TutorCourses = () => {
               )}
             </div>
           ) : (
-            <div className="courses-grid" style={{position: 'relative', bottom: '400px',width: '300px', height: '200px'}}>
+            <div className="courses-grid" style={{position: 'relative', right: '10%', top: '-410px',minHeight: '300px',display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',gap: '20px', margin: '0 auto',padding: '20px',maxWidth: '900px',}}>
               {filteredCourses.map((course) => {
                 const statusBadge = getStatusBadge(course.status);
                 return (
-                  <div key={course.id} className="course-card">
+                  <div key={course.id} className="course-card" style={{background: "#d3cdcdff", borderRadius: '12px',border: '1px solid #eee', padding: '20px',boxShadow: '0 4px 6px rgba(0,0,0,0.05)'}}>
                     <div className="course-header">
                       <div className="course-title">
                         <h3>📚 {course.subject}</h3>
@@ -352,14 +352,16 @@ const TutorCourses = () => {
                       <button 
                         className="btn btn-primary"
                         onClick={() => window.location.href = '/tutor/videos'}
+                        style={{width: '120px', height: '70px'}}
                       >
-                        📹 Subir Material
+                        Subir Material
                       </button>
                       <button 
                         className="btn btn-secondary"
                         onClick={() => window.location.href = '/tutor/students'}
+                        style={{width: '120px', height: '70px',position: 'relative', left: '10%'}}
                       >
-                        👥 Ver Estudiante
+                         Ver Estudiante
                       </button>
                     </div>
                   </div>
