@@ -189,21 +189,22 @@ const TutorProgress = () => {
   return (
     <div className="dashboard-container">
       <TutorSidebarMenu userRole={userRole} />
-      <div className="dashboard-content">
-        <div className="dashboard-header">
-          <h1>📊 Progreso de Estudiantes</h1>
+      <div className="dashboard-content" style={{position: 'relative', top: '20px',width: '800px'}}>
+        <div className="dashboard-header" style={{position: 'relative', left: '-70px'}}>
+          <h1>Progreso de Estudiantes</h1>
           <p>Monitorea el rendimiento y progreso de tus estudiantes</p>
         </div>
 
         {error && <div className="alert alert-danger">{error}</div>}
 
-        <div className="dashboard-main">
+        <div className="dashboard-main" style={{position: 'relative', top: '20px'}}>
           {students.length > 0 && (
             <div className="progress-controls">
               <select
                 value={selectedSubject}
                 onChange={(e) => setSelectedSubject(e.target.value)}
                 className="course-filter"
+                style={{position: 'relative', bottom: '30px',width: '280px', left: '800px', height: '30px'}}
               >
                 <option value="all">Todas las materias ({students.length} estudiantes)</option>
                 {allSubjects.map(subject => {
@@ -219,7 +220,7 @@ const TutorProgress = () => {
           )}
 
           {filteredStudents.length === 0 ? (
-            <div className="empty-state">
+            <div className="empty-state" style={{position: 'relative', bottom: '50px',width: '800px', height: '200px', left: '100px'}}>
               <div className="empty-icon">📊</div>
               <h3>
                 {students.length === 0 
@@ -234,7 +235,7 @@ const TutorProgress = () => {
                 }
               </p>
               {students.length === 0 && (
-                <div className="help-text">
+                <div className="help-text" style={{position: 'relative', top: '30px', left: '30px'}}>
                   <h4>💡 ¿Cómo funciona el progreso?</h4>
                   <ul>
                     <li>El progreso se calcula basado en sesiones completadas</li>
@@ -246,9 +247,9 @@ const TutorProgress = () => {
               )}
             </div>
           ) : (
-            <div className="students-progress">
+            <div className="students-progress" style={{position: 'relative', right: '400px',minHeight: '300px',display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',gap: '20px', margin: '0 auto',padding: '20px',maxWidth: '1200px',}}>
               {filteredStudents.map((student) => (
-                <div key={student.id} className="student-progress-card">
+                <div key={student.id} className="student-progress-card" style={{background: "#d3cdcdff", borderRadius: '12px',border: '1px solid #eee', padding: '20px',boxShadow: '0 4px 6px rgba(0,0,0,0.05)'}}>
                   <div className="student-header">
                     <h3>👨‍🎓 {student.name}</h3>
                     <div className="student-badges">
@@ -324,9 +325,10 @@ const TutorProgress = () => {
                     ))}
                   </div>
 
-                  <div className="student-actions">
+                  <div className="student-actions" style={{display: 'flex',flexWrap: 'wrap',gap: '10px',marginTop: '15px', alignItems: 'center'}}>
                     <button 
                       className="btn btn-outline small"
+                      style={{position: 'relative', top: '-5px', right: '25px'}}
                       onClick={() => window.location.href = '/dashboard/estudiantes'}
                     >
                       👥 Ver Detalles
@@ -334,10 +336,11 @@ const TutorProgress = () => {
                     <button 
                       className="btn btn-outline small"
                       onClick={() => window.location.href = '/dashboard/videos-tutor'}
+                      style={{position: 'relative', bottom: '63px', left: '125px'}}
                     >
                       📹 Subir Material
                     </button>
-                    <span className="last-activity">
+                    <span className="last-activity" style={{position: 'relative', bottom: '50px'}}>
                       🕐 Última actividad: {student.lastActivityFormatted}
                     </span>
                   </div>

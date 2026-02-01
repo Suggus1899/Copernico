@@ -190,24 +190,28 @@ const TutorCourses = () => {
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="search-input"
+                    style={{position: 'relative', top: '9px', left: '520px',width: '140px', height: '50px'}}
                   />
                 </div>
                 <div className="filter-buttons">
                   <button
                     className={`filter-btn ${filterStatus === 'all' ? 'active' : ''}`}
                     onClick={() => setFilterStatus('all')}
+                    style={{position: 'relative', bottom: '40px',width: '160px', height: '50px'}}
                   >
                     Todos ({courses.length})
                   </button>
                   <button
                     className={`filter-btn ${filterStatus === 'active' ? 'active' : ''}`}
                     onClick={() => setFilterStatus('active')}
+                    style={{position: 'relative', bottom: '40px',width: '160px', height: '50px'}}
                   >
                     Activos ({courses.filter(c => c.status === 'active').length})
                   </button>
                   <button
                     className={`filter-btn ${filterStatus === 'completed' ? 'active' : ''}`}
                     onClick={() => setFilterStatus('completed')}
+                    style={{position: 'relative', bottom: '40px',width: '160px', height: '50px'}}
                   >
                     Completados ({courses.filter(c => c.status === 'completed').length})
                   </button>
@@ -216,19 +220,19 @@ const TutorCourses = () => {
 
               {/* Estadísticas */}
               <div className="courses-stats">
-                <div className="stat-item">
+                <div className="stat-item" style={{position: 'relative', bottom: '110px',left: '790px', width: '300px'}}>
                   <span className="stat-number">{courses.filter(c => c.status === 'active').length}</span>
                   <span className="stat-label">Cursos activos</span>
                 </div>
-                <div className="stat-item">
+                <div className="stat-item" style={{position: 'relative', bottom: '100px',left: '790px', width: '300px'}}>
                   <span className="stat-number">{courses.reduce((acc, c) => acc + c.completedSessions, 0)}</span>
                   <span className="stat-label">Sesiones completadas</span>
                 </div>
-                <div className="stat-item">
+                <div className="stat-item" style={{position: 'relative', bottom: '90px',left: '790px', width: '300px'}}>
                   <span className="stat-number">{courses.reduce((acc, c) => acc + c.upcomingSessions, 0)}</span>
                   <span className="stat-label">Sesiones programadas</span>
                 </div>
-                <div className="stat-item">
+                <div className="stat-item" style={{position: 'relative', bottom: '80px',left: '790px', width: '300px'}}>
                   <span className="stat-number">{Math.round(courses.reduce((acc, c) => acc + c.progress, 0) / courses.length) || 0}%</span>
                   <span className="stat-label">Progreso promedio</span>
                 </div>
@@ -237,7 +241,7 @@ const TutorCourses = () => {
           )}
 
           {filteredCourses.length === 0 ? (
-            <div className="empty-state">
+            <div className="empty-state" style={{position: 'relative', left:'200px', width: '600px'}}>
               <div className="empty-icon">📚</div>
               <h3>
                 {courses.length === 0 
@@ -264,11 +268,11 @@ const TutorCourses = () => {
               )}
             </div>
           ) : (
-            <div className="courses-grid">
+            <div className="courses-grid" style={{position: 'relative', right: '10%', top: '-410px',minHeight: '300px',display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',gap: '20px', margin: '0 auto',padding: '20px',maxWidth: '900px',}}>
               {filteredCourses.map((course) => {
                 const statusBadge = getStatusBadge(course.status);
                 return (
-                  <div key={course.id} className="course-card">
+                  <div key={course.id} className="course-card" style={{background: "#d3cdcdff", borderRadius: '12px',border: '1px solid #eee', padding: '20px',boxShadow: '0 4px 6px rgba(0,0,0,0.05)'}}>
                     <div className="course-header">
                       <div className="course-title">
                         <h3>📚 {course.subject}</h3>
@@ -348,14 +352,16 @@ const TutorCourses = () => {
                       <button 
                         className="btn btn-primary"
                         onClick={() => window.location.href = '/tutor/videos'}
+                        style={{width: '120px', height: '70px'}}
                       >
-                        📹 Subir Material
+                        Subir Material
                       </button>
                       <button 
                         className="btn btn-secondary"
                         onClick={() => window.location.href = '/tutor/students'}
+                        style={{width: '120px', height: '70px',position: 'relative', left: '10%'}}
                       >
-                        👥 Ver Estudiante
+                         Ver Estudiante
                       </button>
                     </div>
                   </div>

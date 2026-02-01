@@ -223,7 +223,7 @@ render() {
         </div>
 
         {/* Tabs para filtrar contenido */}
-        <div className="content-tabs">
+        <div className="content-tabs" style={{position:'relative', top:'150px'}}>
           <button 
             className={`tab-btn ${activeTab === 'all' ? 'active' : ''}`}
             onClick={() => this.setState({ activeTab: 'all', selectedItem: null })}
@@ -254,6 +254,7 @@ render() {
               onChange={this.handleFilterChange}
               placeholder="Buscar contenido..."
               className="search-input"
+              style={{position: 'relative', top: '70px', left: '500px'}}
             />
           </div>
           <div className="filter-group">
@@ -262,6 +263,7 @@ render() {
               value={filters.subject}
               onChange={this.handleFilterChange}
               className="subject-select"
+              style={{position: 'relative', top: '70px', left: '500px'}}
             >
               <option value="">Todas las materias</option>
               {uniqueSubjects.map(subject => (
@@ -272,20 +274,20 @@ render() {
         </div>
 
         {/* Estadísticas */}
-        <div className="videos-stats">
-          <div className="stat-item">
+        <div className="videos-stats" style={{position: 'relative', height: '100px', top: '70px', left: '800px'}}>
+          <div className="stat-item" style={{position: 'relative', width: '250px', height: '90px', left: '110px', top: '-10px'}}>
             <span className="stat-number">{filteredContent.length}</span>
             <span className="stat-label">Contenidos disponibles</span>
           </div>
-          <div className="stat-item">
+          <div className="stat-item" style={{position: 'relative', width: '250px', height: '90px', left: '110px'}}>
             <span className="stat-number">{filteredContent.filter(item => item.contentType === 'video').length}</span>
             <span className="stat-label">Videos</span>
           </div>
-          <div className="stat-item">
+          <div className="stat-item" style={{position: 'relative', width: '250px', height: '90px', left: '110px', top: '10px'}}>
             <span className="stat-number">{filteredContent.filter(item => item.contentType === 'material').length}</span>
             <span className="stat-label">Materiales</span>
           </div>
-          <div className="stat-item">
+          <div className="stat-item" style={{position: 'relative', width: '250px', height: '90px', left: '110px', top: '20px'}}>
             <span className="stat-number">{uniqueSubjects.length}</span>
             <span className="stat-label">Materias</span>
           </div>

@@ -1,15 +1,11 @@
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
 
 body {
-  background-color: #f8f9fa !important;
+  background-image: url("../src/assets/background.jpg")  !important;
+  background-repeat: no-repeat !important;
+  background-size: cover !important;
   color: #212529;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   margin: 0;
-  min-height: 100vh;
 }
 
 .card {
@@ -222,7 +218,9 @@ body {
   justify-content: center;
   align-items: center;
   padding: 20px;
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  background-image: url(../src/assets/background.jpg);
+  background-size: cover;
+  background-repeat: no-repeat;
 }
 
 .signup-card {
@@ -535,6 +533,9 @@ body {
 }
 
 .videos-header {
+  position: relative;
+  width: 750px;
+  top: 150px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -548,6 +549,9 @@ body {
 }
 
 .video-form-container {
+  position: relative;
+  top: 150px;
+  width: 1100px;
   background: white;
   border-radius: 12px;
   padding: 25px;
@@ -821,6 +825,8 @@ body {
 }
 
 .videos-list {
+  position: relative;
+  top: 250px;
   display: flex;
   flex-direction: column;
   gap: 15px;

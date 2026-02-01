@@ -97,32 +97,33 @@ const TutorAgenda = () => {
       <TutorSidebarMenu />
       <div className="dashboard-content">
         <div className="dashboard-header">
-          <h1>📅 Agenda de Clases</h1>
+          <h1>Agenda de Clases</h1>
           <p>Gestiona tus clases y asesorías programadas</p>
         </div>
 
         {error && <div className="alert alert-danger">{error}</div>}
 
-        <div className="dashboard-main">
-          <div className="agenda-controls">
+        <div className="dashboard-main" style={{position: 'relative', top: '10px'}}>
+          <div className="agenda-controls" >
             <input
               type="date"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
               className="date-picker"
+              style={{position: 'relative', left: '850px', bottom: '80px',width: '200px'}}
             />
-            <div className="agenda-stats">
-              <span className="stat-item">
-                📊 Total citas: {appointments.length}
+            <div className="agenda-stats" style={{position: 'relative', left: '700px', bottom: '30px'}}>
+              <span className="stat-item" style={{position: 'relative', left: '250px', width: '100px', whiteSpace: 'nowrap'}} >
+                Total citas: {appointments.length}
               </span>
-              <span className="stat-item">
-                📅 Hoy: {todayAppointments.length}
+              <span className="stat-item" style={{width: '100px', whiteSpace: 'nowrap'}} >
+                Hoy: {todayAppointments.length}
               </span>
             </div>
           </div>
 
           <div className="agenda-calendar">
-            <div className="today-schedule">
+            <div className="today-schedule" style={{position: 'relative', bottom: '22px', right: '250px', width: '800px'}}>
               <h2>📋 Citas del {formatDate(selectedDate)}</h2>
               {todayAppointments.length > 0 ? (
                 <div className="schedule-list">
@@ -171,9 +172,9 @@ const TutorAgenda = () => {
                   ))}
                 </div>
               ) : (
-                <div className="no-classes">
-                  <div className="empty-icon">📅</div>
-                  <h3>No hay citas programadas para esta fecha</h3>
+                <div className="no-classes" style={{position: 'relative', right: '00px'}}>
+                  <div className="empty-icon"></div>
+                  <h3>📅 No hay citas programadas para esta fecha</h3>
                   <p>Las citas aparecerán aquí cuando los estudiantes soliciten asesorías y tú las aceptes</p>
                   <div className="help-text">
                     <h4>💡 ¿Cómo funcionan las citas?</h4>
