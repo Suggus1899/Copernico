@@ -15,6 +15,16 @@ const apiClient = axios.create({
 // Interceptor para agregar el token de autenticación a todas las peticiones
 apiClient.interceptors.request.use(
   (config) => {
+    // Si se envía FormData, permitir que el navegador establezca el Content-Type con boundary
+    if (typeof FormData !== 'undefined' && config.data instanceof FormData) {
+      if (config.headers) {
+        delete config.headers['Content-Type'];
+        if (config.headers.common) {
+          delete config.headers.common['Content-Type'];
+        }
+      }
+    }
+
     // Proteger uso de localStorage en entornos no-browser
     const rawToken = typeof window !== 'undefined' && typeof localStorage !== 'undefined'
       ? localStorage.getItem('token')
