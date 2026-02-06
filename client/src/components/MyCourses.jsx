@@ -169,7 +169,7 @@ const MyCourses = () => {
     <div className="courses-page">
       <div className="courses-header">
         <h2>📚 Mis Cursos</h2>
-        <p>Cursos coordinados con tus tutores y asesores</p>
+        <p>Cursos coordinados con tus tutores</p>
       </div>
 
       {error && <div className="alert alert-danger">{error}</div>}
@@ -242,7 +242,7 @@ const MyCourses = () => {
           </h3>
           <p>
             {courses.length === 0 
-              ? 'Los cursos aparecerán aquí cuando tengas citas confirmadas con tutores o asesores'
+              ? 'Los cursos aparecerán aquí cuando tengas citas confirmadas con tutores'
               : 'Intenta con otros términos de búsqueda o filtros diferentes'
             }
           </p>
@@ -281,7 +281,7 @@ const MyCourses = () => {
                       {getRoleIcon(course.tutorRole)} {course.tutorName}
                     </span>
                     <span className="role-badge">
-                      {course.tutorRole === 'advisor' ? 'Asesor' : 'Tutor'}
+                      Tutor
                     </span>
                   </div>
                 </div>

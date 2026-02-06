@@ -22,9 +22,9 @@ export const signupSchema = z.object({
         message: "Password must be at least 8 characters",
       }),
     userType: z
-      .enum(['Estudiante', 'Tutor', 'Asesor'], {
+      .enum(['Estudiante', 'Tutor'], {
         required_error: "User type is required",
-        invalid_type_error: "User type must be Estudiante, Tutor, or Asesor",
+        invalid_type_error: "User type must be Estudiante or Tutor",
       }),
   }),
 });

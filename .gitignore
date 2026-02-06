@@ -12,8 +12,18 @@ dist
 dist-ssr
 *.local
 
-# Uploaded files
-uploads/
+# Uploaded files (ignore content but keep directories)
+uploads/*
+!uploads/.gitkeep
+!uploads/videos/
+!uploads/thumbnails/
+!uploads/avatars/
+uploads/videos/*
+!uploads/videos/.gitkeep
+uploads/thumbnails/*
+!uploads/thumbnails/.gitkeep
+uploads/avatars/*
+!uploads/avatars/.gitkeep
 
 # Editor directories and files
 .vscode/*

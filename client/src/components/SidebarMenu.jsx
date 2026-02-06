@@ -26,8 +26,8 @@ const SidebarMenu = () => {
   const menuItems = [
     { path: '/dashboard/cursos', icon: iconCursos, label: 'Cursos' },
     { path: '/dashboard/videos', icon: iconVideos, label: 'Clases' },
+    { path: '/dashboard/progreso-videos', icon: iconVideos, label: 'Mi Progreso' },
     { path: '/dashboard/tutores', icon: iconTutores, label: 'Tutores' },
-    { path: '/dashboard/asesores', icon: iconAsesoria, label: 'Asesores' },
     { path: '/dashboard/notas', icon: iconNotas, label: 'Apuntes' },
     { path: '/dashboard/perfil', icon: iconPerfil, label: 'Perfil' },
     { path: '#', icon: iconLogout, label: 'Salir', isLogout: true }

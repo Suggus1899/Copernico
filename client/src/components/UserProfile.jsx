@@ -149,7 +149,6 @@ const UserProfile = () => {
     const map = {
       student: 'Estudiante',
       tutor: 'Tutor',
-      advisor: 'Asesor',
       admin: 'Administrador'
     };
     return map[role] || role;

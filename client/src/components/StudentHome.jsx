@@ -11,7 +11,7 @@ const StudentHome = () => {
         <h2>¡Bienvenido a tu espacio de aprendizaje!</h2>
         <p>
           Desde aquí puedes acceder a todos tus cursos, ver videos de clases, 
-          conectar con tutores, programar asesorías y gestionar tus apuntes de estudio.
+          conectar con tutores y gestionar tus apuntes de estudio.
         </p>
         <p>
           Explora las opciones del menú superior para comenzar tu experiencia de aprendizaje.

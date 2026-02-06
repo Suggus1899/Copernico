@@ -170,7 +170,6 @@ class CreateUser extends Component {
 		const roleMap = {
 			Estudiante: 'student',
 			Tutor: 'tutor',
-			Asesor: 'advisor',
 		};
 		const role = roleMap[this.state.userType] || 'student';
 
@@ -271,26 +270,13 @@ class CreateUser extends Component {
 									<div className="card-icon">👨‍🏫</div>
 									<div className="card-content">
 										<h4>Tutor</h4>
-										<p>Ofrece tutorías y comparte conocimientos</p>
+										<p>Ofrece tutorías, comparte conocimientos y proporciona asesorías especializadas</p>
 									</div>
 									<div className={`card-radio ${this.state.userType === 'Tutor' ? 'checked' : ''}`}>
 										<div className="radio-dot"></div>
 									</div>
 								</div>
 
-								<div
-									className={`account-type-card ${this.state.userType === 'Asesor' ? 'selected' : ''}`}
-									onClick={() => this.setState({ userType: 'Asesor' })}
-								>
-									<div className="card-icon">💼</div>
-									<div className="card-content">
-										<h4>Asesor</h4>
-										<p>Proporciona asesorías especializadas</p>
-									</div>
-									<div className={`card-radio ${this.state.userType === 'Asesor' ? 'checked' : ''}`}>
-										<div className="radio-dot"></div>
-									</div>
-								</div>
 							</div>
 							{!this.state.userType && (
 								<div className="error-message">Por favor selecciona un tipo de cuenta</div>

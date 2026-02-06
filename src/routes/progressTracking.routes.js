@@ -34,10 +34,10 @@ router.get('/student-progress', getStudentProgress);
 router.get('/', getProgressTrackings);
 router.get('/statistics', getProgressStatistics);
 router.get('/:id', getProgressTrackingById);
-router.post('/', requireRole(['tutor', 'advisor', 'admin']), schemaValidator(createProgressTrackingSchema), createProgressTracking);
-router.post('/baseline', requireRole(['tutor', 'advisor', 'admin']), createBaselineAssessment);
-router.put('/:id', requireRole(['tutor', 'advisor', 'admin']), schemaValidator(updateProgressTrackingSchema), updateProgressTracking);
-router.post('/:id/history', requireRole(['tutor', 'advisor', 'admin']), schemaValidator(addProgressHistorySchema), addProgressHistory);
+router.post('/', requireRole(['tutor', 'admin']), schemaValidator(createProgressTrackingSchema), createProgressTracking);
+router.post('/baseline', requireRole(['tutor', 'admin']), createBaselineAssessment);
+router.put('/:id', requireRole(['tutor', 'admin']), schemaValidator(updateProgressTrackingSchema), updateProgressTracking);
+router.post('/:id/history', requireRole(['tutor', 'admin']), schemaValidator(addProgressHistorySchema), addProgressHistory);
 router.patch('/:id/goals', schemaValidator(updateGoalStatusSchema), updateGoalStatus);
 
 export default router;

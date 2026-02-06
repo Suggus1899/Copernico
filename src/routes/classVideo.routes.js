@@ -32,15 +32,15 @@ router.get('/test', (req, res) => {
 // Rutas para obtener videos
 router.get('/', getClassVideos);
 router.get('/popular', getPopularVideos);
-router.get('/my/videos', requireRole(['tutor', 'advisor', 'admin']), getMyClassVideos);
+router.get('/my/videos', requireRole(['tutor', 'admin']), getMyClassVideos);
 router.get('/:id', getClassVideoById);
 
 // Ruta para crear video con subida de archivos
-router.post('/', requireRole(['tutor', 'advisor', 'admin']), uploadVideoFiles, createClassVideo);
+router.post('/', requireRole(['tutor', 'admin']), uploadVideoFiles, createClassVideo);
 
 // Rutas para modificar videos
-router.put('/:id', requireRole(['tutor', 'advisor', 'admin']), updateClassVideo);
-router.delete('/:id', requireRole(['tutor', 'advisor', 'admin']), deleteClassVideo);
+router.put('/:id', requireRole(['tutor', 'admin']), updateClassVideo);
+router.delete('/:id', requireRole(['tutor', 'admin']), deleteClassVideo);
 
 // Rutas de interacción
 router.post('/:id/like', toggleLikeVideo);

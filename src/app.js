@@ -22,6 +22,7 @@ import assignmentRoutes from "./routes/assignment.routes.js";
 import progressTrackingRoutes from "./routes/progressTracking.routes.js";
 import reportRoutes from "./routes/report.routes.js";
 import notificationRoutes from "./routes/notification.routes.js";
+import videoProgressRoutes from "./routes/videoProgress.routes.js";
 
 // settings
 app.set("port", process.env.PORT || 4002);
@@ -71,6 +72,7 @@ console.log('Montando ruta /api/videos con classVideoRoutes...');
 app.use("/api/videos", classVideoRoutes);
 app.use("/api/assignments", assignmentRoutes);
 app.use("/api/progress", progressTrackingRoutes);
+app.use("/api/video-progress", videoProgressRoutes);
 app.use("/api/reports", reportRoutes);
 app.use("/api/notifications", notificationRoutes);
 console.log('Rutas montadas exitosamente');

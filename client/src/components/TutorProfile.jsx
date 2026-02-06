@@ -212,7 +212,6 @@ const TutorProfile = () => {
     const map = {
       student: 'Estudiante',
       tutor: 'Tutor',
-      advisor: 'Asesor',
       admin: 'Administrador'
     };
     return map[role] || role;
@@ -360,14 +359,14 @@ const TutorProfile = () => {
           {/* Estadísticas del tutor/asesor */}
           {stats && !editMode && (
             <div className="profile-stats" style={{position: 'relative', bottom: '360px', left: '620px', width:'540px', height: '300px'}}>
-              <h3>📊 {isAdvisor ? 'Estadísticas de Asesorías' : 'Estadísticas de Tutorías'}</h3>
+              <h3>📊 Estadísticas de Tutorías</h3>
               <div className="stats-grid">
                 <div className="stat-card"  style={{height: '80px'}}>
                   <div className="stat-icon">{isAdvisor ? '🎯' : '📚'}</div>
                   <div className="stat-content">
                     <span className="stat-number">{stats.totalSessions}</span>
                     <span className="stat-label">
-                      {isAdvisor ? 'Total Asesorías' : 'Total Tutorías'}
+                      Total Tutorías
                     </span>
                   </div>
                 </div>
@@ -396,7 +395,7 @@ const TutorProfile = () => {
               
               {stats.subjects.length > 0 && (
                 <div className="subjects-section"  style={{position: 'relative', bottom: '30px'}}>
-                  <h4>📚 {isAdvisor ? 'Áreas de Asesoría' : 'Materias Impartidas'}</h4>
+                  <h4>📚 Materias Impartidas</h4>
                   <div className="subjects-list"  style={{position: 'relative', bottom: '40px', left: '300px'}}>
                     {stats.subjects.map((subject, index) => (
                       <span key={index} className="subject-tag">

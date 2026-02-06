@@ -49,11 +49,10 @@ const TutorSidebarMenu = ({ userRole = 'tutor' }) => {
   const isAdvisor = userRole === 'advisor';
 
   const menuItems = [
-    { path: '/dashboard/cursos-tutor', icon: iconCursos, label: isAdvisor ? 'Mis Asesorías' : 'Mis Cursos' },
+    { path: '/dashboard/cursos-tutor', icon: iconCursos, label: 'Mis Cursos' },
     { path: '/dashboard/videos-tutor', icon: iconVideos, label: 'Videos de Clases' },
     { path: '/dashboard/estudiantes', icon: iconTutores, label: 'Mis Estudiantes' },
-    { path: '/dashboard/agenda', icon: iconAsesoria, label: isAdvisor ? 'Agenda de Asesorías' : 'Agenda de Clases' },
-    { path: '/dashboard/materiales', icon: iconNotas, label: 'Materiales' },
+    { path: '/dashboard/agenda', icon: iconAsesoria, label: 'Agenda de Clases' },
     { path: '/dashboard/progreso', icon: iconConfig, label: 'Progreso' },
     { 
       path: '/dashboard/notificaciones', 

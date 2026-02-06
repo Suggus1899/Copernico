@@ -1,20 +1,26 @@
 import React, { Component } from 'react';
 import apiClient from '../utils/axiosConfig';
+import VideoProgressTracker from './VideoProgressTracker';
 import './Dashboard.css';
+import './VideoProgress.css';
 
 class VideosList extends Component {
   state = {
     videos: [],
-    materials: [],
     loading: false,
     selectedItem: null,
-    selectedType: null, // 'video' or 'material'
-    activeTab: 'all', // 'all', 'videos', 'materials'
+    selectedType: 'video',
+    activeTab: 'videos',
     filters: {
       subject: '',
       search: ''
     },
-    likedVideos: new Set()
+    likedVideos: new Set(),
+    // Nuevos estados para seguimiento de progreso
+    videoProgress: new Map(),
+    currentVideoTime: 0,
+    videoDuration: 0,
+    videoElement: null
   };
 
   componentDidMount() {
@@ -29,17 +35,11 @@ class VideosList extends Component {
       const profileResponse = await apiClient.get('/auth/profile');
       const currentUserId = profileResponse.data.data._id;
       
-      // Cargar videos y materiales en paralelo
-      const [videosResponse, materialsResponse] = await Promise.all([
-        apiClient.get('/videos').catch(err => {
-          console.warn('Error loading videos:', err);
-          return { data: { data: [] } };
-        }),
-        apiClient.get('/materials').catch(err => {
-          console.warn('Error loading materials:', err);
-          return { data: { data: [] } };
-        })
-      ]);
+      // Cargar videos
+      const videosResponse = await apiClient.get('/videos').catch(err => {
+        console.warn('Error loading videos:', err);
+        return { data: { data: [] } };
+      });
       
       // Filtrar videos dirigidos al estudiante actual o públicos
       const filteredVideos = (videosResponse.data.data || []).filter(video => {
@@ -47,24 +47,15 @@ class VideosList extends Component {
                video.targetStudentId === currentUserId || // Videos dirigidos a este estudiante
                video.visibility === 'public'; // Videos públicos
       });
-
-      // Filtrar materiales dirigidos al estudiante actual o públicos
-      const filteredMaterials = (materialsResponse.data.data || []).filter(material => {
-        return !material.targetStudentId || // Materiales sin destinatario específico
-               material.targetStudentId === currentUserId || // Materiales dirigidos a este estudiante
-               material.visibility === 'public'; // Materiales públicos
-      });
       
       this.setState({
         videos: filteredVideos,
-        materials: filteredMaterials,
         loading: false
       });
     } catch (error) {
       console.error('Error loading content:', error);
       this.setState({ 
         videos: [],
-        materials: [],
         loading: false 
       });
     }
@@ -72,12 +63,13 @@ class VideosList extends Component {
 
   handleItemSelect = async (item, type) => {
     try {
-      if (type === 'video') {
-        // Incrementar vistas cuando se selecciona un video
-        await apiClient.get(`/videos/${item._id}`);
-      } else if (type === 'material') {
-        // Incrementar vistas cuando se selecciona un material
-        await apiClient.get(`/materials/${item._id}`);
+      // Incrementar vistas cuando se selecciona un video
+      const response = await apiClient.get(`/videos/${item._id}`);
+      // Actualizar el item con la información de progreso si está disponible
+      if (response.data.data.progress) {
+        const progressMap = new Map(this.state.videoProgress);
+        progressMap.set(item._id, response.data.data.progress);
+        this.setState({ videoProgress: progressMap });
       }
       this.setState({ 
         selectedItem: item, 
@@ -112,16 +104,6 @@ class VideosList extends Component {
     }
   };
 
-  handleDownload = async (materialId) => {
-    try {
-      await apiClient.patch(`/materials/${materialId}/download`);
-      // Recargar materiales para actualizar los contadores
-      this.loadContent();
-    } catch (error) {
-      console.error('Error incrementing download:', error);
-    }
-  };
-
   handleFilterChange = (e) => {
     const { name, value } = e.target;
     this.setState(prevState => ({
@@ -133,47 +115,25 @@ class VideosList extends Component {
   };
 
   getFilteredContent = () => {
-    const { videos, materials, filters, activeTab } = this.state;
+    const { videos, filters } = this.state;
     
-    let allContent = [];
-    
-    if (activeTab === 'all' || activeTab === 'videos') {
-      const filteredVideos = videos.filter(video => {
-        const matchesSubject = !filters.subject || video.subject.toLowerCase().includes(filters.subject.toLowerCase());
-        const matchesSearch = !filters.search ||
-          video.title.toLowerCase().includes(filters.search.toLowerCase()) ||
-          video.description?.toLowerCase().includes(filters.search.toLowerCase()) ||
-          video.topic?.toLowerCase().includes(filters.search.toLowerCase());
-        return matchesSubject && matchesSearch;
-      }).map(video => ({ ...video, contentType: 'video' }));
-      
-      if (activeTab === 'videos') return filteredVideos;
-      allContent = [...allContent, ...filteredVideos];
-    }
-    
-    if (activeTab === 'all' || activeTab === 'materials') {
-      const filteredMaterials = materials.filter(material => {
-        const matchesSubject = !filters.subject || material.subject.toLowerCase().includes(filters.subject.toLowerCase());
-        const matchesSearch = !filters.search ||
-          material.title.toLowerCase().includes(filters.search.toLowerCase()) ||
-          material.description?.toLowerCase().includes(filters.search.toLowerCase()) ||
-          material.topic?.toLowerCase().includes(filters.search.toLowerCase());
-        return matchesSubject && matchesSearch;
-      }).map(material => ({ ...material, contentType: 'material' }));
-      
-      if (activeTab === 'materials') return filteredMaterials;
-      allContent = [...allContent, ...filteredMaterials];
-    }
+    const filteredVideos = videos.filter(video => {
+      const matchesSubject = !filters.subject || video.subject.toLowerCase().includes(filters.subject.toLowerCase());
+      const matchesSearch = !filters.search ||
+        video.title.toLowerCase().includes(filters.search.toLowerCase()) ||
+        video.description?.toLowerCase().includes(filters.search.toLowerCase()) ||
+        video.topic?.toLowerCase().includes(filters.search.toLowerCase());
+      return matchesSubject && matchesSearch;
+    }).map(video => ({ ...video, contentType: 'video' }));
     
     // Ordenar por fecha de creación (más recientes primero)
-    return allContent.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    return filteredVideos.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   };
 
   getUniqueSubjects = () => {
-    const { videos, materials } = this.state;
+    const { videos } = this.state;
     const videoSubjects = videos.map(video => video.subject);
-    const materialSubjects = materials.map(material => material.subject);
-    const subjects = [...new Set([...videoSubjects, ...materialSubjects])];
+    const subjects = [...new Set(videoSubjects)];
     return subjects.sort();
   };
 
@@ -187,29 +147,6 @@ class VideosList extends Component {
     return `${mins}m`;
   };
 
-  getFileIcon = (type, fileUrl) => {
-    if (type === 'video' || fileUrl?.includes('video')) return '🎥';
-    if (type === 'document' || fileUrl?.includes('.pdf')) return '📄';
-    if (type === 'presentation' || fileUrl?.includes('.ppt')) return '📊';
-    if (fileUrl?.includes('.doc')) return '📝';
-    if (fileUrl?.includes('.xls')) return '📈';
-    if (fileUrl?.includes('image')) return '🖼️';
-    return '📁';
-  };
-
-  getTypeLabel = (type) => {
-    const labels = {
-      video: 'Video',
-      document: 'Documento',
-      presentation: 'Presentación',
-      exercise: 'Ejercicio',
-      worksheet: 'Hoja de trabajo',
-      quiz: 'Quiz',
-      link: 'Enlace'
-    };
-    return labels[type] || type;
-  };
-
 render() {
     const { loading, selectedItem, selectedType, filters, activeTab } = this.state;
     const filteredContent = this.getFilteredContent();
@@ -218,30 +155,8 @@ render() {
     return (
       <div className="videos-list-page">
         <div className="videos-header">
-          <h2>📚 Clases y Materiales</h2>
-          <p>Accede a videos de clases y materiales educativos subidos por tus tutores y asesores</p>
-        </div>
-
-        {/* Tabs para filtrar contenido */}
-        <div className="content-tabs" style={{position:'relative', top:'150px'}}>
-          <button 
-            className={`tab-btn ${activeTab === 'all' ? 'active' : ''}`}
-            onClick={() => this.setState({ activeTab: 'all', selectedItem: null })}
-          >
-            📚 Todo
-          </button>
-          <button 
-            className={`tab-btn ${activeTab === 'videos' ? 'active' : ''}`}
-            onClick={() => this.setState({ activeTab: 'videos', selectedItem: null })}
-          >
-            🎥 Videos
-          </button>
-          <button 
-            className={`tab-btn ${activeTab === 'materials' ? 'active' : ''}`}
-            onClick={() => this.setState({ activeTab: 'materials', selectedItem: null })}
-          >
-            📄 Materiales
-          </button>
+          <h2>🎥 Videos de Clases</h2>
+          <p>Accede a videos educativos subidos por tus tutores</p>
         </div>
 
         {/* Filtros */}
@@ -277,17 +192,9 @@ render() {
         <div className="videos-stats" style={{position: 'relative', height: '100px', top: '70px', left: '800px'}}>
           <div className="stat-item" style={{position: 'relative', width: '250px', height: '90px', left: '110px', top: '-10px'}}>
             <span className="stat-number">{filteredContent.length}</span>
-            <span className="stat-label">Contenidos disponibles</span>
-          </div>
-          <div className="stat-item" style={{position: 'relative', width: '250px', height: '90px', left: '110px'}}>
-            <span className="stat-number">{filteredContent.filter(item => item.contentType === 'video').length}</span>
-            <span className="stat-label">Videos</span>
+            <span className="stat-label">Videos disponibles</span>
           </div>
           <div className="stat-item" style={{position: 'relative', width: '250px', height: '90px', left: '110px', top: '10px'}}>
-            <span className="stat-number">{filteredContent.filter(item => item.contentType === 'material').length}</span>
-            <span className="stat-label">Materiales</span>
-          </div>
-          <div className="stat-item" style={{position: 'relative', width: '250px', height: '90px', left: '110px', top: '20px'}}>
             <span className="stat-number">{uniqueSubjects.length}</span>
             <span className="stat-label">Materias</span>
           </div>
@@ -303,10 +210,10 @@ render() {
               </div>
             ) : filteredContent.length === 0 ? (
               <div className="empty-state">
-                <div className="empty-icon">📚</div>
-                <h3>No se encontró contenido</h3>
-                {this.state.videos.length === 0 && this.state.materials.length === 0 ? (
-                  <p>Los tutores y asesores aún no han subido contenido.</p>
+                <div className="empty-icon">🎥</div>
+                <h3>No se encontraron videos</h3>
+                {this.state.videos.length === 0 ? (
+                  <p>Los tutores aún no han subido videos.</p>
                 ) : (
                   <p>Intenta con otros términos de búsqueda o filtros diferentes.</p>
                 )}
@@ -320,36 +227,36 @@ render() {
                     onClick={() => this.handleItemSelect(item, item.contentType)}
                   >
                     <div className="video-item-thumbnail">
-                      {item.contentType === 'video' && item.thumbnailUrl ? (
+                      {item.thumbnailUrl ? (
                         <img src={item.thumbnailUrl} alt={item.title} />
                       ) : (
                         <div className="thumbnail-placeholder">
-                          <span>{this.getFileIcon(item.type || item.contentType, item.fileUrl || item.videoUrl)}</span>
+                          <span>🎥</span>
                         </div>
                       )}
-                      {item.contentType === 'video' && item.duration && (
+                      {item.duration && (
                         <div className="video-duration-small">
                           {this.formatDuration(item.duration)}
                         </div>
                       )}
-                      <div className="content-type-badge">
-                        {item.contentType === 'video' ? '🎥' : this.getFileIcon(item.type, item.fileUrl)}
-                      </div>
                     </div>
 
                     <div className="video-item-info">
                       <h4>{item.title}</h4>
                       <p className="video-subject">{item.subject}</p>
                       {item.topic && <p className="video-topic">{item.topic}</p>}
-                      {item.contentType === 'material' && (
-                        <p className="material-type">{this.getTypeLabel(item.type)}</p>
-                      )}
                       <div className="video-stats-small">
                         <span>👁️ {item.views || 0}</span>
-                        {item.contentType === 'video' && <span>❤️ {item.likes || 0}</span>}
-                        {item.contentType === 'material' && <span>⬇️ {item.downloads || 0}</span>}
-                        {item.contentType === 'material' && item.averageRating > 0 && (
-                          <span>⭐ {item.averageRating.toFixed(1)}</span>
+                        <span>❤️ {item.likes || 0}</span>
+                        {/* Mostrar progreso del video si está disponible */}
+                        {this.state.videoProgress.has(item._id) && (
+                          <span className="progress-indicator">
+                            📊 {this.state.videoProgress.get(item._id).progressPercentage}%
+                          </span>
+                        )}
+                        {this.state.videoProgress.has(item._id) && 
+                         this.state.videoProgress.get(item._id).isCompleted && (
+                          <span className="completed-indicator">✅</span>
                         )}
                       </div>
                       <div className="video-uploader-small">
@@ -369,25 +276,12 @@ render() {
                 <div className="video-player-header">
                   <h3>{selectedItem.title}</h3>
                   <div className="video-actions">
-                    {selectedType === 'video' && (
-                      <button
-                        className={`btn-like ${this.state.likedVideos.has(selectedItem._id) ? 'liked' : ''}`}
-                        onClick={() => this.handleLike(selectedItem._id)}
-                      >
-                        ❤️ {selectedItem.likes || 0}
-                      </button>
-                    )}
-                    {selectedType === 'material' && selectedItem.fileUrl && (
-                      <button
-                        className="btn-download"
-                        onClick={() => {
-                          this.handleDownload(selectedItem._id);
-                          window.open(selectedItem.fileUrl, '_blank');
-                        }}
-                      >
-                        ⬇️ Descargar
-                      </button>
-                    )}
+                    <button
+                      className={`btn-like ${this.state.likedVideos.has(selectedItem._id) ? 'liked' : ''}`}
+                      onClick={() => this.handleLike(selectedItem._id)}
+                    >
+                      ❤️ {selectedItem.likes || 0}
+                    </button>
                     <button className="btn-share">
                       📤 Compartir
                     </button>
@@ -395,112 +289,61 @@ render() {
                 </div>
 
                 <div className="video-player-content">
-                  {selectedType === 'video' ? (
-                    <div className="video-iframe-container">
-                      {selectedItem.videoUrl.includes('/uploads/videos/') ? (
-                        <video
-                          controls
-                          src={selectedItem.videoUrl}
-                          poster={selectedItem.thumbnailUrl}
-                          className="video-element"
-                          preload="metadata"
-                        >
-                          Tu navegador no soporta la reproducción de video.
-                        </video>
-                      ) :
-                      selectedItem.videoUrl.includes('youtube.com') ||
-                      selectedItem.videoUrl.includes('youtu.be') ? (
-                        <iframe
-                          src={`https://www.youtube.com/embed/${this.getYouTubeVideoId(selectedItem.videoUrl)}`}
-                          title={selectedItem.title}
-                          frameBorder="0"
-                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                          allowFullScreen
-                        ></iframe>
-                      ) :
-                      selectedItem.videoUrl.includes('vimeo.com') ? (
-                        <iframe
-                          src={`https://player.vimeo.com/video/${this.getVimeoVideoId(selectedItem.videoUrl)}`}
-                          title={selectedItem.title}
-                          frameBorder="0"
-                          allow="autoplay; fullscreen; picture-in-picture"
-                          allowFullScreen
-                        ></iframe>
-                      ) : (
-                        <video
-                          controls
-                          src={selectedItem.videoUrl}
-                          poster={selectedItem.thumbnailUrl}
-                          className="video-element"
-                        >
-                          Tu navegador no soporta la reproducción de video.
-                        </video>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="material-preview">
-                      {selectedItem.fileUrl ? (
-                        selectedItem.fileUrl.includes('.pdf') ? (
-                          <iframe
-                            src={selectedItem.fileUrl}
-                            title={selectedItem.title}
-                            className="pdf-viewer"
-                          >
-                            <p>Tu navegador no soporta la visualización de PDF. 
-                              <a href={selectedItem.fileUrl} target="_blank" rel="noopener noreferrer">
-                                Haz clic aquí para descargar
-                              </a>
-                            </p>
-                          </iframe>
-                        ) : selectedItem.fileUrl.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
-                          <img 
-                            src={selectedItem.fileUrl} 
-                            alt={selectedItem.title}
-                            className="image-preview"
-                          />
-                        ) : (
-                          <div className="file-preview">
-                            <div className="file-icon-large">
-                              {this.getFileIcon(selectedItem.type, selectedItem.fileUrl)}
-                            </div>
-                            <h4>{selectedItem.title}</h4>
-                            <p>Tipo: {this.getTypeLabel(selectedItem.type)}</p>
-                            <a 
-                              href={selectedItem.fileUrl} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="btn btn-primary"
-                              onClick={() => this.handleDownload(selectedItem._id)}
-                            >
-                              ⬇️ Descargar archivo
-                            </a>
-                          </div>
-                        )
-                      ) : selectedItem.externalLink ? (
-                        <div className="external-link-preview">
-                          <div className="link-icon">🔗</div>
-                          <h4>{selectedItem.title}</h4>
-                          <p>Enlace externo</p>
-                          <a 
-                            href={selectedItem.externalLink} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="btn btn-primary"
-                          >
-                            🌐 Abrir enlace
-                          </a>
-                        </div>
-                      ) : selectedItem.content ? (
-                        <div className="content-preview">
-                          <div dangerouslySetInnerHTML={{ __html: selectedItem.content }} />
-                        </div>
-                      ) : (
-                        <div className="no-preview">
-                          <p>Vista previa no disponible</p>
-                        </div>
-                      )}
-                    </div>
-                  )}
+                  <div className="video-iframe-container">
+                    {/* Componente de seguimiento de progreso */}
+                    <VideoProgressTracker
+                      ref={(ref) => { this.videoProgressTracker = ref; }}
+                      videoId={selectedItem._id}
+                      currentTime={this.state.currentVideoTime}
+                      totalDuration={this.state.videoDuration}
+                      onProgressUpdate={this.handleProgressUpdate}
+                      onVideoCompleted={this.handleVideoCompleted}
+                      showProgress={true}
+                      showCompletionBadge={true}
+                    />
+                    
+                    {selectedItem.videoUrl.includes('/uploads/videos/') ? (
+                      <video
+                        ref={this.handleVideoRef}
+                        controls
+                        src={selectedItem.videoUrl}
+                        poster={selectedItem.thumbnailUrl}
+                        className="video-element"
+                        preload="metadata"
+                      >
+                        Tu navegador no soporta la reproducción de video.
+                      </video>
+                    ) :
+                    selectedItem.videoUrl.includes('youtube.com') ||
+                    selectedItem.videoUrl.includes('youtu.be') ? (
+                      <iframe
+                        src={`https://www.youtube.com/embed/${this.getYouTubeVideoId(selectedItem.videoUrl)}`}
+                        title={selectedItem.title}
+                        frameBorder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      ></iframe>
+                    ) :
+                    selectedItem.videoUrl.includes('vimeo.com') ? (
+                      <iframe
+                        src={`https://player.vimeo.com/video/${this.getVimeoVideoId(selectedItem.videoUrl)}`}
+                        title={selectedItem.title}
+                        frameBorder="0"
+                        allow="autoplay; fullscreen; picture-in-picture"
+                        allowFullScreen
+                      ></iframe>
+                    ) : (
+                      <video
+                        ref={this.handleVideoRef}
+                        controls
+                        src={selectedItem.videoUrl}
+                        poster={selectedItem.thumbnailUrl}
+                        className="video-element"
+                      >
+                        Tu navegador no soporta la reproducción de video.
+                      </video>
+                    )}
+                  </div>
 
                   <div className="video-details">
                     <div className="video-meta">
@@ -511,24 +354,14 @@ render() {
                       {selectedItem.grade && (
                         <span className="grade-badge">{selectedItem.grade}</span>
                       )}
-                      {selectedType === 'video' && selectedItem.duration && (
+                      {selectedItem.duration && (
                         <span className="duration-badge">
                           ⏱️ {this.formatDuration(selectedItem.duration)}
-                        </span>
-                      )}
-                      {selectedType === 'material' && (
-                        <span className="type-badge">
-                          {this.getFileIcon(selectedItem.type, selectedItem.fileUrl)} {this.getTypeLabel(selectedItem.type)}
                         </span>
                       )}
                       <span className="views-badge">
                         👁️ {selectedItem.views || 0} visualizaciones
                       </span>
-                      {selectedType === 'material' && selectedItem.downloads > 0 && (
-                        <span className="downloads-badge">
-                          ⬇️ {selectedItem.downloads} descargas
-                        </span>
-                      )}
                     </div>
 
                     {selectedItem.description && (
@@ -552,7 +385,7 @@ render() {
                             {selectedItem.uploadedBy?.personalInfo?.firstName || selectedItem.createdBy?.personalInfo?.firstName} {selectedItem.uploadedBy?.personalInfo?.lastName || selectedItem.createdBy?.personalInfo?.lastName}
                           </p>
                           <p className="uploader-role">
-                            {(selectedItem.uploadedBy?.role || selectedItem.createdBy?.role) === 'tutor' ? '👨‍🏫 Tutor' : '🎓 Asesor'}
+                            👨‍🏫 Tutor
                           </p>
                         </div>
                       </div>
@@ -565,16 +398,6 @@ render() {
                           {selectedItem.tags.map((tag, index) => (
                             <span key={index} className="tag">{tag}</span>
                           ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {selectedType === 'material' && selectedItem.averageRating > 0 && (
-                      <div className="material-rating">
-                        <h4>⭐ Calificación</h4>
-                        <div className="rating-info">
-                          <span className="rating-value">{selectedItem.averageRating.toFixed(1)}/5</span>
-                          <span className="rating-count">({selectedItem.ratingsCount} calificaciones)</span>
                         </div>
                       </div>
                     )}
@@ -599,16 +422,16 @@ render() {
             ) : (
               <div className="video-placeholder">
                 <div className="placeholder-content">
-                  <span className="placeholder-icon">📚</span>
-                  <h3>Selecciona contenido</h3>
-                  <p>Haz clic en un video o material de la lista para comenzar a verlo</p>
+                  <span className="placeholder-icon">🎥</span>
+                  <h3>Selecciona un video</h3>
+                  <p>Haz clic en un video de la lista para comenzar a verlo</p>
                   <div className="placeholder-tips">
                     <h4>💡 Consejos:</h4>
                     <ul>
-                      <li>Usa las pestañas para filtrar entre videos y materiales</li>
-                      <li>Usa los filtros para encontrar contenido específico</li>
-                      <li>El contenido se organiza por materia y tema</li>
-                      <li>Puedes dar "me gusta" a videos y descargar materiales</li>
+                      <li>Usa los filtros para encontrar videos específicos</li>
+                      <li>Los videos se organizan por materia y tema</li>
+                      <li>Puedes dar "me gusta" a tus videos favoritos</li>
+                      <li>Tu progreso se guarda automáticamente</li>
                     </ul>
                   </div>
                 </div>
@@ -631,6 +454,92 @@ render() {
     const match = url.match(regExp);
     return match ? match[1] : null;
   };
+
+  // Métodos para seguimiento de progreso de videos
+  handleVideoRef = (videoElement) => {
+    if (videoElement && videoElement !== this.state.videoElement) {
+      // Limpiar listeners anteriores si existen
+      if (this.state.videoElement) {
+        const oldVideo = this.state.videoElement;
+        oldVideo.removeEventListener('loadedmetadata', this.handleVideoMetadata);
+        oldVideo.removeEventListener('timeupdate', this.handleVideoTimeUpdate);
+        oldVideo.removeEventListener('play', this.handleVideoPlay);
+        oldVideo.removeEventListener('pause', this.handleVideoPause);
+        oldVideo.removeEventListener('ended', this.handleVideoEnded);
+      }
+
+      this.setState({ videoElement });
+      
+      // Agregar event listeners para seguimiento de progreso
+      videoElement.addEventListener('loadedmetadata', this.handleVideoMetadata);
+      videoElement.addEventListener('timeupdate', this.handleVideoTimeUpdate);
+      videoElement.addEventListener('play', this.handleVideoPlay);
+      videoElement.addEventListener('pause', this.handleVideoPause);
+      videoElement.addEventListener('ended', this.handleVideoEnded);
+      
+      console.log('Video element configured for progress tracking');
+    }
+  };
+
+  handleVideoMetadata = (event) => {
+    const duration = event.target.duration;
+    console.log('Video metadata loaded, duration:', duration);
+    this.setState({
+      videoDuration: duration
+    });
+  };
+
+  handleVideoTimeUpdate = (event) => {
+    this.setState({
+      currentVideoTime: event.target.currentTime
+    });
+  };
+
+  handleVideoPlay = () => {
+    console.log('Video play event');
+    if (this.videoProgressTracker) {
+      this.videoProgressTracker.handleVideoPlay();
+    }
+  };
+
+  handleVideoPause = () => {
+    console.log('Video pause event');
+    if (this.videoProgressTracker) {
+      this.videoProgressTracker.handleVideoPause();
+    }
+  };
+
+  handleVideoEnded = () => {
+    console.log('Video ended event');
+    if (this.videoProgressTracker) {
+      this.videoProgressTracker.handleVideoEnded();
+    }
+  };
+
+  handleProgressUpdate = (progress) => {
+    console.log('Progress updated:', progress);
+    const progressMap = new Map(this.state.videoProgress);
+    progressMap.set(this.state.selectedItem._id, progress);
+    this.setState({ videoProgress: progressMap });
+  };
+
+  handleVideoCompleted = (progress) => {
+    console.log('Video completed!', progress);
+    // Mostrar notificación de video completado
+    alert(`¡Felicidades! Has completado el video "${this.state.selectedItem.title}"`);
+  };
+
+  componentWillUnmount() {
+    // Limpiar event listeners
+    if (this.state.videoElement) {
+      const video = this.state.videoElement;
+      video.removeEventListener('loadedmetadata', this.handleVideoMetadata);
+      video.removeEventListener('timeupdate', this.handleVideoTimeUpdate);
+      video.removeEventListener('play', this.handleVideoPlay);
+      video.removeEventListener('pause', this.handleVideoPause);
+      video.removeEventListener('ended', this.handleVideoEnded);
+    }
+  }
 }
 
 export default VideosList;

@@ -7,9 +7,7 @@ import Login from "./components/Login";
 import ForgotPassword from "./components/ForgotPassword";
 import Dashboard from "./components/Dashboard";
 import MyCourses from "./components/MyCourses";
-import Advisories from "./components/Advisories";
 import Tutors from "./components/Tutors";
-import AdvisorsList from "./components/AdvisorsList";
 import NotesList from "./components/NotesList";
 import UserProfile from "./components/UserProfile";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -25,10 +23,10 @@ import TutorHome from "./components/TutorHome";
 import TutorCourses from "./components/TutorCourses";
 import TutorStudents from "./components/TutorStudents";
 import TutorAgenda from "./components/TutorAgenda";
-import TutorMaterials from "./components/TutorMaterials";
 import TutorProgress from "./components/TutorProgress";
 import TutorNotifications from "./components/TutorNotifications";
 import TutorProfile from "./components/TutorProfile";
+import VideoProgressDashboard from "./components/VideoProgressDashboard";
 
 import "./App.css";
 
@@ -74,16 +72,14 @@ function App() {
               {/* Rutas para estudiantes */}
               <Route path="cursos" element={<MyCourses />} />
               <Route path="videos" element={<VideosList />} />
+              <Route path="progreso-videos" element={<VideoProgressDashboard />} />
               <Route path="tutores" element={<Tutors />} />
-              <Route path="asesores" element={<AdvisorsList />} />
-              <Route path="asesoria" element={<Advisories />} />
               <Route path="notas" element={<NotesList />} />
               <Route path="perfil" element={<UserProfile />} />
               {/* Rutas específicas para tutores */}
               <Route path="cursos-tutor" element={<TutorCourses />} />
               <Route path="estudiantes" element={<TutorStudents />} />
               <Route path="agenda" element={<TutorAgenda />} />
-              <Route path="materiales" element={<TutorMaterials />} />
               <Route path="videos-tutor" element={<TutorVideos />} />
               <Route path="progreso" element={<TutorProgress />} />
               <Route path="notificaciones" element={<TutorNotifications />} />

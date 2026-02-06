@@ -17,7 +17,7 @@ const UserSchema = new mongoose.Schema({
       message: 'Password must be at least 8 chars with upper, lower and number.'
     }
   },
-  role: { type: String, enum: ['student','tutor','advisor','admin'], default: 'student', index: true },
+  role: { type: String, enum: ['student','tutor','admin'], default: 'student', index: true },
   status: { type: String, enum: ['active','inactive','suspended','deleted'], default: 'active', index: true },
   personalInfo: {
     firstName: String,
@@ -34,8 +34,7 @@ const UserSchema = new mongoose.Schema({
     bio: String
   },
   academicProfile: { institution: String, department: String, title: String, experienceYears: Number, skills: [String] },
-  tutorProfile: { specialties: [String], teachingMethods: [String], maxStudents: Number, available: Boolean, hourlyRate: Number, rating: Number, totalSessions: Number },
-  advisorProfile: { specializationAreas: [String], appointmentDuration: Number, available: Boolean, rating: Number },
+  tutorProfile: { specialties: [String], teachingMethods: [String], maxStudents: Number, available: Boolean, hourlyRate: Number, rating: Number, totalSessions: Number, appointmentDuration: Number, specializationAreas: [String] },
   studentProfile: { studentId: String, career: String, semester: Number, averageGrade: Number, enrolledCourses: [String] },
   communicationSettings: { allowNotifications: { type: Boolean, default: true }, emailNotifications: { type: Boolean, default: true }, notificationPreferences: [String] },
   emailVerified: { type: Boolean, default: false },

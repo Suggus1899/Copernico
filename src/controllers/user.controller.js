@@ -12,13 +12,12 @@ export const getUsers = async (req, res, next) => {
     
     // Si es un estudiante, aplicar restricciones de seguridad
     if (req.user.role === 'student') {
-      // Los estudiantes solo pueden ver tutores y asesores activos
-      if (role && ['tutor', 'advisor'].includes(role)) {
-        // Si se especifica un rol válido, usarlo
+      // Los estudiantes solo pueden ver tutores activos
+      if (role && role === 'tutor') {
         filter.role = role;
       } else if (!role) {
-        // Si no se especifica rol, mostrar ambos
-        filter.role = { $in: ['tutor', 'advisor'] };
+        // Si no se especifica rol, mostrar solo tutores
+        filter.role = 'tutor';
       } else {
         // Si se especifica un rol inválido, no mostrar nada
         filter.role = { $in: [] };
@@ -39,8 +38,8 @@ export const getUsers = async (req, res, next) => {
     // Seleccionar campos apropiados según el rol del usuario
     let selectFields = '-password -verificationToken -passwordResetToken';
     if (req.user.role === 'student') {
-      // Los estudiantes solo ven información básica de tutores/asesores
-      selectFields = 'personalInfo role tutorProfile advisorProfile email createdAt updatedAt';
+      // Los estudiantes solo ven información básica de tutores
+      selectFields = 'personalInfo role tutorProfile email createdAt updatedAt';
     }
 
     // Obtener usuarios iniciales
@@ -74,7 +73,7 @@ export const getUsers = async (req, res, next) => {
         return !hasExistingAppointment;
       });
 
-      console.log('✅ Tutores/asesores disponibles después del filtro:', users.length);
+      console.log('✅ Tutores disponibles después del filtro:', users.length);
     }
 
     const total = await User.countDocuments(filter);
@@ -253,7 +252,7 @@ export const updateUserProfile = async (req, res, next) => {
     // Prevenir que usuarios normales cambien ciertos campos
     const allowedFields = [
       'personalInfo', 'academicProfile', 'studentProfile', 
-      'tutorProfile', 'advisorProfile', 'communicationSettings'
+      'tutorProfile', 'communicationSettings'
     ];
     
     const updateData = {};
@@ -473,13 +472,13 @@ export const getAvailableEducators = async (req, res, next) => {
       throw error;
     }
 
-    console.log('🔍 Obteniendo educadores disponibles para estudiante:', req.user.id);
+    console.log('🔍 Obteniendo tutores disponibles para estudiante:', req.user.id);
     console.log('📋 Filtros - Rol:', role, 'Página:', page, 'Límite:', limit);
 
-    // Filtro base para tutores y asesores activos
+    // Filtro base para tutores activos
     const filter = { 
       status: 'active',
-      role: role && ['tutor', 'advisor'].includes(role) ? role : { $in: ['tutor', 'advisor'] }
+      role: 'tutor'
     };
 
     // Buscar citas confirmadas, completadas o programadas del estudiante
@@ -488,12 +487,12 @@ export const getAvailableEducators = async (req, res, next) => {
       status: { $in: ['confirmed', 'completed', 'scheduled'] }
     }).select('professionalId');
 
-    // Extraer IDs de tutores/asesores que ya tienen citas con el estudiante
+    // Extraer IDs de tutores que ya tienen citas con el estudiante
     const professionalIdsWithAppointments = existingAppointments.map(apt => apt.professionalId.toString());
     
-    console.log('📅 Educadores con citas existentes:', professionalIdsWithAppointments.length);
+    console.log('📅 Tutores con citas existentes:', professionalIdsWithAppointments.length);
     
-    // Excluir educadores que ya tienen citas con el estudiante
+    // Excluir tutores que ya tienen citas con el estudiante
     if (professionalIdsWithAppointments.length > 0) {
       filter._id = { $nin: professionalIdsWithAppointments };
     }
@@ -504,16 +503,16 @@ export const getAvailableEducators = async (req, res, next) => {
       sort: { createdAt: -1 }
     };
 
-    // Obtener educadores disponibles
+    // Obtener tutores disponibles
     const educators = await User.find(filter)
-      .select('personalInfo role tutorProfile advisorProfile academicProfile email createdAt updatedAt')
+      .select('personalInfo role tutorProfile academicProfile email createdAt updatedAt')
       .limit(options.limit * 1)
       .skip((options.page - 1) * options.limit)
       .sort(options.sort);
 
     const total = await User.countDocuments(filter);
 
-    console.log('✅ Educadores disponibles encontrados:', educators.length);
+    console.log('✅ Tutores disponibles encontrados:', educators.length);
     console.log('📊 Total en base de datos (después del filtro):', total);
 
     res.json({
@@ -528,7 +527,7 @@ export const getAvailableEducators = async (req, res, next) => {
       meta: {
         excludedEducators: professionalIdsWithAppointments.length,
         availableEducators: educators.length,
-        requestedRole: role || 'all'
+        requestedRole: 'tutor'
       }
     });
   } catch (error) {
@@ -552,10 +551,10 @@ export const checkEducatorAvailability = async (req, res, next) => {
     // Validar ObjectId
     validateObjectId(educatorId, 'Educator ID');
 
-    // Verificar si el educador existe y es tutor o asesor
+    // Verificar si el educador existe y es tutor
     const educator = await User.findById(educatorId).select('role personalInfo');
-    if (!educator || !['tutor', 'advisor'].includes(educator.role)) {
-      const error = new Error("Educador no encontrado o rol inválido");
+    if (!educator || educator.role !== 'tutor') {
+      const error = new Error("Tutor no encontrado o rol inválido");
       error.status = 404;
       throw error;
     }

@@ -1,4 +1,5 @@
 import ClassVideo from "../models/ClassVideo.js";
+import VideoProgress from "../models/VideoProgress.js";
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
@@ -6,11 +7,20 @@ import fs from 'fs';
 // Configuración de multer para subida de archivos
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
+    let uploadPath;
     if (file.fieldname === 'videoFile') {
-      cb(null, 'uploads/videos/');
+      uploadPath = 'uploads/videos/';
     } else if (file.fieldname === 'thumbnailFile') {
-      cb(null, 'uploads/thumbnails/');
+      uploadPath = 'uploads/thumbnails/';
     }
+    
+    // Crear directorio si no existe
+    if (!fs.existsSync(uploadPath)) {
+      fs.mkdirSync(uploadPath, { recursive: true });
+      console.log(`📁 Directorio creado: ${uploadPath}`);
+    }
+    
+    cb(null, uploadPath);
   },
   filename: (req, file, cb) => {
     // Generar nombre único para evitar conflictos
@@ -86,7 +96,7 @@ export const getClassVideos = async (req, res, next) => {
         { uploadedBy: req.user.id },
         { allowedStudents: req.user.id }
       ];
-    } else if (['tutor', 'advisor'].includes(req.user.role)) {
+    } else if (['tutor'].includes(req.user.role)) {
       filter.$or = [
         { visibility: { $in: ['public', 'students'] } },
         { uploadedBy: req.user.id }
@@ -149,9 +159,27 @@ export const getClassVideoById = async (req, res, next) => {
     // Incrementar vistas
     await video.incrementViews();
 
+    // Si es un estudiante, obtener su progreso en este video
+    let videoProgress = null;
+    if (req.user.role === 'student') {
+      videoProgress = await VideoProgress.findOne({
+        studentId: req.user.id,
+        videoId: req.params.id
+      });
+    }
+
     res.json({
       success: true,
-      data: video
+      data: {
+        ...video.toObject(),
+        progress: videoProgress ? {
+          progressPercentage: videoProgress.progressPercentage,
+          isCompleted: videoProgress.isCompleted,
+          watchTime: videoProgress.watchTime,
+          status: videoProgress.status,
+          lastWatchedAt: videoProgress.lastWatchedAt
+        } : null
+      }
     });
   } catch (error) {
     next(error);
@@ -171,9 +199,9 @@ export const createClassVideo = async (req, res, next) => {
     videoData.uploadedBy = req.user.id;
 
     // Verificar permisos para subir videos
-    if (!['tutor', 'advisor', 'admin'].includes(req.user.role)) {
+    if (!['tutor', 'admin'].includes(req.user.role)) {
       console.log('User role not allowed:', req.user.role);
-      const error = new Error("Only tutors, advisors and admins can upload class videos");
+      const error = new Error("Only tutors and admins can upload class videos");
       error.status = 403;
       throw error;
     }

@@ -20,7 +20,7 @@ export const getProgressTrackings = async (req, res, next) => {
     // Filtros según el rol del usuario
     if (req.user.role === 'student') {
       filter.studentId = req.user.id;
-    } else if (['tutor', 'advisor'].includes(req.user.role)) {
+    } else if (['tutor'].includes(req.user.role)) {
       filter.trackedBy = req.user.id;
     }
     
@@ -122,15 +122,15 @@ export const createProgressTracking = async (req, res, next) => {
 
     // Verificar que el tracker existe y tiene permisos
     const tracker = await User.findById(progressData.trackedBy);
-    if (!tracker || !['tutor', 'advisor', 'admin'].includes(tracker.role)) {
-      const error = new Error("Tracker must be a tutor, advisor or admin");
+    if (!tracker || !['tutor', 'admin'].includes(tracker.role)) {
+      const error = new Error("Tracker must be a tutor or admin");
       error.status = 400;
       throw error;
     }
 
     // Verificar permisos para crear seguimiento
-    if (!['tutor', 'advisor', 'admin'].includes(req.user.role)) {
-      const error = new Error("Only tutors, advisors and admins can create progress tracking");
+    if (!['tutor', 'admin'].includes(req.user.role)) {
+      const error = new Error("Only tutors and admins can create progress tracking");
       error.status = 403;
       throw error;
     }
@@ -311,7 +311,7 @@ export const getStudentProgress = async (req, res, next) => {
     // Si es estudiante, solo puede ver su propio progreso
     if (req.user.role === 'student') {
       targetStudentId = req.user.id;
-    } else if (!studentId && !['tutor', 'advisor', 'admin'].includes(req.user.role)) {
+    } else if (!studentId && !['tutor', 'admin'].includes(req.user.role)) {
       const error = new Error("Student ID is required");
       error.status = 400;
       throw error;
@@ -443,8 +443,8 @@ export const createBaselineAssessment = async (req, res, next) => {
     const { studentId, subject } = req.body;
 
     // Verificar permisos
-    if (!['tutor', 'advisor', 'admin'].includes(req.user.role)) {
-      const error = new Error("Only tutors, advisors and admins can create baseline assessments");
+    if (!['tutor', 'admin'].includes(req.user.role)) {
+      const error = new Error("Only tutors and admins can create baseline assessments");
       error.status = 403;
       throw error;
     }

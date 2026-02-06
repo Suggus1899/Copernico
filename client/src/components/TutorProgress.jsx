@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import TutorSidebarMenu from './TutorSidebarMenu';
 import apiClient from '../utils/axiosConfig';
 import './Dashboard.css';
+import './VideoProgress.css';
 
 const TutorProgress = () => {
   const [students, setStudents] = useState([]);
@@ -55,7 +56,8 @@ const TutorProgress = () => {
             subjects: new Map(),
             totalAppointments: 0,
             completedAppointments: 0,
-            lastActivity: null
+            lastActivity: null,
+            videoProgress: null // Nuevo campo para progreso de videos
           });
         }
         
@@ -97,33 +99,46 @@ const TutorProgress = () => {
         student.totalAppointments++;
       });
       
-      // Convertir a array y calcular estadísticas
-      const studentsArray = Array.from(studentsMap.values()).map(student => {
-        const subjects = Array.from(student.subjects.values()).map(subject => ({
-          ...subject,
-          progress: subject.totalSessions > 0 
-            ? Math.round((subject.completedSessions / subject.totalSessions) * 100)
-            : 0,
-          topics: Array.from(subject.topics)
-        }));
-        
-        const overallProgress = student.totalAppointments > 0 
-          ? Math.round((student.completedAppointments / student.totalAppointments) * 100)
-          : 0;
-        
-        // Calcular "asistencia" basada en citas completadas vs programadas
-        const attendance = student.totalAppointments > 0 
-          ? Math.round((student.completedAppointments / student.totalAppointments) * 100)
-          : 0;
-        
-        return {
-          ...student,
-          subjects,
-          overallProgress,
-          attendance,
-          lastActivityFormatted: student.lastActivity ? formatTimeAgo(student.lastActivity) : 'Sin actividad'
-        };
-      });
+      // Obtener progreso de videos para cada estudiante
+      const studentsArray = await Promise.all(
+        Array.from(studentsMap.values()).map(async (student) => {
+          try {
+            // Obtener estadísticas de progreso de videos del estudiante
+            const videoStatsResponse = await apiClient.get(`/video-progress/student-stats?studentId=${student.id}`);
+            student.videoProgress = videoStatsResponse.data.data;
+          } catch (error) {
+            console.warn(`Could not load video progress for student ${student.id}:`, error);
+            student.videoProgress = { bySubject: [], overall: { totalVideosWatched: 0, totalCompletedVideos: 0 } };
+          }
+          
+          const subjects = Array.from(student.subjects.values()).map(subject => ({
+            ...subject,
+            progress: subject.totalSessions > 0 
+              ? Math.round((subject.completedSessions / subject.totalSessions) * 100)
+              : 0,
+            topics: Array.from(subject.topics),
+            // Agregar progreso de videos por materia
+            videoProgress: student.videoProgress?.bySubject?.find(vs => vs.subject === subject.subject) || null
+          }));
+          
+          const overallProgress = student.totalAppointments > 0 
+            ? Math.round((student.completedAppointments / student.totalAppointments) * 100)
+            : 0;
+          
+          // Calcular "asistencia" basada en citas completadas vs programadas
+          const attendance = student.totalAppointments > 0 
+            ? Math.round((student.completedAppointments / student.totalAppointments) * 100)
+            : 0;
+          
+          return {
+            ...student,
+            subjects,
+            overallProgress,
+            attendance,
+            lastActivityFormatted: student.lastActivity ? formatTimeAgo(student.lastActivity) : 'Sin actividad'
+          };
+        })
+      );
       
       setStudents(studentsArray);
       setError('');
@@ -311,6 +326,29 @@ const TutorProgress = () => {
                             style={{ width: `${subject.progress}%` }}
                           ></div>
                         </div>
+                        
+                        {/* Progreso de videos por materia */}
+                        {subject.videoProgress && (
+                          <div className="video-progress-section">
+                            <div className="video-progress-header">
+                              <span className="video-progress-label">🎥 Videos:</span>
+                              <span className="video-progress-stats">
+                                {subject.videoProgress.completedVideos}/{subject.videoProgress.totalVideos} completados
+                              </span>
+                            </div>
+                            <div className="video-progress-bar">
+                              <div 
+                                className="video-progress-fill" 
+                                style={{ width: `${subject.videoProgress.completionRate}%` }}
+                              ></div>
+                            </div>
+                            <div className="video-progress-details">
+                              <span>📈 {subject.videoProgress.completionRate}% completado</span>
+                              <span>⏱️ {subject.videoProgress.totalWatchTimeHours}h vistas</span>
+                            </div>
+                          </div>
+                        )}
+                        
                         {subject.topics.length > 0 && (
                           <div className="topics-list">
                             {subject.topics.slice(0, 3).map((topic, index) => (
