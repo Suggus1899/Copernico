@@ -140,7 +140,7 @@ const Tutors = () => {
 
   return (
     <div className="tutors-page">
-      <div className="tutors-header">
+      <div className="tutors-header" style={{position: 'relative', top:'15%'}}>
         <h2>👨‍🏫 Tutores Disponibles</h2>
         <p>Encuentra tutores especializados para reforzar tus conocimientos académicos</p>
         <div className="info-banner">
@@ -152,7 +152,7 @@ const Tutors = () => {
       </div>
 
       {/* Filtros */}
-      <div className="tutors-filters">
+      <div className="tutors-filters" style={{position: 'relative', top: '-3%', left: '110%'}}>
         <div className="search-group">
           <input
             type="text"
@@ -174,7 +174,7 @@ const Tutors = () => {
       ) : (
         <>
           {/* Estadísticas */}
-          <div className="educators-stats">
+          <div className="educators-stats" style={{display: 'flex', flexDirection: 'column', gap: '20px',position: 'relative', left: '165%', width: '40%', top: '-125px'}}>
             <div className="stat-item">
               <span className="stat-number">{filteredTutors.length}</span>
               <span className="stat-label">Tutores encontrados</span>
@@ -503,7 +503,7 @@ const Tutors = () => {
           </div>
 
           {filteredTutors.length === 0 && !loading && (
-            <div className="empty-state">
+            <div className="empty-state" style={{position: 'relative', top: '-35%'}}>
               <div className="empty-icon">👨‍🏫</div>
               <h3>No se encontraron tutores disponibles</h3>
               {searchTerm ? (

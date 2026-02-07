@@ -166,7 +166,7 @@ const MyCourses = () => {
   }
 
   return (
-    <div className="courses-page">
+    <div className="courses-page" style={{position: 'relative', top: '15%'}}>
       <div className="courses-header">
         <h2>📚 Mis Cursos</h2>
         <p>Cursos coordinados con tus tutores</p>
@@ -178,7 +178,7 @@ const MyCourses = () => {
         <>
           {/* Filtros y búsqueda */}
           <div className="courses-filters">
-            <div className="search-group">
+            <div className="search-group" style={{position: 'relative', left: '105%'}}>
               <input
                 type="text"
                 placeholder="Buscar por materia, tutor o tema..."
@@ -187,7 +187,7 @@ const MyCourses = () => {
                 className="search-input"
               />
             </div>
-            <div className="filter-buttons">
+            <div className="filter-buttons" style={{width: '120%', position: 'relative', top: '-40px'}}>
               <button
                 className={`filter-btn ${filterStatus === 'all' ? 'active' : ''}`}
                 onClick={() => setFilterStatus('all')}
@@ -210,7 +210,7 @@ const MyCourses = () => {
           </div>
 
           {/* Estadísticas */}
-          <div className="courses-stats">
+          <div className="courses-stats" style={{display: 'flex', flexDirection: 'column', gap: '20px',position: 'relative', left: '165%', width: '40%', top: '-180px'}}>
             <div className="stat-item">
               <span className="stat-number">{courses.filter(c => c.status === 'active').length}</span>
               <span className="stat-label">Cursos activos</span>
@@ -264,11 +264,11 @@ const MyCourses = () => {
           )}
         </div>
       ) : (
-        <div className="courses-grid">
+        <div className="courses-grid" style={{position: 'relative', right: '10%', top: '-470px',minHeight: '300px',display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',gap: '20px', margin: '0 auto',padding: '20px',maxWidth: '460px',}}>
           {filteredCourses.map((course) => {
             const statusBadge = getStatusBadge(course.status);
             return (
-              <div key={course.id} className="course-card">
+              <div key={course.id} className="course-card" style={{background: "#d3cdcdff", borderRadius: '12px',border: '1px solid #eee', padding: '20px',boxShadow: '0 4px 6px rgba(0,0,0,0.05)'}}>
                 <div className="course-header">
                   <div className="course-title">
                     <h3>📚 {course.subject}</h3>
@@ -352,14 +352,16 @@ const MyCourses = () => {
                       <button 
                         className="btn btn-primary"
                         onClick={() => window.location.href = '/student/classes'}
+                        style={{width: '140px', height: '70px'}}
                       >
-                        📚 Ver Materiales
+                        Ver Materiales
                       </button>
                       <button 
                         className="btn btn-secondary"
                         onClick={() => window.location.href = '/student/advisories'}
+                        style={{width: '120px', height: '70px',position: 'relative', left: '28%'}}
                       >
-                        📅 Nueva Sesión
+                        Nueva Sesión
                       </button>
                     </>
                   ) : (

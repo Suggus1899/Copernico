@@ -122,7 +122,7 @@ class TutorStudents extends Component {
       <div className="dashboard-container">
         <TutorSidebarMenu userRole={user?.role} />
         <div className="dashboard-content">
-          <div className="dashboard-header">
+          <div className="dashboard-header" style={{position: 'relative', right: '35%'}}>
             <h1>Mis Estudiantes</h1>
             <p>Estudiantes con citas confirmadas o completadas</p>
           </div>
@@ -147,7 +147,7 @@ class TutorStudents extends Component {
                 <div className="stat-card" style={{ 
                   background: 'white', 
                   padding: '20px', 
-                  width: '450px',
+                  width: '300px',
                   borderRadius: '10px', 
                   boxShadow: '0 2px 10px rgba(0,0,0,0.1)' 
                 }}>
@@ -158,7 +158,7 @@ class TutorStudents extends Component {
                 </div>
                 <div className="stat-card" style={{ 
                   background: 'white', 
-                  width: '450px',
+                  width: '300px',
                   padding: '20px', 
                   borderRadius: '10px', 
                   boxShadow: '0 2px 10px rgba(0,0,0,0.1)' 
@@ -171,7 +171,7 @@ class TutorStudents extends Component {
                 <div className="stat-card" style={{ 
                   background: 'white', 
                   padding: '20px', 
-                  width: '450px',
+                  width: '300px',
                   borderRadius: '10px', 
                   boxShadow: '0 2px 10px rgba(0,0,0,0.1)' 
                 }}>
@@ -183,15 +183,15 @@ class TutorStudents extends Component {
               </div>
 
               {students.length > 0 ? (
-                <div className="students-table" style={{position: 'relative', top: '200px', left: '320px'}}>
-                  <table className="data-table">
+                <div className="students-table" style={{position: 'relative', top: '140px', left: '-220px',backgroundColor: '#ffffff', borderRadius: '12px', padding: '20px', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', marginLeft: '320px', marginTop: '50px',minWidth: '820px' ,maxWidth: '820px'}}>
+                  <table className="data-table" style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0 15px' }}>
                     <thead>
-                      <tr>
+                      <tr style={{ textAlign: 'left', color: '#666', fontSize: '0.9rem', textTransform: 'uppercase' }}>
                         <th>Estudiante</th>
-                        <th>Materias</th>
-                        <th>Citas Totales</th>
-                        <th>Última Actividad</th>
-                        <th>Estado</th>
+                        <th style={{ textAlign: 'left', width: '13%' }}>Materias</th>
+                        <th style={{ textAlign: 'center', width: '15%' }}>Citas Totales</th>
+                        <th style={{ textAlign: 'center', width: '12%' }}>Última Actividad</th>
+                        <th style={{ textAlign: 'center', width: '12%' }}>Estado</th>
                         <th>Acciones</th>
                       </tr>
                     </thead>

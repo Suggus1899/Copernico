@@ -235,14 +235,14 @@ class TutorNotifications extends Component {
       <div className="dashboard-container">
         <TutorSidebarMenu />
         <div className="dashboard-content">
-          <div className="dashboard-header" style={{width: '200%'}}>
+          <div className="dashboard-header" style={{position: 'relative', right: '35%', top: '5%'}}>
             <h1>Notificaciones</h1>
             <p>Mantente al día con todas tus actividades y actualizaciones</p>
             <button 
               className="btn btn-primary"
               onClick={this.fetchNotifications}
               disabled={loading}
-              style={{position: 'relative', left: '70%'}}
+              style={{position: 'relative', left: '50%'}}
             >
               {loading ? '🔄 Actualizando...' : '🔄 Actualizar'}
             </button>
@@ -257,7 +257,7 @@ class TutorNotifications extends Component {
             </div>
           ) : (
             <div className="dashboard-main">
-              <div className="notifications-controls" style={{position: 'relative', top: '30%', left: '370%'}}>
+              <div className="notifications-controls" style={{position: 'relative', top: '43%', left: '370%'}}>
                 <div className="notifications-stats">
                   <span className="unread-count">
                     {unreadCount} sin leer

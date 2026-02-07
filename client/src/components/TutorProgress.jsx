@@ -205,7 +205,7 @@ const TutorProgress = () => {
     <div className="dashboard-container">
       <TutorSidebarMenu userRole={userRole} />
       <div className="dashboard-content" style={{position: 'relative', top: '20px',width: '800px'}}>
-        <div className="dashboard-header" style={{position: 'relative', left: '-70px'}}>
+        <div className="dashboard-header" style={{position: 'relative', right: '30%'}}>
           <h1>Progreso de Estudiantes</h1>
           <p>Monitorea el rendimiento y progreso de tus estudiantes</p>
         </div>
