@@ -134,13 +134,13 @@ class VideoProgressDashboard extends Component {
 
     return (
       <div className="video-progress-dashboard">
-        <div className="dashboard-header">
+        <div className="dashboard-header" style={{position: 'relative', top: '7%', right: '25%'}}>
           <h2>📊 Progreso de Videos</h2>
           <p>Seguimiento de tu progreso en videos educativos</p>
         </div>
 
         {/* Estadísticas generales */}
-        <div className="stats-overview">
+        <div className="stats-overview" style={{position: 'relative', height: '5%',top: '8.4%', display: 'flex'}}>
           <div className="stat-card">
             <div className="stat-icon">🎥</div>
             <div className="stat-content">
@@ -176,11 +176,13 @@ class VideoProgressDashboard extends Component {
 
         {/* Mensaje inicial si no hay datos */}
         {subjectStats.length === 0 && (
-          <div className="empty-state-initial">
-            <div className="empty-icon">🎬</div>
+          <div className="empty-state-initial" style={{position: 'relative', top: '8%', height: '23%', fontSize: '1rem'}}>
+            <div className="empty-icon" style={{position: 'relative', bottom: '20%'}}>🎬</div>
+            <div classname='text-empty' style={{position: 'relative', bottom: '26%'}}>
             <h3>¡Comienza a ver videos!</h3>
             <p>Tu progreso aparecerá aquí cuando empieces a ver videos de clases.</p>
-            <div className="getting-started-tips">
+            </div>
+            <div className="getting-started-tips" style={{position: 'relative', top: '-32%', height: '65%', textAlign: 'center'}}>
               <h4>💡 Para empezar:</h4>
               <ol>
                 <li>Ve a la sección "Clases" en el menú</li>
@@ -192,6 +194,7 @@ class VideoProgressDashboard extends Component {
             <button 
               className="btn btn-primary"
               onClick={() => window.location.href = '/dashboard/videos'}
+              style={{position: 'relative', bottom: '39%', height: '13%'}}
             >
               🎥 Ver Videos de Clases
             </button>
@@ -219,12 +222,12 @@ class VideoProgressDashboard extends Component {
           </div>
         )}
 
-        <div className="dashboard-content">
+        <div className="dashboard-content" style={{position: 'relative',left: '99%', width: '53%', bottom:'26%'}} >
           {/* Progreso por materia */}
-          <div className="dashboard-section">
+          <div className="dashboard-section" style={{height: '70%', display: 'flex', flexDirection: 'column'}}>
             <h3>📊 Progreso por Materia</h3>
             {filteredStats.length === 0 ? (
-              <div className="empty-state">
+              <div className="empty-state" style={{position: 'relative', bottom: '25%'}}>
                 <p>No hay datos de progreso disponibles</p>
               </div>
             ) : (
@@ -280,10 +283,10 @@ class VideoProgressDashboard extends Component {
           </div>
 
           {/* Videos más vistos */}
-          <div className="dashboard-section">
+          <div className="dashboard-section" style={{height: '70%', position: 'relative', bottom: '35%'}}>
             <h3>🔥 Videos Más Vistos</h3>
             {mostWatched.length === 0 ? (
-              <div className="empty-state">
+              <div className="empty-state" style={{position: 'relative', bottom: '25%'}}>
                 <p>Aún no has visto ningún video</p>
               </div>
             ) : (
@@ -317,10 +320,10 @@ class VideoProgressDashboard extends Component {
           </div>
 
           {/* Actividad reciente */}
-          <div className="dashboard-section">
+          <div className="dashboard-section" style={{height: '70%', position: 'relative', bottom: '75%'}}>
             <h3>🕒 Actividad Reciente</h3>
             {recentProgress.length === 0 ? (
-              <div className="empty-state">
+              <div className="empty-state" style={{position: 'relative', bottom: '25%'}}>
                 <p>No hay actividad reciente</p>
               </div>
             ) : (

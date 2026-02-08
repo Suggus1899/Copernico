@@ -96,7 +96,7 @@ const TutorAgenda = () => {
     <div className="dashboard-container">
       <TutorSidebarMenu />
       <div className="dashboard-content">
-        <div className="dashboard-header">
+        <div className="dashboard-header" style={{position: 'relative', right: '33%'}}>
           <h1>Agenda de Clases</h1>
           <p>Gestiona tus clases y asesorías programadas</p>
         </div>

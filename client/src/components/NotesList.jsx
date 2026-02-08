@@ -129,12 +129,13 @@ function NotesList() {
 
   return (
     <div className="notes-page">
-      <div className="notes-header">
+      <div className="notes-header" style={{position: 'relative', top:'15%'}}>
         <h2>📝 Mis Apuntes</h2>
         <p>Organiza y gestiona tus apuntes de estudio</p>
         <button
           className={`btn ${showCreateForm ? 'btn-secondary' : 'btn-primary'}`}
           onClick={() => setShowCreateForm(!showCreateForm)}
+          style={{position: 'relative', top:'-74px', left: '70%'}}
         >
           {showCreateForm ? '✕ Cancelar' : '+ Nuevo Apunte'}
         </button>
@@ -213,8 +214,8 @@ function NotesList() {
       )}
 
       {/* Filtros y búsqueda */}
-      <div className="notes-filters">
-        <div className="search-group">
+      <div className="notes-filters" style={{position: 'relative', top:'10%'}}>
+        <div className="search-group" style={{position: 'relative', top:'50px',left:'110%'}}>
           <input
             type="text"
             placeholder="Buscar en tus apuntes..."
@@ -223,7 +224,7 @@ function NotesList() {
             className="search-input"
           />
         </div>
-        <div className="filter-buttons">
+        <div className="filter-buttons" style={{width: '90%'}}>
           <button
             className={`filter-btn ${filterBy === 'all' ? 'active' : ''}`}
             onClick={() => setFilterBy('all')}
@@ -246,7 +247,7 @@ function NotesList() {
       </div>
 
       {/* Estadísticas */}
-      <div className="notes-stats">
+      <div className="notes-stats" style={{display: 'flex', flexDirection: 'column', gap: '20px',position: 'relative', left: '165%', width: '40%', top: '-60px'}}>
         <div className="stat-item">
           <span className="stat-number">{notes.length}</span>
           <span className="stat-label">Total de apuntes</span>
@@ -266,7 +267,7 @@ function NotesList() {
       </div>
 
       {filteredNotes.length === 0 ? (
-        <div className="empty-state">
+        <div className="empty-state" style={{position: 'relative', bottom: '33%'}}>
           <div className="empty-icon">📝</div>
           <h3>
             {notes.length === 0 
