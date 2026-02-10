@@ -12,7 +12,6 @@ class VideoProgressDashboard extends Component {
       recentProgress: [],
       recentlyCompleted: []
     },
-    selectedSubject: 'all',
     error: null
   };
 
@@ -40,18 +39,6 @@ class VideoProgressDashboard extends Component {
         loading: false
       });
     }
-  };
-
-  handleSubjectFilter = (subject) => {
-    this.setState({ selectedSubject: subject });
-  };
-
-  getFilteredStats = () => {
-    const { subjectStats } = this.state.dashboardData;
-    if (this.state.selectedSubject === 'all') {
-      return subjectStats;
-    }
-    return subjectStats.filter(stat => stat.subject === this.state.selectedSubject);
   };
 
   calculateOverallStats = () => {
@@ -101,9 +88,8 @@ class VideoProgressDashboard extends Component {
   };
 
   render() {
-    const { loading, dashboardData, selectedSubject, error } = this.state;
+    const { loading, dashboardData, error } = this.state;
     const { subjectStats, mostWatched, recentProgress, recentlyCompleted } = dashboardData;
-    const filteredStats = this.getFilteredStats();
     const overallStats = this.calculateOverallStats();
 
     if (loading) {
@@ -134,13 +120,13 @@ class VideoProgressDashboard extends Component {
 
     return (
       <div className="video-progress-dashboard">
-        <div className="dashboard-header" style={{position: 'relative', top: '7%', right: '25%'}}>
-          <h2>📊 Progreso de Videos</h2>
+        <header className="progress-dashboard-header">
+          <h2>📊 Mi Progreso</h2>
           <p>Seguimiento de tu progreso en videos educativos</p>
-        </div>
+        </header>
 
         {/* Estadísticas generales */}
-        <div className="stats-overview" style={{position: 'relative', height: '5%',top: '8.4%', display: 'flex'}}>
+        <section className="progress-stats-overview">
           <div className="stat-card">
             <div className="stat-icon">🎥</div>
             <div className="stat-content">
@@ -148,7 +134,6 @@ class VideoProgressDashboard extends Component {
               <p>Videos vistos</p>
             </div>
           </div>
-          
           <div className="stat-card">
             <div className="stat-icon">✅</div>
             <div className="stat-content">
@@ -156,7 +141,6 @@ class VideoProgressDashboard extends Component {
               <p>Videos completados</p>
             </div>
           </div>
-          
           <div className="stat-card">
             <div className="stat-icon">⏱️</div>
             <div className="stat-content">
@@ -164,7 +148,6 @@ class VideoProgressDashboard extends Component {
               <p>Tiempo total</p>
             </div>
           </div>
-          
           <div className="stat-card">
             <div className="stat-icon">📈</div>
             <div className="stat-content">
@@ -172,213 +155,144 @@ class VideoProgressDashboard extends Component {
               <p>Progreso promedio</p>
             </div>
           </div>
-        </div>
+        </section>
 
         {/* Mensaje inicial si no hay datos */}
         {subjectStats.length === 0 && (
-          <div className="empty-state-initial" style={{position: 'relative', top: '8%', height: '23%', fontSize: '1rem'}}>
-            <div className="empty-icon" style={{position: 'relative', bottom: '20%'}}>🎬</div>
-            <div classname='text-empty' style={{position: 'relative', bottom: '26%'}}>
+          <section className="progress-empty-state">
+            <div className="empty-icon">🎬</div>
             <h3>¡Comienza a ver videos!</h3>
             <p>Tu progreso aparecerá aquí cuando empieces a ver videos de clases.</p>
-            </div>
-            <div className="getting-started-tips" style={{position: 'relative', top: '-32%', height: '65%', textAlign: 'center'}}>
+            <div className="getting-started-tips">
               <h4>💡 Para empezar:</h4>
               <ol>
-                <li>Ve a la sección "Clases" en el menú</li>
+                <li>Ve a la sección &quot;Clases&quot; en el menú</li>
                 <li>Selecciona un video para reproducir</li>
                 <li>Tu progreso se registrará automáticamente</li>
                 <li>Regresa aquí para ver tus estadísticas</li>
               </ol>
             </div>
-            <button 
+            <button
+              type="button"
               className="btn btn-primary"
               onClick={() => window.location.href = '/dashboard/videos'}
-              style={{position: 'relative', bottom: '39%', height: '13%'}}
             >
               🎥 Ver Videos de Clases
             </button>
-          </div>
-        )}
-
-        {/* Filtros por materia */}
-        {subjectStats.length > 0 && (
-          <div className="subject-filters">
             <button
-              className={`filter-btn ${selectedSubject === 'all' ? 'active' : ''}`}
-              onClick={() => this.handleSubjectFilter('all')}
+              type="button"
+              className="btn btn-secondary"
+              onClick={this.loadDashboardData}
+              style={{ marginTop: '12px' }}
             >
-              📚 Todas las materias
+              🔄 Actualizar datos
             </button>
-            {subjectStats.map(stat => (
-              <button
-                key={stat.subject}
-                className={`filter-btn ${selectedSubject === stat.subject ? 'active' : ''}`}
-                onClick={() => this.handleSubjectFilter(stat.subject)}
-              >
-                {stat.subject}
-              </button>
-            ))}
-          </div>
+          </section>
         )}
 
-        <div className="dashboard-content" style={{position: 'relative',left: '99%', width: '53%', bottom:'26%'}} >
-          {/* Progreso por materia */}
-          <div className="dashboard-section" style={{height: '70%', display: 'flex', flexDirection: 'column'}}>
-            <h3>📊 Progreso por Materia</h3>
-            {filteredStats.length === 0 ? (
-              <div className="empty-state" style={{position: 'relative', bottom: '25%'}}>
-                <p>No hay datos de progreso disponibles</p>
+        {/* Contenido cuando hay datos */}
+        {subjectStats.length > 0 && (
+          <>
+            <div className="progress-dashboard-content">
+              {/* Videos más vistos + Actividad reciente en dos columnas */}
+              <div className="progress-dashboard-row">
+                <section className="progress-dashboard-section">
+                  <h3>🔥 Videos Más Vistos</h3>
+                  {mostWatched.length === 0 ? (
+                    <div className="empty-state">
+                      <p>Aún no has visto ningún video</p>
+                    </div>
+                  ) : (
+                    <div className="video-list">
+                      {mostWatched.map(progress => (
+                        <div key={progress._id} className="video-item-small">
+                          <div className="video-thumbnail-small">
+                            {progress.videoId?.thumbnailUrl ? (
+                              <img src={progress.videoId.thumbnailUrl} alt={progress.videoTitle} />
+                            ) : (
+                              <div className="thumbnail-placeholder-small">🎥</div>
+                            )}
+                            <div className="progress-overlay">
+                              {progress.progressPercentage}%
+                            </div>
+                          </div>
+                          <div className="video-info-small">
+                            <h5>{progress.videoTitle}</h5>
+                            <p className="video-subject">{progress.videoSubject}</p>
+                            <div className="video-stats-small">
+                              <span>⏱️ {this.formatTime(progress.watchTime)}</span>
+                              <span>👁️ {progress.videoId?.views || 0}</span>
+                              {progress.isCompleted && <span className="completed-badge">✅</span>}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </section>
+
+                <section className="progress-dashboard-section">
+                  <h3>🕒 Actividad Reciente</h3>
+                  {recentProgress.length === 0 ? (
+                    <div className="empty-state">
+                      <p>No hay actividad reciente</p>
+                    </div>
+                  ) : (
+                    <div className="recent-activity">
+                      {recentProgress.slice(0, 5).map(progress => (
+                        <div key={progress._id} className="activity-item">
+                          <div className="activity-icon">
+                            {progress.isCompleted ? '✅' : '▶️'}
+                          </div>
+                          <div className="activity-content">
+                            <p className="activity-title">
+                              {progress.isCompleted ? 'Completaste' : 'Viste'} &quot;{progress.videoTitle}&quot;
+                            </p>
+                            <p className="activity-details">
+                              {progress.videoSubject} • {progress.progressPercentage}% •
+                              {' '}{this.formatDate(progress.lastWatchedAt)}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </section>
               </div>
-            ) : (
-              <div className="subject-stats-grid">
-                {filteredStats.map(stat => (
-                  <div key={stat.subject} className="subject-stat-card">
-                    <div className="subject-header">
-                      <h4>{stat.subject}</h4>
-                      <div className="completion-badge">
-                        {stat.completionRate}% completado
-                      </div>
-                    </div>
-                    
-                    <div className="progress-bar-large">
-                      <div 
-                        className="progress-fill" 
-                        style={{ width: `${stat.completionRate}%` }}
-                      ></div>
-                    </div>
-                    
-                    <div className="subject-details">
-                      <div className="detail-item">
-                        <span className="detail-label">Videos:</span>
-                        <span className="detail-value">
-                          {stat.completedVideos}/{stat.totalVideos}
-                        </span>
-                      </div>
-                      <div className="detail-item">
-                        <span className="detail-label">Tiempo:</span>
-                        <span className="detail-value">
-                          {stat.totalWatchTimeHours}h
-                        </span>
-                      </div>
-                      <div className="detail-item">
-                        <span className="detail-label">Progreso promedio:</span>
-                        <span className="detail-value">
-                          {stat.averageProgress}%
-                        </span>
-                      </div>
-                      {stat.lastWatched && (
-                        <div className="detail-item">
-                          <span className="detail-label">Última vez:</span>
-                          <span className="detail-value">
-                            {this.formatDate(stat.lastWatched)}
+
+              {/* Videos completados recientemente */}
+              {recentlyCompleted.length > 0 && (
+                <section className="progress-dashboard-section">
+                  <h3>🎉 Completados Recientemente</h3>
+                  <div className="completed-videos">
+                    {recentlyCompleted.map(progress => (
+                      <div key={progress._id} className="completed-video-card">
+                        <div className="completion-icon">🏆</div>
+                        <div className="completed-info">
+                          <h5>{progress.videoTitle}</h5>
+                          <p>{progress.videoSubject}</p>
+                          <span className="completion-date">
+                            Completado el {this.formatDate(progress.completedAt)}
                           </span>
                         </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Videos más vistos */}
-          <div className="dashboard-section" style={{height: '70%', position: 'relative', bottom: '35%'}}>
-            <h3>🔥 Videos Más Vistos</h3>
-            {mostWatched.length === 0 ? (
-              <div className="empty-state" style={{position: 'relative', bottom: '25%'}}>
-                <p>Aún no has visto ningún video</p>
-              </div>
-            ) : (
-              <div className="video-list">
-                {mostWatched.map(progress => (
-                  <div key={progress._id} className="video-item-small">
-                    <div className="video-thumbnail-small">
-                      {progress.videoId?.thumbnailUrl ? (
-                        <img src={progress.videoId.thumbnailUrl} alt={progress.videoTitle} />
-                      ) : (
-                        <div className="thumbnail-placeholder-small">🎥</div>
-                      )}
-                      <div className="progress-overlay">
-                        {progress.progressPercentage}%
                       </div>
-                    </div>
-                    
-                    <div className="video-info-small">
-                      <h5>{progress.videoTitle}</h5>
-                      <p className="video-subject">{progress.videoSubject}</p>
-                      <div className="video-stats-small">
-                        <span>⏱️ {this.formatTime(progress.watchTime)}</span>
-                        <span>👁️ {progress.videoId?.views || 0}</span>
-                        {progress.isCompleted && <span className="completed-badge">✅</span>}
-                      </div>
-                    </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Actividad reciente */}
-          <div className="dashboard-section" style={{height: '70%', position: 'relative', bottom: '75%'}}>
-            <h3>🕒 Actividad Reciente</h3>
-            {recentProgress.length === 0 ? (
-              <div className="empty-state" style={{position: 'relative', bottom: '25%'}}>
-                <p>No hay actividad reciente</p>
-              </div>
-            ) : (
-              <div className="recent-activity">
-                {recentProgress.slice(0, 5).map(progress => (
-                  <div key={progress._id} className="activity-item">
-                    <div className="activity-icon">
-                      {progress.isCompleted ? '✅' : '▶️'}
-                    </div>
-                    <div className="activity-content">
-                      <p className="activity-title">
-                        {progress.isCompleted ? 'Completaste' : 'Viste'} "{progress.videoTitle}"
-                      </p>
-                      <p className="activity-details">
-                        {progress.videoSubject} • {progress.progressPercentage}% • 
-                        {this.formatDate(progress.lastWatchedAt)}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Videos completados recientemente */}
-          {recentlyCompleted.length > 0 && (
-            <div className="dashboard-section">
-              <h3>🎉 Completados Recientemente</h3>
-              <div className="completed-videos">
-                {recentlyCompleted.map(progress => (
-                  <div key={progress._id} className="completed-video-card">
-                    <div className="completion-icon">🏆</div>
-                    <div className="completed-info">
-                      <h5>{progress.videoTitle}</h5>
-                      <p>{progress.videoSubject}</p>
-                      <span className="completion-date">
-                        Completado el {this.formatDate(progress.completedAt)}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                </section>
+              )}
             </div>
-          )}
-        </div>
 
-        {/* Botón para actualizar */}
-        <div className="dashboard-actions">
-          <button 
-            className="btn btn-secondary"
-            onClick={this.loadDashboardData}
-          >
-            🔄 Actualizar datos
-          </button>
-        </div>
+            <div className="progress-dashboard-actions">
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={this.loadDashboardData}
+              >
+                🔄 Actualizar datos
+              </button>
+            </div>
+          </>
+        )}
       </div>
     );
   }

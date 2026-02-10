@@ -69,7 +69,12 @@ export const updateProfileSchema = z.object({
       country: z.string().optional(),
       province: z.string().optional(),
       postalCode: z.string().optional(),
-      avatar: z.string().optional()
+      avatar: z.string().optional(),
+      specialty: z.string().optional(),
+      degrees: z.string().optional(),
+      experience: z.string().optional(),
+      certifications: z.string().optional(),
+      bio: z.string().optional()
     }).optional(),
     
     // Campos condicionales por rol (opcionales)

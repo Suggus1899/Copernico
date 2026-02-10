@@ -1,0 +1,451 @@
+/* ===== Página Cursos (MyCourses) - Estilos profesionales ===== */
+
+.cursos-page {
+  display: flex;
+  flex-direction: column;
+  padding: 24px 32px;
+  max-width: 1200px;
+  margin: 0 auto;
+  gap: 24px;
+}
+
+/* Loading */
+.cursos-page--loading {
+  align-items: center;
+  justify-content: center;
+  min-height: 280px;
+  color: #6b7280;
+  text-align: center;
+}
+
+.cursos-page--loading p {
+  margin: 12px 0 0 0;
+  font-size: 0.9375rem;
+}
+
+.cursos-page__spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #e5e7eb;
+  border-top-color: #2563eb;
+  border-radius: 50%;
+  animation: cursos-spin 0.8s linear infinite;
+}
+
+@keyframes cursos-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Header */
+.cursos-page__header {
+  flex-shrink: 0;
+}
+
+.cursos-page__title {
+  margin: 0 0 4px 0;
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #1a1d21;
+  letter-spacing: -0.02em;
+}
+
+.cursos-page__subtitle {
+  margin: 0;
+  font-size: 1rem;
+  color: #6b7280;
+}
+
+/* Alert */
+.cursos-page__alert {
+  padding: 12px 16px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  color: #b91c1c;
+  font-size: 0.9375rem;
+}
+
+/* Toolbar */
+.cursos-page__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 16px 20px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e5e7eb;
+}
+
+.cursos-page__filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.cursos-page__search {
+  width: 280px;
+  padding: 10px 14px;
+  font-size: 0.9375rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #f9fafb;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.cursos-page__search::placeholder {
+  color: #9ca3af;
+}
+
+.cursos-page__search:hover {
+  background: #fff;
+}
+
+.cursos-page__search:focus {
+  outline: none;
+  border-color: #2563eb;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.cursos-page__filter-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.cursos-page__filter-btn {
+  padding: 8px 14px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #f9fafb;
+  color: #374151;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
+}
+
+.cursos-page__filter-btn:hover {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+}
+
+.cursos-page__filter-btn--active {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #fff;
+}
+
+.cursos-page__stats {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.cursos-page__stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 72px;
+}
+
+.cursos-page__stat-num {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1a1d21;
+  line-height: 1.2;
+}
+
+.cursos-page__stat-label {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-top: 2px;
+  text-align: center;
+}
+
+/* Empty state */
+.cursos-page__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  text-align: center;
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  color: #6b7280;
+}
+
+.cursos-page__empty-icon {
+  font-size: 3rem;
+  margin-bottom: 16px;
+  display: block;
+  opacity: 0.8;
+}
+
+.cursos-page__empty h3 {
+  margin: 0 0 8px 0;
+  font-size: 1.25rem;
+  color: #374151;
+}
+
+.cursos-page__empty p {
+  margin: 0 0 24px 0;
+  font-size: 0.9375rem;
+}
+
+.cursos-page__btn-primary {
+  padding: 10px 20px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  background: #2563eb;
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.15s;
+}
+
+.cursos-page__btn-primary:hover {
+  background: #1d4ed8;
+}
+
+.cursos-page__help {
+  margin-top: 28px;
+  padding: 20px;
+  background: #f9fafb;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  text-align: left;
+  max-width: 420px;
+}
+
+.cursos-page__help h4 {
+  margin: 0 0 12px 0;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.cursos-page__help ul {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 0.875rem;
+  color: #6b7280;
+  line-height: 1.6;
+}
+
+/* Grid de tarjetas */
+.cursos-page__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+/* Tarjeta de curso */
+.cursos-page__card {
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  transition: box-shadow 0.2s, border-color 0.2s;
+}
+
+.cursos-page__card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border-color: #d1d5db;
+}
+
+.cursos-page__card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.cursos-page__card-title {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1a1d21;
+  line-height: 1.35;
+  flex: 1;
+  min-width: 0;
+}
+
+.cursos-page__card-status {
+  flex-shrink: 0;
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+.cursos-page__card-status--active {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.cursos-page__card-status--completed {
+  background: #e0e7ff;
+  color: #3730a3;
+}
+
+.cursos-page__card-tutor {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-bottom: 12px;
+}
+
+.cursos-page__card-email {
+  width: 100%;
+  font-size: 0.75rem;
+  color: #9ca3af;
+}
+
+.cursos-page__card-topics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.cursos-page__card-tag {
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  background: #f3f4f6;
+  color: #4b5563;
+  border-radius: 6px;
+}
+
+.cursos-page__card-tag--more {
+  background: #e5e7eb;
+  color: #6b7280;
+}
+
+.cursos-page__card-progress {
+  margin-bottom: 16px;
+}
+
+.cursos-page__card-progress-head {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8125rem;
+  color: #6b7280;
+  margin-bottom: 6px;
+}
+
+.cursos-page__card-progress-bar {
+  height: 8px;
+  background: #e5e7eb;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.cursos-page__card-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #2563eb, #3b82f6);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.cursos-page__card-details {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0 0 16px 0;
+  padding: 0;
+}
+
+.cursos-page__card-detail {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  font-size: 0.8125rem;
+}
+
+.cursos-page__card-detail dt {
+  margin: 0;
+  font-weight: 500;
+  color: #6b7280;
+}
+
+.cursos-page__card-detail dd {
+  margin: 0;
+  font-weight: 600;
+  color: #1a1d21;
+}
+
+.cursos-page__card-detail--next dd {
+  color: #2563eb;
+  font-weight: 600;
+}
+
+.cursos-page__card-actions {
+  margin-top: auto;
+  padding-top: 16px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.cursos-page__btn-outline {
+  width: 100%;
+  padding: 10px 16px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #fff;
+  color: #374151;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.cursos-page__btn-outline:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .cursos-page {
+    padding: 16px;
+  }
+
+  .cursos-page__toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .cursos-page__filters {
+    flex-direction: column;
+  }
+
+  .cursos-page__search {
+    width: 100%;
+  }
+
+  .cursos-page__stats {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .cursos-page__grid {
+    grid-template-columns: 1fr;
+  }
+}

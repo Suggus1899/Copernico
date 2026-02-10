@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import apiClient from '../utils/axiosConfig';
 import TutorSidebarMenu from './TutorSidebarMenu';
 import './Dashboard.css';
+import './TutorStudents.css';
 
 class TutorStudents extends Component {
   state = {
@@ -117,214 +118,132 @@ class TutorStudents extends Component {
 
   render() {
     const { user, students, loading, error } = this.state;
+    const activeCount = students.filter(s => this.getStudentStatus(s) === 'active').length;
+    const totalCitas = students.reduce((total, s) => total + (s.stats?.totalAppointments || 0), 0);
 
     return (
       <div className="dashboard-container">
         <TutorSidebarMenu userRole={user?.role} />
         <div className="dashboard-content">
-          <div className="dashboard-header" style={{position: 'relative', right: '35%'}}>
-            <h1>Mis Estudiantes</h1>
-            <p>Estudiantes con citas confirmadas o completadas</p>
-          </div>
+          <div className="estudiantes-page">
+            <header className="estudiantes-page__header">
+              <h1 className="estudiantes-page__title">Mis Estudiantes</h1>
+              <p className="estudiantes-page__subtitle">Estudiantes con citas confirmadas o completadas</p>
+            </header>
 
-          {error && <div className="alert alert-danger">{error}</div>}
-
-          {loading ? (
-            <div className="loading-container">
-              <div className="loading-spinner"></div>
-              <p>Cargando estudiantes...</p>
-            </div>
-          ) : (
-            <div className="dashboard-main">
-              <div className="students-stats" style={{ 
-                position: 'relative',
-                top: '190px',
-                display: 'grid', 
-                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
-                gap: '20px', 
-                marginBottom: '30px' 
-              }}>
-                <div className="stat-card" style={{ 
-                  background: 'white', 
-                  padding: '20px', 
-                  width: '300px',
-                  borderRadius: '10px', 
-                  boxShadow: '0 2px 10px rgba(0,0,0,0.1)' 
-                }}>
-                  <h3 style={{ margin: '0 0 10px 0', color: '#2c3e50' }}>Total Estudiantes:</h3>
-                  <p style={{ fontSize: '2rem', position: 'relative', top: '-5px', fontWeight: 'bold', color: '#3498db', margin: 0 }}>
-                    {students.length}
-                  </p>
-                </div>
-                <div className="stat-card" style={{ 
-                  background: 'white', 
-                  width: '300px',
-                  padding: '20px', 
-                  borderRadius: '10px', 
-                  boxShadow: '0 2px 10px rgba(0,0,0,0.1)' 
-                }}>
-                  <h3 style={{ margin: '0 0 10px 0', color: '#2c3e50' }}>Estudiantes Activos:</h3>
-                  <p style={{ fontSize: '2rem', position: 'relative', top: '-5px',fontWeight: 'bold', color: '#27ae60', margin: 0 }}>
-                    {students.filter(s => this.getStudentStatus(s) === 'active').length}
-                  </p>
-                </div>
-                <div className="stat-card" style={{ 
-                  background: 'white', 
-                  padding: '20px', 
-                  width: '300px',
-                  borderRadius: '10px', 
-                  boxShadow: '0 2px 10px rgba(0,0,0,0.1)' 
-                }}>
-                  <h3 style={{ margin: '0 0 10px 0', color: '#2c3e50' }}>Total Citas:</h3>
-                  <p style={{ fontSize: '2rem', position: 'relative', top: '-5px', fontWeight: 'bold', color: '#e74c3c', margin: 0 }}>
-                    {students.reduce((total, s) => total + s.stats.totalAppointments, 0)}
-                  </p>
-                </div>
+            {error && (
+              <div className="estudiantes-page__alert" role="alert">
+                {error}
               </div>
+            )}
 
-              {students.length > 0 ? (
-                <div className="students-table" style={{position: 'relative', top: '140px', left: '-220px',backgroundColor: '#ffffff', borderRadius: '12px', padding: '20px', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', marginLeft: '320px', marginTop: '50px',minWidth: '820px' ,maxWidth: '820px'}}>
-                  <table className="data-table" style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0 15px' }}>
-                    <thead>
-                      <tr style={{ textAlign: 'left', color: '#666', fontSize: '0.9rem', textTransform: 'uppercase' }}>
-                        <th>Estudiante</th>
-                        <th style={{ textAlign: 'left', width: '13%' }}>Materias</th>
-                        <th style={{ textAlign: 'center', width: '15%' }}>Citas Totales</th>
-                        <th style={{ textAlign: 'center', width: '12%' }}>Última Actividad</th>
-                        <th style={{ textAlign: 'center', width: '12%' }}>Estado</th>
-                        <th>Acciones</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {students.map((student) => {
-                        const studentName = `${student.personalInfo?.firstName || ''} ${student.personalInfo?.lastName || ''}`.trim() || 'Sin nombre';
-                        const status = this.getStudentStatus(student);
-                        const isProfileOpen = this.state.expandedStudentId === student._id;
-                        const isHistoryOpen = this.state.historyStudentId === student._id;
-                        
-                        return (
-                          <tr key={student._id}>
-                            <td>
-                              <div className="student-info">
-                                <div className="student-name" style={{ fontWeight: 'bold', marginBottom: '4px' }}>
-                                  {studentName}
-                                </div>
-                                <div className="student-email" style={{ color: '#666', fontSize: '0.9rem' }}>
-                                  {student.email}
-                                </div>
-                              </div>
-                            </td>
-                            <td>
-                              <div className="subjects-list">
-                                {student.stats.subjects.map((subject, index) => (
-                                  <span 
-                                    key={index}
-                                    style={{ 
-                                      display: 'inline-block',
-                                      background: '#e3f2fd',
-                                      color: '#1976d2',
-                                      padding: '2px 8px',
-                                      borderRadius: '12px',
-                                      fontSize: '0.8rem',
-                                      margin: '2px',
-                                      whiteSpace: 'nowrap'
-                                    }}
-                                  >
-                                    {subject}
-                                  </span>
-                                ))}
-                              </div>
-                            </td>
-                            <td>
-                              <div style={{ textAlign: 'center' }}>
-                                <div style={{ fontWeight: 'bold', fontSize: '1.2rem' }}>
-                                  {student.stats.totalAppointments}
-                                </div>
-                                <div style={{ fontSize: '0.8rem', color: '#666' }}>
-                                  {student.stats.completedAppointments} completadas
-                                </div>
-                              </div>
-                            </td>
-                            <td>{this.formatLastActivity(student.stats.lastAppointmentDate)}</td>
-                            <td>
-                              <span className={`status-badge ${status}`} style={{
-                                padding: '4px 12px',
-                                borderRadius: '20px',
-                                fontSize: '0.8rem',
-                                fontWeight: 'bold',
-                                backgroundColor: status === 'active' ? '#d4edda' : '#f8d7da',
-                                color: status === 'active' ? '#155724' : '#721c24'
-                              }}>
-                                {status === 'active' ? 'Activo' : 'Inactivo'}
-                              </span>
-                            </td>
-                            <td>
-                              <div className="action-buttons" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                                <button 
-                                  className="btn-outline small"
-                                  style={{ fontSize: '0.8rem', padding: '4px 8px' }}
-                                >
-                                  Ver Perfil
-                                </button>
-                                <button 
-                                  className="btn-outline small"
-                                  style={{ fontSize: '0.8rem', padding: '4px 8px' }}
-                                >
-                                  Historial
-                                </button>
-                                <button 
-                                  className="btn-outline small"
-                                  style={{ fontSize: '0.8rem', padding: '4px 8px' }}
-                                >
-                                  Mensaje
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <div className="empty-state" style={{
-                  position: 'relative', 
-                  left: '300px',
-                  top: '175px',
-                  width: '600px',
-                  height: '380px',
-                  textAlign: 'center', 
-                  padding: '60px 20px',
-                  background: 'white',
-                  borderRadius: '10px',
-                  boxShadow: '0 2px 10px rgba(0,0,0,0.1)'
-                }}>
-                  <div style={{ fontSize: '4rem',position: 'relative', bottom: '55px', marginBottom: '20px' }}>👨‍🎓</div>
-                  <h3 style={{ color: '#2c3e50', position: 'relative', bottom: '55px' ,marginBottom: '10px' }}>No tienes estudiantes aún</h3>
-                  <p style={{ color: '#666', marginBottom: '20px', position: 'relative', bottom: '55px' }}>
-                    Cuando aceptes solicitudes de asesoría, los estudiantes aparecerán aquí
-                  </p>
-                  <div style={{ 
-                    position: 'relative',
-                    bottom: '30px',
-                    height: '108px',
-                    background: '#f8f9fa', 
-                    padding: '20px', 
-                    borderRadius: '8px',
-                    marginTop: '20px'
-                  }}>
-                    <h4 style={{ color: '#2c3e50', marginBottom: '10px',position: 'relative', bottom: '60px' }}>💡 ¿Cómo obtener estudiantes?</h4>
-                    <ul style={{ textAlign: 'left', color: '#666', lineHeight: '1.6',position: 'relative', bottom: '55px' }}>
-                      <li>Los estudiantes envían solicitudes de asesoría</li>
-                      <li>Recibes notificaciones de las solicitudes</li>
-                      <li>Aceptas las solicitudes que te interesen</li>
-                      <li>Los estudiantes aparecen automáticamente aquí</li>
-                    </ul>
+            {loading ? (
+              <div className="estudiantes-page estudiantes-page--loading">
+                <div className="estudiantes-page__spinner" />
+                <p>Cargando estudiantes...</p>
+              </div>
+            ) : (
+              <>
+                {students.length > 0 && (
+                  <div className="estudiantes-page__stats">
+                    <div className="estudiantes-page__stat-card">
+                      <span className="estudiantes-page__stat-num">{students.length}</span>
+                      <span className="estudiantes-page__stat-label">Total estudiantes</span>
+                    </div>
+                    <div className="estudiantes-page__stat-card">
+                      <span className="estudiantes-page__stat-num estudiantes-page__stat-num--active">{activeCount}</span>
+                      <span className="estudiantes-page__stat-label">Activos</span>
+                    </div>
+                    <div className="estudiantes-page__stat-card">
+                      <span className="estudiantes-page__stat-num estudiantes-page__stat-num--citas">{totalCitas}</span>
+                      <span className="estudiantes-page__stat-label">Total citas</span>
+                    </div>
                   </div>
-                </div>
-              )}
-            </div>
-          )}
+                )}
+
+                {students.length > 0 ? (
+                  <div className="estudiantes-page__grid">
+                    {students.map((student) => {
+                      const studentName = `${student.personalInfo?.firstName || ''} ${student.personalInfo?.lastName || ''}`.trim() || 'Sin nombre';
+                      const status = this.getStudentStatus(student);
+                      const stats = student.stats || { totalAppointments: 0, completedAppointments: 0, lastAppointmentDate: null, subjects: [] };
+                      return (
+                        <article key={student._id} className="estudiantes-page__card">
+                          <div className="estudiantes-page__card-header">
+                            <div className="estudiantes-page__card-info">
+                              <h3 className="estudiantes-page__card-name">👨‍🎓 {studentName}</h3>
+                              <p className="estudiantes-page__card-email">{student.email}</p>
+                            </div>
+                            <span className={`estudiantes-page__card-status estudiantes-page__card-status--${status}`}>
+                              {status === 'active' ? 'Activo' : 'Inactivo'}
+                            </span>
+                          </div>
+
+                          <div className="estudiantes-page__card-body">
+                            {stats.subjects && stats.subjects.length > 0 && (
+                              <div className="estudiantes-page__card-subjects">
+                                <h4>Materias</h4>
+                                <div className="estudiantes-page__card-tags">
+                                  {stats.subjects.map((subject, index) => (
+                                    <span key={index} className="estudiantes-page__card-tag">{subject}</span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            <div className="estudiantes-page__card-metrics">
+                              <div className="estudiantes-page__card-metric">
+                                <span className="estudiantes-page__card-metric-value">{stats.totalAppointments}</span>
+                                <span className="estudiantes-page__card-metric-label">Citas totales</span>
+                                <span className="estudiantes-page__card-metric-detail">{stats.completedAppointments} completadas</span>
+                              </div>
+                              <div className="estudiantes-page__card-metric">
+                                <span className="estudiantes-page__card-metric-value estudiantes-page__card-metric-value--text">
+                                  {this.formatLastActivity(stats.lastAppointmentDate)}
+                                </span>
+                                <span className="estudiantes-page__card-metric-label">Última actividad</span>
+                              </div>
+                            </div>
+
+                            {(student.personalInfo?.phoneNumber || student.personalInfo?.phone) && (
+                              <div className="estudiantes-page__card-contact">
+                                📞 {student.personalInfo.phoneNumber || student.personalInfo.phone}
+                              </div>
+                            )}
+
+                            <div className="estudiantes-page__card-actions">
+                              <button
+                                type="button"
+                                className="estudiantes-page__btn-outline"
+                                onClick={() => this.handleSendMessage(student)}
+                              >
+                                Enviar mensaje
+                              </button>
+                            </div>
+                          </div>
+                        </article>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="estudiantes-page__empty">
+                    <span className="estudiantes-page__empty-icon" aria-hidden>👨‍🎓</span>
+                    <h3>No tienes estudiantes aún</h3>
+                    <p>Cuando aceptes solicitudes de asesoría, los estudiantes aparecerán aquí.</p>
+                    <div className="estudiantes-page__help">
+                      <h4>¿Cómo obtener estudiantes?</h4>
+                      <ul>
+                        <li>Los estudiantes envían solicitudes de asesoría desde la plataforma</li>
+                        <li>Recibes notificaciones de las solicitudes</li>
+                        <li>Acepta las solicitudes que te interesen</li>
+                        <li>Los estudiantes aparecerán automáticamente aquí</li>
+                      </ul>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
         </div>
       </div>
     );

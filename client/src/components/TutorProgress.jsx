@@ -3,6 +3,7 @@ import TutorSidebarMenu from './TutorSidebarMenu';
 import apiClient from '../utils/axiosConfig';
 import './Dashboard.css';
 import './VideoProgress.css';
+import './TutorProgress.css';
 
 const TutorProgress = () => {
   const [students, setStudents] = useState([]);
@@ -192,9 +193,9 @@ const TutorProgress = () => {
       <div className="dashboard-container">
         <TutorSidebarMenu userRole={userRole} />
         <div className="dashboard-content">
-          <div className="loading-container">
-            <div className="loading-spinner"></div>
-            <p>Cargando progreso de estudiantes...</p>
+          <div className="progreso-page progreso-page--loading">
+            <div className="progreso-page__spinner" />
+            <p>Cargando progreso...</p>
           </div>
         </div>
       </div>
@@ -204,158 +205,142 @@ const TutorProgress = () => {
   return (
     <div className="dashboard-container">
       <TutorSidebarMenu userRole={userRole} />
-      <div className="dashboard-content" style={{position: 'relative', top: '20px',width: '800px'}}>
-        <div className="dashboard-header" style={{position: 'relative', right: '30%'}}>
-          <h1>Progreso de Estudiantes</h1>
-          <p>Monitorea el rendimiento y progreso de tus estudiantes</p>
-        </div>
+      <div className="dashboard-content">
+        <div className="progreso-page">
+          <header className="progreso-page__header">
+            <h1 className="progreso-page__title">Progreso</h1>
+            <p className="progreso-page__subtitle">Rendimiento y progreso de tus estudiantes</p>
+          </header>
 
-        {error && <div className="alert alert-danger">{error}</div>}
+          {error && (
+            <div className="progreso-page__alert" role="alert">
+              {error}
+            </div>
+          )}
 
-        <div className="dashboard-main" style={{position: 'relative', top: '20px'}}>
           {students.length > 0 && (
-            <div className="progress-controls">
-              <select
-                value={selectedSubject}
-                onChange={(e) => setSelectedSubject(e.target.value)}
-                className="course-filter"
-                style={{position: 'relative', bottom: '30px',width: '280px', left: '800px', height: '30px'}}
-              >
-                <option value="all">Todas las materias ({students.length} estudiantes)</option>
-                {allSubjects.map(subject => {
-                  const count = students.filter(s => s.subjects.some(sub => sub.subject === subject)).length;
-                  return (
-                    <option key={subject} value={subject}>
-                      {subject} ({count} estudiante{count !== 1 ? 's' : ''})
-                    </option>
-                  );
-                })}
-              </select>
+            <div className="progreso-page__toolbar">
+              <label className="progreso-page__filter-wrap">
+                <span className="progreso-page__filter-label">Materia</span>
+                <select
+                  value={selectedSubject}
+                  onChange={(e) => setSelectedSubject(e.target.value)}
+                  className="progreso-page__select"
+                  aria-label="Filtrar por materia"
+                >
+                  <option value="all">Todas las materias ({students.length} estudiantes)</option>
+                  {allSubjects.map(subject => {
+                    const count = students.filter(s => s.subjects.some(sub => sub.subject === subject)).length;
+                    return (
+                      <option key={subject} value={subject}>
+                        {subject} ({count} estudiante{count !== 1 ? 's' : ''})
+                      </option>
+                    );
+                  })}
+                </select>
+              </label>
             </div>
           )}
 
           {filteredStudents.length === 0 ? (
-            <div className="empty-state" style={{position: 'relative', bottom: '50px',width: '800px', height: '200px', left: '100px'}}>
-              <div className="empty-icon">📊</div>
+            <div className="progreso-page__empty">
+              <span className="progreso-page__empty-icon" aria-hidden>📊</span>
               <h3>
-                {students.length === 0 
-                  ? 'No hay estudiantes con progreso registrado' 
-                  : 'No se encontraron estudiantes para la materia seleccionada'
-                }
+                {students.length === 0
+                  ? 'No hay progreso registrado'
+                  : 'No hay estudiantes para esta materia'}
               </h3>
               <p>
-                {students.length === 0 
-                  ? 'El progreso aparecerá aquí cuando tengas sesiones completadas con estudiantes'
-                  : 'Selecciona otra materia o "Todas las materias" para ver más estudiantes'
-                }
+                {students.length === 0
+                  ? 'El progreso aparecerá cuando tengas sesiones completadas con estudiantes.'
+                  : 'Selecciona otra materia o "Todas las materias".'}
               </p>
               {students.length === 0 && (
-                <div className="help-text" style={{position: 'relative', top: '30px', left: '30px'}}>
-                  <h4>💡 ¿Cómo funciona el progreso?</h4>
+                <div className="progreso-page__help">
+                  <h4>¿Cómo funciona el progreso?</h4>
                   <ul>
-                    <li>El progreso se calcula basado en sesiones completadas</li>
-                    <li>Cada sesión completada aumenta el progreso del estudiante</li>
-                    <li>Se agrupan por materia para un seguimiento detallado</li>
-                    <li>La asistencia se basa en sesiones completadas vs programadas</li>
+                    <li>Se calcula con las sesiones completadas</li>
+                    <li>Se agrupa por materia para seguimiento detallado</li>
+                    <li>La asistencia es sesiones completadas vs programadas</li>
                   </ul>
                 </div>
               )}
             </div>
           ) : (
-            <div className="students-progress" style={{position: 'relative', right: '400px',minHeight: '300px',display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',gap: '20px', margin: '0 auto',padding: '20px',maxWidth: '1200px',}}>
+            <div className="progreso-page__grid">
               {filteredStudents.map((student) => (
-                <div key={student.id} className="student-progress-card" style={{background: "#d3cdcdff", borderRadius: '12px',border: '1px solid #eee', padding: '20px',boxShadow: '0 4px 6px rgba(0,0,0,0.05)'}}>
-                  <div className="student-header">
-                    <h3>👨‍🎓 {student.name}</h3>
-                    <div className="student-badges">
+                <article key={student.id} className="progreso-page__card">
+                  <div className="progreso-page__card-header">
+                    <h3 className="progreso-page__card-name">👨‍🎓 {student.name}</h3>
+                    <div className="progreso-page__card-badges">
                       {student.subjects.map(subject => (
-                        <span key={subject.subject} className="course-badge">
-                          📚 {subject.subject}
+                        <span key={subject.subject} className="progreso-page__card-badge">
+                          {subject.subject}
                         </span>
                       ))}
                     </div>
                   </div>
 
-                  <div className="progress-overview">
-                    <div className="progress-metric">
-                      <h4>Progreso General</h4>
-                      <div className="progress-circle">
-                        <div className="progress-fill" style={{'--percentage': `${student.overallProgress}%`}}>
-                          {student.overallProgress}%
-                        </div>
+                  <div className="progreso-page__card-metrics">
+                    <div className="progreso-page__card-metric">
+                      <span className="progreso-page__card-metric-label">Progreso general</span>
+                      <div className="progreso-page__card-metric-value progreso-page__card-metric-value--circle">
+                        {student.overallProgress}%
                       </div>
-                      <p className="progress-detail">
+                      <span className="progreso-page__card-metric-detail">
                         {student.completedAppointments}/{student.totalAppointments} sesiones
-                      </p>
+                      </span>
                     </div>
-
-                    <div className="progress-metric">
-                      <h4>Asistencia</h4>
-                      <div className="attendance-bar">
-                        <div className="attendance-fill" style={{width: `${student.attendance}%`}}>
-                          {student.attendance}%
-                        </div>
+                    <div className="progreso-page__card-metric">
+                      <span className="progreso-page__card-metric-label">Asistencia</span>
+                      <div className="progreso-page__card-progress-bar">
+                        <div
+                          className="progreso-page__card-progress-fill"
+                          style={{ width: `${student.attendance}%` }}
+                        />
                       </div>
-                      <p className="attendance-detail">
-                        Sesiones completadas vs programadas
-                      </p>
+                      <span className="progreso-page__card-metric-detail">{student.attendance}%</span>
                     </div>
                   </div>
 
-                  <div className="subjects-progress">
-                    <h4>📚 Progreso por Materia</h4>
+                  <div className="progreso-page__card-subjects">
+                    <h4>Progreso por materia</h4>
                     {student.subjects.map((subject) => (
-                      <div key={subject.subject} className="subject-progress-item">
-                        <div className="subject-header">
-                          <span className="subject-name">{subject.subject}</span>
-                          <span className="subject-progress">{subject.progress}%</span>
+                      <div key={subject.subject} className="progreso-page__subject">
+                        <div className="progreso-page__subject-head">
+                          <span className="progreso-page__subject-name">{subject.subject}</span>
+                          <span className="progreso-page__subject-pct">{subject.progress}%</span>
                         </div>
-                        <div className="subject-details">
-                          <span className="sessions-count">
-                            📊 {subject.completedSessions}/{subject.totalSessions} sesiones
-                          </span>
+                        <div className="progreso-page__subject-bar">
+                          <div
+                            className="progreso-page__subject-fill"
+                            style={{ width: `${subject.progress}%` }}
+                          />
+                        </div>
+                        <div className="progreso-page__subject-meta">
+                          <span>{subject.completedSessions}/{subject.totalSessions} sesiones</span>
                           {subject.topics.length > 0 && (
-                            <span className="topics-count">
-                              🎯 {subject.topics.length} tema{subject.topics.length !== 1 ? 's' : ''}
-                            </span>
+                            <span>{subject.topics.length} tema{subject.topics.length !== 1 ? 's' : ''}</span>
                           )}
                         </div>
-                        <div className="progress-bar">
-                          <div 
-                            className="progress-fill" 
-                            style={{ width: `${subject.progress}%` }}
-                          ></div>
-                        </div>
-                        
-                        {/* Progreso de videos por materia */}
                         {subject.videoProgress && (
-                          <div className="video-progress-section">
-                            <div className="video-progress-header">
-                              <span className="video-progress-label">🎥 Videos:</span>
-                              <span className="video-progress-stats">
-                                {subject.videoProgress.completedVideos}/{subject.videoProgress.totalVideos} completados
-                              </span>
-                            </div>
-                            <div className="video-progress-bar">
-                              <div 
-                                className="video-progress-fill" 
+                          <div className="progreso-page__subject-videos">
+                            <span>Videos: {subject.videoProgress.completedVideos}/{subject.videoProgress.totalVideos} ({subject.videoProgress.completionRate}%)</span>
+                            <div className="progreso-page__subject-bar progreso-page__subject-bar--thin">
+                              <div
+                                className="progreso-page__subject-fill progreso-page__subject-fill--alt"
                                 style={{ width: `${subject.videoProgress.completionRate}%` }}
-                              ></div>
-                            </div>
-                            <div className="video-progress-details">
-                              <span>📈 {subject.videoProgress.completionRate}% completado</span>
-                              <span>⏱️ {subject.videoProgress.totalWatchTimeHours}h vistas</span>
+                              />
                             </div>
                           </div>
                         )}
-                        
                         {subject.topics.length > 0 && (
-                          <div className="topics-list">
+                          <div className="progreso-page__subject-tags">
                             {subject.topics.slice(0, 3).map((topic, index) => (
-                              <span key={index} className="topic-tag">{topic}</span>
+                              <span key={index} className="progreso-page__subject-tag">{topic}</span>
                             ))}
                             {subject.topics.length > 3 && (
-                              <span className="topic-tag more">+{subject.topics.length - 3} más</span>
+                              <span className="progreso-page__subject-tag progreso-page__subject-tag--more">+{subject.topics.length - 3}</span>
                             )}
                           </div>
                         )}
@@ -363,26 +348,28 @@ const TutorProgress = () => {
                     ))}
                   </div>
 
-                  <div className="student-actions" style={{display: 'flex',flexWrap: 'wrap',gap: '10px',marginTop: '15px', alignItems: 'center'}}>
-                    <button 
-                      className="btn btn-outline small"
-                      style={{position: 'relative', top: '-5px', right: '25px'}}
-                      onClick={() => window.location.href = '/dashboard/estudiantes'}
-                    >
-                      👥 Ver Detalles
-                    </button>
-                    <button 
-                      className="btn btn-outline small"
-                      onClick={() => window.location.href = '/dashboard/videos-tutor'}
-                      style={{position: 'relative', bottom: '63px', left: '125px'}}
-                    >
-                      📹 Subir Material
-                    </button>
-                    <span className="last-activity" style={{position: 'relative', bottom: '50px'}}>
-                      🕐 Última actividad: {student.lastActivityFormatted}
+                  <div className="progreso-page__card-footer">
+                    <span className="progreso-page__card-activity">
+                      Última actividad: {student.lastActivityFormatted}
                     </span>
+                    <div className="progreso-page__card-actions">
+                      <button
+                        type="button"
+                        className="progreso-page__btn"
+                        onClick={() => window.location.href = '/dashboard/estudiantes'}
+                      >
+                        Ver detalles
+                      </button>
+                      <button
+                        type="button"
+                        className="progreso-page__btn progreso-page__btn--outline"
+                        onClick={() => window.location.href = '/dashboard/videos-tutor'}
+                      >
+                        Subir material
+                      </button>
+                    </div>
                   </div>
-                </div>
+                </article>
               ))}
             </div>
           )}

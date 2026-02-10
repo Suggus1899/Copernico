@@ -31,7 +31,11 @@ const UserSchema = new mongoose.Schema({
     postalCode: String,
     avatar: String,
     phone: String,
-    bio: String
+    bio: String,
+    specialty: String,
+    degrees: String,
+    experience: String,
+    certifications: String
   },
   academicProfile: { institution: String, department: String, title: String, experienceYears: Number, skills: [String] },
   tutorProfile: { specialties: [String], teachingMethods: [String], maxStudents: Number, available: Boolean, hourlyRate: Number, rating: Number, totalSessions: Number, appointmentDuration: Number, specializationAreas: [String] },

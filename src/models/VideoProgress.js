@@ -98,12 +98,21 @@ videoProgressSchema.index({ videoId: 1, isCompleted: 1 });
 
 // Middleware para calcular progreso automáticamente
 videoProgressSchema.pre('save', function(next) {
-  // Calcular porcentaje de progreso
+  // Calcular porcentaje: usar el mayor entre tiempo visto acumulado y posición de reproducción (currentTime)
+  // para que la barra refleje hasta dónde ha llegado el estudiante en el video
   if (this.totalDuration > 0) {
-    this.progressPercentage = Math.min(100, Math.round((this.watchTime / this.totalDuration) * 100));
+    const watchTimePct = (this.watchTime / this.totalDuration) * 100;
+    let positionPct = 0;
+    if (this.viewingSessions && this.viewingSessions.length > 0) {
+      const lastSession = this.viewingSessions[this.viewingSessions.length - 1];
+      if (lastSession.lastPosition != null && lastSession.lastPosition > 0) {
+        positionPct = (lastSession.lastPosition / this.totalDuration) * 100;
+      }
+    }
+    this.progressPercentage = Math.min(100, Math.round(Math.max(watchTimePct, positionPct)));
   }
   
-  // Determinar si está completado (consideramos completado si vio más del 90%)
+  // Determinar si está completado (consideramos completado si llegó al 90% o más)
   if (this.progressPercentage >= 90 && !this.isCompleted) {
     this.isCompleted = true;
     this.completedAt = new Date();

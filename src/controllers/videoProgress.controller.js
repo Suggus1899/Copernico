@@ -64,14 +64,22 @@ export const updateVideoProgress = async (req, res, next) => {
       console.log('Updated watchTime:', videoProgress.watchTime);
     }
 
-    // Actualizar última sesión si existe
+    // Actualizar o crear sesión de visualización (por si se envió progreso sin haber llamado /start)
     if (videoProgress.viewingSessions.length > 0) {
       const lastSession = videoProgress.viewingSessions[videoProgress.viewingSessions.length - 1];
       lastSession.endTime = new Date();
-      lastSession.lastPosition = currentTime || 0;
+      lastSession.lastPosition = currentTime != null ? Number(currentTime) : lastSession.lastPosition;
       if (watchedSeconds) {
-        lastSession.watchedSeconds += watchedSeconds;
+        lastSession.watchedSeconds = (lastSession.watchedSeconds || 0) + watchedSeconds;
       }
+    } else {
+      videoProgress.viewingSessions.push({
+        startTime: new Date(),
+        endTime: new Date(),
+        watchedSeconds: watchedSeconds || 0,
+        lastPosition: currentTime != null ? Number(currentTime) : 0
+      });
+      videoProgress.totalSessions = videoProgress.viewingSessions.length;
     }
 
     videoProgress.lastWatchedAt = new Date();

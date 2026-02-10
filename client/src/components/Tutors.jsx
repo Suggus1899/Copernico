@@ -308,81 +308,93 @@ const Tutors = () => {
                         <div className="personal-info">
                           <h5>👤 Información Personal:</h5>
                           <div className="info-grid">
-                            {tutor.personalInfo?.firstName && (
-                              <div className="info-item">
-                                <span className="info-label">Nombre:</span>
-                                <span className="info-value">{tutor.personalInfo.firstName} {tutor.personalInfo.lastName}</span>
-                              </div>
-                            )}
-                            {tutor.personalInfo?.email && (
-                              <div className="info-item">
-                                <span className="info-label">Email:</span>
-                                <span className="info-value">{tutor.personalInfo.email}</span>
-                              </div>
-                            )}
-                            {tutor.personalInfo?.phone && (
-                              <div className="info-item">
-                                <span className="info-label">Teléfono:</span>
-                                <span className="info-value">{tutor.personalInfo.phone}</span>
-                              </div>
-                            )}
-                            {tutor.personalInfo?.city && (
-                              <div className="info-item">
-                                <span className="info-label">Ciudad:</span>
-                                <span className="info-value">{tutor.personalInfo.city}, {tutor.personalInfo.country}</span>
-                              </div>
-                            )}
+                            <div className="info-item">
+                              <span className="info-label">Nombre:</span>
+                              <span className="info-value">
+                                {[tutor.personalInfo?.firstName, tutor.personalInfo?.lastName].filter(Boolean).join(' ') || 'No especificado'}
+                              </span>
+                            </div>
+                            <div className="info-item">
+                              <span className="info-label">Email:</span>
+                              <span className="info-value">{tutor.personalInfo?.email || tutor.email || 'No especificado'}</span>
+                            </div>
+                            <div className="info-item">
+                              <span className="info-label">Teléfono:</span>
+                              <span className="info-value">{tutor.personalInfo?.phone || 'No especificado'}</span>
+                            </div>
+                            <div className="info-item">
+                              <span className="info-label">Ciudad:</span>
+                              <span className="info-value">
+                                {[tutor.personalInfo?.city, tutor.personalInfo?.country].filter(Boolean).join(', ') || 'No especificado'}
+                              </span>
+                            </div>
                           </div>
-                          {tutor.personalInfo?.bio && (
-                            <div className="bio-full">
-                              <h6>📝 Biografía:</h6>
-                              <p>{tutor.personalInfo.bio}</p>
+                          <div className="bio-full">
+                            <h6>📝 Biografía:</h6>
+                            <p>{tutor.personalInfo?.bio || 'No especificada'}</p>
+                          </div>
+                        </div>
+
+                        {/* Información Académica - siempre visible con todos los campos */}
+                        <div className="academic-info">
+                          <h5>🎓 Información Académica:</h5>
+                          <div className="info-grid">
+                            <div className="info-item">
+                              <span className="info-label">Especialización:</span>
+                              <span className="info-value">{tutor.personalInfo?.specialty || 'No especificada'}</span>
+                            </div>
+                            <div className="info-item">
+                              <span className="info-label">Títulos y Grados:</span>
+                              <span className="info-value">{tutor.personalInfo?.degrees || 'No especificados'}</span>
+                            </div>
+                            <div className="info-item">
+                              <span className="info-label">Experiencia Docente:</span>
+                              <span className="info-value">{tutor.personalInfo?.experience || 'No especificada'}</span>
+                            </div>
+                            <div className="info-item">
+                              <span className="info-label">Certificaciones:</span>
+                              <span className="info-value">{tutor.personalInfo?.certifications || 'No especificadas'}</span>
+                            </div>
+                            <div className="info-item">
+                              <span className="info-label">Institución:</span>
+                              <span className="info-value">{tutor.academicProfile?.institution || 'No especificada'}</span>
+                            </div>
+                            <div className="info-item">
+                              <span className="info-label">Departamento:</span>
+                              <span className="info-value">{tutor.academicProfile?.department || 'No especificado'}</span>
+                            </div>
+                            <div className="info-item">
+                              <span className="info-label">Título académico:</span>
+                              <span className="info-value">{tutor.academicProfile?.title || 'No especificado'}</span>
+                            </div>
+                            <div className="info-item">
+                              <span className="info-label">Años de experiencia:</span>
+                              <span className="info-value">
+                                {tutor.academicProfile?.experienceYears != null ? `${tutor.academicProfile.experienceYears} años` : 'No especificado'}
+                              </span>
+                            </div>
+                          </div>
+                          {tutor.academicProfile?.skills && tutor.academicProfile.skills.length > 0 && (
+                            <div className="skills">
+                              <h6>🛠️ Habilidades:</h6>
+                              <div className="skill-tags">
+                                {tutor.academicProfile.skills.map((skill, index) => (
+                                  <span key={index} className="skill-tag">{skill}</span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {tutor.tutorProfile?.specializationAreas && tutor.tutorProfile.specializationAreas.length > 0 && (
+                            <div className="specialization-areas">
+                              <h6>📌 Áreas de especialización:</h6>
+                              <div className="specialty-tags">
+                                {tutor.tutorProfile.specializationAreas.map((area, index) => (
+                                  <span key={index} className="specialty-tag">{area}</span>
+                                ))}
+                              </div>
                             </div>
                           )}
                         </div>
-
-                        {/* Perfil académico */}
-                        {tutor.academicProfile && (
-                          <div className="academic-info">
-                            <h5>🎓 Perfil Académico:</h5>
-                            <div className="info-grid">
-                              {tutor.academicProfile.institution && (
-                                <div className="info-item">
-                                  <span className="info-label">Institución:</span>
-                                  <span className="info-value">{tutor.academicProfile.institution}</span>
-                                </div>
-                              )}
-                              {tutor.academicProfile.department && (
-                                <div className="info-item">
-                                  <span className="info-label">Departamento:</span>
-                                  <span className="info-value">{tutor.academicProfile.department}</span>
-                                </div>
-                              )}
-                              {tutor.academicProfile.title && (
-                                <div className="info-item">
-                                  <span className="info-label">Título:</span>
-                                  <span className="info-value">{tutor.academicProfile.title}</span>
-                                </div>
-                              )}
-                              {tutor.academicProfile.experienceYears && (
-                                <div className="info-item">
-                                  <span className="info-label">Años de experiencia:</span>
-                                  <span className="info-value">{tutor.academicProfile.experienceYears} años</span>
-                                </div>
-                              )}
-                            </div>
-                            {tutor.academicProfile.skills && tutor.academicProfile.skills.length > 0 && (
-                              <div className="skills">
-                                <h6>🛠️ Habilidades:</h6>
-                                <div className="skill-tags">
-                                  {tutor.academicProfile.skills.map((skill, index) => (
-                                    <span key={index} className="skill-tag">{skill}</span>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        )}
 
                         {/* Perfil de tutor */}
                         {tutor.tutorProfile && (

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import apiClient from '../utils/axiosConfig';
 import './Dashboard.css';
+import './MyCourses.css';
 
 const MyCourses = () => {
   const [courses, setCourses] = useState([]);
@@ -158,230 +159,195 @@ const MyCourses = () => {
 
   if (loading) {
     return (
-      <div className="loading-container">
-        <div className="loading-spinner"></div>
+      <div className="cursos-page cursos-page--loading">
+        <div className="cursos-page__spinner" />
         <p>Cargando tus cursos...</p>
       </div>
     );
   }
 
   return (
-    <div className="courses-page" style={{position: 'relative', top: '15%'}}>
-      <div className="courses-header">
-        <h2>📚 Mis Cursos</h2>
-        <p>Cursos coordinados con tus tutores</p>
-      </div>
+    <div className="cursos-page">
+      <header className="cursos-page__header">
+        <h1 className="cursos-page__title">Cursos</h1>
+        <p className="cursos-page__subtitle">Sesiones coordinadas con tus tutores</p>
+      </header>
 
-      {error && <div className="alert alert-danger">{error}</div>}
+      {error && (
+        <div className="cursos-page__alert" role="alert">
+          {error}
+        </div>
+      )}
 
       {courses.length > 0 && (
-        <>
-          {/* Filtros y búsqueda */}
-          <div className="courses-filters">
-            <div className="search-group" style={{position: 'relative', left: '105%'}}>
-              <input
-                type="text"
-                placeholder="Buscar por materia, tutor o tema..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="search-input"
-              />
-            </div>
-            <div className="filter-buttons" style={{width: '120%', position: 'relative', top: '-40px'}}>
+        <div className="cursos-page__toolbar">
+          <div className="cursos-page__filters">
+            <input
+              type="text"
+              placeholder="Buscar por materia, tutor o tema..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="cursos-page__search"
+              aria-label="Buscar cursos"
+            />
+            <div className="cursos-page__filter-btns">
               <button
-                className={`filter-btn ${filterStatus === 'all' ? 'active' : ''}`}
+                type="button"
+                className={`cursos-page__filter-btn ${filterStatus === 'all' ? 'cursos-page__filter-btn--active' : ''}`}
                 onClick={() => setFilterStatus('all')}
               >
                 Todos ({courses.length})
               </button>
               <button
-                className={`filter-btn ${filterStatus === 'active' ? 'active' : ''}`}
+                type="button"
+                className={`cursos-page__filter-btn ${filterStatus === 'active' ? 'cursos-page__filter-btn--active' : ''}`}
                 onClick={() => setFilterStatus('active')}
               >
                 Activos ({courses.filter(c => c.status === 'active').length})
               </button>
               <button
-                className={`filter-btn ${filterStatus === 'completed' ? 'active' : ''}`}
+                type="button"
+                className={`cursos-page__filter-btn ${filterStatus === 'completed' ? 'cursos-page__filter-btn--active' : ''}`}
                 onClick={() => setFilterStatus('completed')}
               >
                 Completados ({courses.filter(c => c.status === 'completed').length})
               </button>
             </div>
           </div>
-
-          {/* Estadísticas */}
-          <div className="courses-stats" style={{display: 'flex', flexDirection: 'column', gap: '20px',position: 'relative', left: '165%', width: '40%', top: '-180px'}}>
-            <div className="stat-item">
-              <span className="stat-number">{courses.filter(c => c.status === 'active').length}</span>
-              <span className="stat-label">Cursos activos</span>
+          <div className="cursos-page__stats">
+            <div className="cursos-page__stat">
+              <span className="cursos-page__stat-num">{courses.filter(c => c.status === 'active').length}</span>
+              <span className="cursos-page__stat-label">Activos</span>
             </div>
-            <div className="stat-item">
-              <span className="stat-number">{courses.reduce((acc, c) => acc + c.completedSessions, 0)}</span>
-              <span className="stat-label">Sesiones completadas</span>
+            <div className="cursos-page__stat">
+              <span className="cursos-page__stat-num">{courses.reduce((acc, c) => acc + c.completedSessions, 0)}</span>
+              <span className="cursos-page__stat-label">Sesiones completadas</span>
             </div>
-            <div className="stat-item">
-              <span className="stat-number">{courses.reduce((acc, c) => acc + c.upcomingSessions, 0)}</span>
-              <span className="stat-label">Sesiones programadas</span>
+            <div className="cursos-page__stat">
+              <span className="cursos-page__stat-num">{courses.reduce((acc, c) => acc + c.upcomingSessions, 0)}</span>
+              <span className="cursos-page__stat-label">Programadas</span>
             </div>
-            <div className="stat-item">
-              <span className="stat-number">{Math.round(courses.reduce((acc, c) => acc + c.progress, 0) / courses.length) || 0}%</span>
-              <span className="stat-label">Progreso promedio</span>
+            <div className="cursos-page__stat">
+              <span className="cursos-page__stat-num">{Math.round(courses.reduce((acc, c) => acc + c.progress, 0) / courses.length) || 0}%</span>
+              <span className="cursos-page__stat-label">Progreso promedio</span>
             </div>
           </div>
-        </>
+        </div>
       )}
 
       {filteredCourses.length === 0 ? (
-        <div className="empty-state">
-          <div className="empty-icon">📚</div>
+        <div className="cursos-page__empty">
+          <span className="cursos-page__empty-icon" aria-hidden>📚</span>
           <h3>
-            {courses.length === 0 
-              ? 'No tienes cursos coordinados aún' 
-              : 'No se encontraron cursos con los filtros aplicados'
-            }
+            {courses.length === 0
+              ? 'Aún no tienes cursos'
+              : 'No hay resultados con los filtros aplicados'}
           </h3>
           <p>
-            {courses.length === 0 
-              ? 'Los cursos aparecerán aquí cuando tengas citas confirmadas con tutores'
-              : 'Intenta con otros términos de búsqueda o filtros diferentes'
-            }
+            {courses.length === 0
+              ? 'Los cursos se crean cuando tienes citas confirmadas con tutores.'
+              : 'Prueba con otra búsqueda o quita filtros.'}
           </p>
           {courses.length === 0 && (
-            <div className="empty-actions">
-              <button className="btn btn-primary" onClick={() => window.location.href = '/student/advisories'}>
-                📝 Solicitar Asesoría
+            <>
+              <button
+                type="button"
+                className="cursos-page__btn-primary"
+                onClick={() => window.location.href = '/dashboard/tutores'}
+              >
+                Ir a Tutores
               </button>
-              <div className="help-text">
-                <h4>💡 ¿Cómo funcionan los cursos?</h4>
+              <div className="cursos-page__help">
+                <h4>¿Cómo funcionan los cursos?</h4>
                 <ul>
-                  <li>Solicita asesorías con tutores en diferentes materias</li>
-                  <li>Cuando el tutor acepta, se crea automáticamente un "curso"</li>
-                  <li>Cada materia con un tutor específico forma un curso</li>
-                  <li>Aquí verás el progreso de todas tus sesiones</li>
+                  <li>Solicita asesorías con tutores en la sección Tutores</li>
+                  <li>Cuando el tutor acepta, se crea un curso por materia</li>
+                  <li>Aquí ves el progreso de tus sesiones con cada tutor</li>
                 </ul>
               </div>
-            </div>
+            </>
           )}
         </div>
       ) : (
-        <div className="courses-grid" style={{position: 'relative', right: '10%', top: '-470px',minHeight: '300px',display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',gap: '20px', margin: '0 auto',padding: '20px',maxWidth: '460px',}}>
+        <div className="cursos-page__grid">
           {filteredCourses.map((course) => {
             const statusBadge = getStatusBadge(course.status);
             return (
-              <div key={course.id} className="course-card" style={{background: "#d3cdcdff", borderRadius: '12px',border: '1px solid #eee', padding: '20px',boxShadow: '0 4px 6px rgba(0,0,0,0.05)'}}>
-                <div className="course-header">
-                  <div className="course-title">
-                    <h3>📚 {course.subject}</h3>
-                    <span className={`status-badge ${statusBadge.class}`}>
-                      {statusBadge.icon} {statusBadge.label}
-                    </span>
-                  </div>
-                  <div className="course-instructor">
-                    <span className="instructor-info">
-                      {getRoleIcon(course.tutorRole)} {course.tutorName}
-                    </span>
-                    <span className="role-badge">
-                      Tutor
-                    </span>
-                  </div>
+              <article key={course.id} className="cursos-page__card">
+                <div className="cursos-page__card-header">
+                  <h3 className="cursos-page__card-title">{course.subject}</h3>
+                  <span className={`cursos-page__card-status cursos-page__card-status--${course.status}`}>
+                    {statusBadge.icon} {statusBadge.label}
+                  </span>
+                </div>
+                <div className="cursos-page__card-tutor">
+                  <span>{getRoleIcon(course.tutorRole)}</span>
+                  <span>{course.tutorName}</span>
                 </div>
 
-                <div className="course-content">
-                  {course.topics.length > 0 && (
-                    <div className="course-topics">
-                      <span className="topics-label">🎯 Temas:</span>
-                      <div className="topics-list">
-                        {course.topics.slice(0, 3).map((topic, index) => (
-                          <span key={index} className="topic-tag">{topic}</span>
-                        ))}
-                        {course.topics.length > 3 && (
-                          <span className="topic-tag more">+{course.topics.length - 3} más</span>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="course-progress">
-                    <div className="progress-header">
-                      <span>Progreso: {course.progress}%</span>
-                      <span>{course.completedSessions}/{course.totalSessions} sesiones</span>
-                    </div>
-                    <div className="progress-bar">
-                      <div 
-                        className="progress-fill" 
-                        style={{ width: `${course.progress}%` }}
-                      ></div>
-                    </div>
-                  </div>
-
-                  <div className="course-details">
-                    <div className="detail-item">
-                      <span className="detail-label">📊 Total sesiones:</span>
-                      <span>{course.totalSessions}</span>
-                    </div>
-                    <div className="detail-item">
-                      <span className="detail-label">✅ Completadas:</span>
-                      <span>{course.completedSessions}</span>
-                    </div>
-                    <div className="detail-item">
-                      <span className="detail-label">📅 Programadas:</span>
-                      <span>{course.upcomingSessions}</span>
-                    </div>
-                    
-                    {course.nextAppointment && (
-                      <div className="detail-item next-session">
-                        <span className="detail-label">🕐 Próxima sesión:</span>
-                        <span className="next-session-date">
-                          {formatDate(course.nextAppointment.scheduledDate)}
-                        </span>
-                      </div>
-                    )}
-                    
-                    {course.lastAppointment && !course.nextAppointment && (
-                      <div className="detail-item">
-                        <span className="detail-label">📅 Última sesión:</span>
-                        <span>{formatDate(course.lastAppointment.scheduledDate)}</span>
-                      </div>
+                {course.topics.length > 0 && (
+                  <div className="cursos-page__card-topics">
+                    {course.topics.slice(0, 3).map((topic, index) => (
+                      <span key={index} className="cursos-page__card-tag">{topic}</span>
+                    ))}
+                    {course.topics.length > 3 && (
+                      <span className="cursos-page__card-tag cursos-page__card-tag--more">+{course.topics.length - 3}</span>
                     )}
                   </div>
+                )}
+
+                <div className="cursos-page__card-progress">
+                  <div className="cursos-page__card-progress-head">
+                    <span>{course.progress}%</span>
+                    <span>{course.completedSessions}/{course.totalSessions} sesiones</span>
+                  </div>
+                  <div className="cursos-page__card-progress-bar">
+                    <div
+                      className="cursos-page__card-progress-fill"
+                      style={{ width: `${course.progress}%` }}
+                    />
+                  </div>
                 </div>
 
-                <div className="course-actions">
-                  {course.status === 'active' ? (
-                    <>
-                      <button 
-                        className="btn btn-primary"
-                        onClick={() => window.location.href = '/student/classes'}
-                        style={{width: '140px', height: '70px'}}
-                      >
-                        Ver Materiales
-                      </button>
-                      <button 
-                        className="btn btn-secondary"
-                        onClick={() => window.location.href = '/student/advisories'}
-                        style={{width: '120px', height: '70px',position: 'relative', left: '28%'}}
-                      >
-                        Nueva Sesión
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <button 
-                        className="btn btn-secondary"
-                        onClick={() => window.location.href = '/student/classes'}
-                      >
-                        📚 Ver Materiales
-                      </button>
-                      <button 
-                        className="btn btn-outline"
-                        onClick={() => window.location.href = '/student/advisories'}
-                      >
-                        🔄 Solicitar Más Sesiones
-                      </button>
-                    </>
+                <dl className="cursos-page__card-details">
+                  <div className="cursos-page__card-detail">
+                    <dt>Total sesiones</dt>
+                    <dd>{course.totalSessions}</dd>
+                  </div>
+                  <div className="cursos-page__card-detail">
+                    <dt>Completadas</dt>
+                    <dd>{course.completedSessions}</dd>
+                  </div>
+                  <div className="cursos-page__card-detail">
+                    <dt>Programadas</dt>
+                    <dd>{course.upcomingSessions}</dd>
+                  </div>
+                  {course.nextAppointment && (
+                    <div className="cursos-page__card-detail cursos-page__card-detail--next">
+                      <dt>Próxima sesión</dt>
+                      <dd>{formatDate(course.nextAppointment.scheduledDate)}</dd>
+                    </div>
                   )}
-                </div>
-              </div>
+                  {course.lastAppointment && !course.nextAppointment && (
+                    <div className="cursos-page__card-detail">
+                      <dt>Última sesión</dt>
+                      <dd>{formatDate(course.lastAppointment.scheduledDate)}</dd>
+                    </div>
+                  )}
+                </dl>
+
+                {course.status !== 'active' && (
+                  <div className="cursos-page__card-actions">
+                    <button
+                      type="button"
+                      className="cursos-page__btn-outline"
+                      onClick={() => window.location.href = '/dashboard/tutores'}
+                    >
+                      Solicitar más sesiones
+                    </button>
+                  </div>
+                )}
+              </article>
             );
           })}
         </div>

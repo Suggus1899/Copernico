@@ -41,11 +41,11 @@ const TutorProfile = () => {
         lastName: userData.personalInfo?.lastName || '',
         username: userData.personalInfo?.username || '',
         phone: userData.personalInfo?.phone || '',
-        address: userData.personalInfo?.address || '',
-        city: userData.personalInfo?.city || '',
-        province: userData.personalInfo?.province || '',
-        country: userData.personalInfo?.country || '',
-        postalCode: userData.personalInfo?.postalCode || ''
+        specialty: userData.personalInfo?.specialty || '',
+        degrees: userData.personalInfo?.degrees || '',
+        experience: userData.personalInfo?.experience || '',
+        certifications: userData.personalInfo?.certifications || '',
+        bio: userData.personalInfo?.bio || ''
       });
       setLoading(false);
     } catch (error) {
@@ -341,11 +341,11 @@ const TutorProfile = () => {
                         lastName: user.personalInfo?.lastName || '',
                         username: user.personalInfo?.username || '',
                         phone: user.personalInfo?.phone || '',
-                        address: user.personalInfo?.address || '',
-                        city: user.personalInfo?.city || '',
-                        province: user.personalInfo?.province || '',
-                        country: user.personalInfo?.country || '',
-                        postalCode: user.personalInfo?.postalCode || ''
+                        specialty: user.personalInfo?.specialty || '',
+                        degrees: user.personalInfo?.degrees || '',
+                        experience: user.personalInfo?.experience || '',
+                        certifications: user.personalInfo?.certifications || '',
+                        bio: user.personalInfo?.bio || ''
                       });
                     }}
                   >
@@ -461,62 +461,60 @@ const TutorProfile = () => {
                 </div>
 
                 <div className="form-section">
-                  <h3>📍 Información de Ubicación</h3>
+                  <h3>🎓 Información Académica</h3>
                   <div className="form-group">
-                    <label>Dirección</label>
+                    <label>Especialización</label>
                     <input
                       type="text"
-                      name="address"
-                      value={editForm.address}
+                      name="specialty"
+                      value={editForm.specialty}
                       onChange={handleFormChange}
-                      placeholder="Tu dirección completa"
+                      placeholder="Tu área de especialización (ej: Matemáticas avanzadas, Física, Química)"
                     />
                   </div>
                   
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label>Ciudad</label>
-                      <input
-                        type="text"
-                        name="city"
-                        value={editForm.city}
-                        onChange={handleFormChange}
-                        placeholder="Tu ciudad"
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label>Provincia/Estado</label>
-                      <input
-                        type="text"
-                        name="province"
-                        value={editForm.province}
-                        onChange={handleFormChange}
-                        placeholder="Tu provincia o estado"
-                      />
-                    </div>
+                  <div className="form-group">
+                    <label>Títulos y Grados</label>
+                    <textarea
+                      name="degrees"
+                      value={editForm.degrees}
+                      onChange={handleFormChange}
+                      placeholder="Títulos académicos obtenidos (ej: Ingeniero Civil, Licenciado en Matemáticas, Maestría en Física)"
+                      rows="3"
+                    />
                   </div>
                   
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label>País</label>
-                      <input
-                        type="text"
-                        name="country"
-                        value={editForm.country}
-                        onChange={handleFormChange}
-                        placeholder="Tu país"
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label>Código Postal</label>
-                      <input
-                        type="text"
-                        name="postalCode"
-                        value={editForm.postalCode}
-                        onChange={handleFormChange}
-                        placeholder="Tu código postal"
-                      />
-                    </div>
+                  <div className="form-group">
+                    <label>Experiencia Docente</label>
+                    <textarea
+                      name="experience"
+                      value={editForm.experience}
+                      onChange={handleFormChange}
+                      placeholder="Descripción de tu experiencia como tutor (ej: 5 años enseñando matemáticas a nivel universitario, experiencia con estudiantes de Bachillerato)"
+                      rows="3"
+                    />
+                  </div>
+                  
+                  <div className="form-group">
+                    <label>Certificaciones</label>
+                    <input
+                      type="text"
+                      name="certifications"
+                      value={editForm.certifications}
+                      onChange={handleFormChange}
+                      placeholder="Certificaciones relevantes (ej: Certificado en enseñanza de matemáticas, TOEFL, etc.)"
+                    />
+                  </div>
+                  
+                  <div className="form-group">
+                    <label>Biografía Académica</label>
+                    <textarea
+                      name="bio"
+                      value={editForm.bio}
+                      onChange={handleFormChange}
+                      placeholder="Cuéntanos sobre tu formación y pasión por la enseñanza"
+                      rows="4"
+                    />
                   </div>
                 </div>
               </form>
@@ -561,27 +559,27 @@ const TutorProfile = () => {
                 </div>
 
                 <div className="details-section">
-                  <h3>📍 Información de Ubicación</h3>
+                  <h3>🎓 Información Académica</h3>
                   <div className="details-grid">
                     <div className="detail-item">
-                      <span className="detail-label">Dirección:</span>
-                      <span className="detail-value">{user.personalInfo?.address || 'No especificada'}</span>
+                      <span className="detail-label">Especialización:</span>
+                      <span className="detail-value">{user.personalInfo?.specialty || 'No especificada'}</span>
                     </div>
                     <div className="detail-item">
-                      <span className="detail-label">Ciudad:</span>
-                      <span className="detail-value">{user.personalInfo?.city || 'No especificada'}</span>
+                      <span className="detail-label">Títulos y Grados:</span>
+                      <span className="detail-value">{user.personalInfo?.degrees || 'No especificados'}</span>
                     </div>
                     <div className="detail-item">
-                      <span className="detail-label">Provincia:</span>
-                      <span className="detail-value">{user.personalInfo?.province || 'No especificada'}</span>
+                      <span className="detail-label">Experiencia Docente:</span>
+                      <span className="detail-value">{user.personalInfo?.experience || 'No especificada'}</span>
                     </div>
                     <div className="detail-item">
-                      <span className="detail-label">País:</span>
-                      <span className="detail-value">{user.personalInfo?.country || 'No especificado'}</span>
+                      <span className="detail-label">Certificaciones:</span>
+                      <span className="detail-value">{user.personalInfo?.certifications || 'No especificadas'}</span>
                     </div>
                     <div className="detail-item">
-                      <span className="detail-label">Código Postal:</span>
-                      <span className="detail-value">{user.personalInfo?.postalCode || 'No especificado'}</span>
+                      <span className="detail-label">Biografía Académica:</span>
+                      <span className="detail-value">{user.personalInfo?.bio || 'No especificada'}</span>
                     </div>
                   </div>
                 </div>

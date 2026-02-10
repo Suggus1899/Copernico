@@ -53,8 +53,8 @@ class VideoProgressTracker extends Component {
         lastUpdateTime: Date.now()
       });
 
-      // Iniciar intervalo para actualizar progreso cada 10 segundos
-      const interval = setInterval(this.updateProgress, 10000);
+      // Actualizar progreso cada 5 segundos para que la barra se actualice al reproducir
+      const interval = setInterval(this.updateProgress, 5000);
       this.setState({ updateInterval: interval });
 
       if (this.props.onSessionStart) {
@@ -90,25 +90,24 @@ class VideoProgressTracker extends Component {
     if (!this.state.sessionActive && !isFinalUpdate) return;
 
     try {
-      const currentTime = this.props.currentTime || 0;
+      // Usar tiempo actual del video en el momento de la petición (getVideoTime si existe)
+      const { currentTime: rawCurrent = 0, totalDuration: rawDuration } = this.props.getVideoTime
+        ? this.props.getVideoTime()
+        : { currentTime: this.props.currentTime, totalDuration: this.props.totalDuration };
+      const currentTime = Number(rawCurrent) || 0;
+      const totalDuration = Number(rawDuration) || this.props.totalDuration || 0;
+
       const now = Date.now();
-      const watchedSeconds = this.state.lastUpdateTime 
+      const watchedSeconds = this.state.lastUpdateTime
         ? Math.floor((now - this.state.lastUpdateTime) / 1000)
         : 0;
 
-      // Solo actualizar si hay tiempo transcurrido o es actualización final
+      // Actualizar siempre que sea final o cada intervalo para que la posición se guarde
       if (watchedSeconds > 0 || isFinalUpdate) {
-        console.log('Updating progress:', {
-          videoId: this.props.videoId,
+        const response = await apiClient.post(`/video-progress/videos/${this.props.videoId}/progress`, {
           currentTime,
           watchedSeconds,
-          totalDuration: this.props.totalDuration
-        });
-
-        const response = await apiClient.post(`/video-progress/videos/${this.props.videoId}/progress`, {
-          currentTime: currentTime,
-          watchedSeconds: watchedSeconds,
-          totalDuration: this.props.totalDuration
+          totalDuration: totalDuration || undefined
         });
 
         const newProgress = response.data.data;
@@ -154,9 +153,13 @@ class VideoProgressTracker extends Component {
 
   render() {
     const { progress } = this.state;
-    const { showProgress = true, showCompletionBadge = true } = this.props;
+    const { showProgress = true, showCompletionBadge = true, currentTime = 0, totalDuration = 0 } = this.props;
 
     if (!showProgress) return null;
+
+    // Mostrar el mayor entre el progreso guardado y la posición actual para que la barra avance al reproducir
+    const positionPct = totalDuration > 0 ? Math.min(100, (currentTime / totalDuration) * 100) : 0;
+    const displayPercentage = Math.round(Math.max(progress.progressPercentage, positionPct));
 
     return (
       <div className="video-progress-tracker">
@@ -166,11 +169,11 @@ class VideoProgressTracker extends Component {
               <div className="progress-bar">
                 <div 
                   className="progress-fill" 
-                  style={{ width: `${progress.progressPercentage}%` }}
-                ></div>
+                  style={{ width: `${displayPercentage}%` }}
+                />
               </div>
               <span className="progress-text">
-                {progress.progressPercentage}% completado
+                {displayPercentage}% completado
               </span>
             </div>
             

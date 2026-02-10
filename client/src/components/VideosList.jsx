@@ -3,6 +3,7 @@ import apiClient from '../utils/axiosConfig';
 import VideoProgressTracker from './VideoProgressTracker';
 import './Dashboard.css';
 import './VideoProgress.css';
+import './VideosList.css';
 
 class VideosList extends Component {
   state = {
@@ -22,6 +23,9 @@ class VideosList extends Component {
     videoDuration: 0,
     videoElement: null
   };
+
+  // Objeto mutable con el tiempo actual del video (actualizado en cada timeupdate) para que el progreso use el valor real
+  videoTimeRef = { current: { currentTime: 0, duration: 0 } };
 
   componentDidMount() {
     this.loadContent();
@@ -63,6 +67,10 @@ class VideosList extends Component {
 
   handleItemSelect = async (item, type) => {
     try {
+      if (this.videoTimeRef.current) {
+        this.videoTimeRef.current.currentTime = 0;
+        this.videoTimeRef.current.duration = 0;
+      }
       // Incrementar vistas cuando se selecciona un video
       const response = await apiClient.get(`/videos/${item._id}`);
       // Actualizar el item con la información de progreso si está disponible
@@ -153,32 +161,29 @@ render() {
     const uniqueSubjects = this.getUniqueSubjects();
 
     return (
-      <div className="videos-list-page">
-        <div className="videos-header">
-          <h2>🎥 Videos de Clases</h2>
-          <p>Accede a videos educativos subidos por tus tutores</p>
-        </div>
+      <div className="clases-page">
+        <header className="clases-page__header">
+          <h1 className="clases-page__title">Clases</h1>
+          <p className="clases-page__subtitle">Videos educativos de tus tutores</p>
+        </header>
 
-        {/* Filtros */}
-        <div className="videos-filters">
-          <div className="filter-group">
+        <div className="clases-page__toolbar">
+          <div className="clases-page__filters">
             <input
               type="text"
               name="search"
               value={filters.search}
               onChange={this.handleFilterChange}
-              placeholder="Buscar contenido..."
-              className="search-input"
-              style={{position: 'relative', top: '70px', left: '500px'}}
+              placeholder="Buscar por título, tema..."
+              className="clases-page__search"
+              aria-label="Buscar videos"
             />
-          </div>
-          <div className="filter-group">
             <select
               name="subject"
               value={filters.subject}
               onChange={this.handleFilterChange}
-              className="subject-select"
-              style={{position: 'relative', top: '70px', left: '500px'}}
+              className="clases-page__select"
+              aria-label="Filtrar por materia"
             >
               <option value="">Todas las materias</option>
               {uniqueSubjects.map(subject => (
@@ -186,122 +191,121 @@ render() {
               ))}
             </select>
           </div>
-        </div>
-
-        {/* Estadísticas */}
-        <div className="videos-stats" style={{position: 'relative', height: '100px', top: '70px', left: '800px'}}>
-          <div className="stat-item" style={{position: 'relative', width: '250px', height: '90px', left: '110px', top: '-10px'}}>
-            <span className="stat-number">{filteredContent.length}</span>
-            <span className="stat-label">Videos disponibles</span>
-          </div>
-          <div className="stat-item" style={{position: 'relative', width: '250px', height: '90px', left: '110px', top: '10px'}}>
-            <span className="stat-number">{uniqueSubjects.length}</span>
-            <span className="stat-label">Materias</span>
+          <div className="clases-page__stats">
+            <div className="clases-page__stat">
+              <span className="clases-page__stat-num">{filteredContent.length}</span>
+              <span className="clases-page__stat-label">Videos</span>
+            </div>
+            <div className="clases-page__stat">
+              <span className="clases-page__stat-num">{uniqueSubjects.length}</span>
+              <span className="clases-page__stat-label">Materias</span>
+            </div>
           </div>
         </div>
 
-        <div className="videos-content">
-          {/* Lista de contenido */}
-          <div className="videos-sidebar">
+        <div className="clases-page__main">
+          <aside className="clases-page__sidebar">
             {loading ? (
-              <div className="loading">
-                <div className="loading-spinner"></div>
-                <p>Cargando contenido...</p>
+              <div className="clases-page__loading">
+                <div className="clases-page__spinner" />
+                <p>Cargando clases...</p>
               </div>
             ) : filteredContent.length === 0 ? (
-              <div className="empty-state">
-                <div className="empty-icon">🎥</div>
-                <h3>No se encontraron videos</h3>
-                {this.state.videos.length === 0 ? (
-                  <p>Los tutores aún no han subido videos.</p>
-                ) : (
-                  <p>Intenta con otros términos de búsqueda o filtros diferentes.</p>
-                )}
+              <div className="clases-page__empty">
+                <span className="clases-page__empty-icon" aria-hidden>🎥</span>
+                <h3>No hay videos</h3>
+                <p>
+                  {this.state.videos.length === 0
+                    ? 'Los tutores aún no han subido videos.'
+                    : 'Prueba con otra búsqueda o quita filtros.'}
+                </p>
               </div>
             ) : (
-              <div className="videos-list">
+              <ul className="clases-page__list" role="list">
                 {filteredContent.map(item => (
-                  <div
-                    key={`${item.contentType}-${item._id}`}
-                    className={`video-item ${selectedItem?._id === item._id && selectedType === item.contentType ? 'active' : ''}`}
-                    onClick={() => this.handleItemSelect(item, item.contentType)}
-                  >
-                    <div className="video-item-thumbnail">
-                      {item.thumbnailUrl ? (
-                        <img src={item.thumbnailUrl} alt={item.title} />
-                      ) : (
-                        <div className="thumbnail-placeholder">
-                          <span>🎥</span>
-                        </div>
-                      )}
-                      {item.duration && (
-                        <div className="video-duration-small">
-                          {this.formatDuration(item.duration)}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="video-item-info">
-                      <h4>{item.title}</h4>
-                      <p className="video-subject">{item.subject}</p>
-                      {item.topic && <p className="video-topic">{item.topic}</p>}
-                      <div className="video-stats-small">
-                        <span>👁️ {item.views || 0}</span>
-                        <span>❤️ {item.likes || 0}</span>
-                        {/* Mostrar progreso del video si está disponible */}
-                        {this.state.videoProgress.has(item._id) && (
-                          <span className="progress-indicator">
-                            📊 {this.state.videoProgress.get(item._id).progressPercentage}%
+                  <li key={`${item.contentType}-${item._id}`}>
+                    <button
+                      type="button"
+                      className={`clases-page__card ${selectedItem?._id === item._id && selectedType === item.contentType ? 'clases-page__card--active' : ''}`}
+                      onClick={() => this.handleItemSelect(item, item.contentType)}
+                    >
+                      <div className="clases-page__card-thumb">
+                        {item.thumbnailUrl ? (
+                          <img src={item.thumbnailUrl} alt="" />
+                        ) : (
+                          <span className="clases-page__card-placeholder">🎥</span>
+                        )}
+                        {item.duration && (
+                          <span className="clases-page__card-duration">
+                            {this.formatDuration(item.duration)}
                           </span>
                         )}
-                        {this.state.videoProgress.has(item._id) && 
-                         this.state.videoProgress.get(item._id).isCompleted && (
-                          <span className="completed-indicator">✅</span>
+                      </div>
+                      <div className="clases-page__card-body">
+                        <h4 className="clases-page__card-title">{item.title}</h4>
+                        <span className="clases-page__card-subject">{item.subject}</span>
+                        {item.topic && (
+                          <span className="clases-page__card-topic">{item.topic}</span>
                         )}
+                        <div className="clases-page__card-meta">
+                          <span>👁️ {item.views || 0}</span>
+                          <span>❤️ {item.likes || 0}</span>
+                          {this.state.videoProgress.has(item._id) && (
+                            <span className="clases-page__card-progress">
+                              {this.state.videoProgress.get(item._id).progressPercentage}%
+                            </span>
+                          )}
+                          {this.state.videoProgress.has(item._id) &&
+                            this.state.videoProgress.get(item._id).isCompleted && (
+                            <span className="clases-page__card-done">✅</span>
+                          )}
+                        </div>
+                        <span className="clases-page__card-tutor">
+                          {item.uploadedBy?.personalInfo?.firstName || item.createdBy?.personalInfo?.firstName}{' '}
+                          {item.uploadedBy?.personalInfo?.lastName || item.createdBy?.personalInfo?.lastName}
+                        </span>
                       </div>
-                      <div className="video-uploader-small">
-                        <span>👨‍🏫 {item.uploadedBy?.personalInfo?.firstName || item.createdBy?.personalInfo?.firstName} {item.uploadedBy?.personalInfo?.lastName || item.createdBy?.personalInfo?.lastName}</span>
-                      </div>
-                    </div>
-                  </div>
+                    </button>
+                  </li>
                 ))}
-              </div>
+              </ul>
             )}
-          </div>
+          </aside>
 
-          {/* Visor de contenido */}
-          <div className="video-player-section">
+          <section className="clases-page__player" aria-label="Reproductor">
             {selectedItem ? (
-              <div className="video-player">
-                <div className="video-player-header">
-                  <h3>{selectedItem.title}</h3>
-                  <div className="video-actions">
+              <div className="clases-page__player-inner">
+                <div className="clases-page__player-header">
+                  <h2 className="clases-page__player-title">{selectedItem.title}</h2>
+                  <div className="clases-page__player-actions">
                     <button
-                      className={`btn-like ${this.state.likedVideos.has(selectedItem._id) ? 'liked' : ''}`}
+                      type="button"
+                      className={`clases-page__btn-like ${this.state.likedVideos.has(selectedItem._id) ? 'clases-page__btn-like--active' : ''}`}
                       onClick={() => this.handleLike(selectedItem._id)}
+                      aria-label="Me gusta"
                     >
                       ❤️ {selectedItem.likes || 0}
-                    </button>
-                    <button className="btn-share">
-                      📤 Compartir
                     </button>
                   </div>
                 </div>
 
-                <div className="video-player-content">
-                  <div className="video-iframe-container">
-                    {/* Componente de seguimiento de progreso */}
+                <div className="clases-page__player-content">
+                  <div className="clases-page__video-wrap">
                     <VideoProgressTracker
                       ref={(ref) => { this.videoProgressTracker = ref; }}
                       videoId={selectedItem._id}
                       currentTime={this.state.currentVideoTime}
                       totalDuration={this.state.videoDuration}
+                      getVideoTime={() => (this.videoTimeRef.current ? {
+                        currentTime: this.videoTimeRef.current.currentTime,
+                        totalDuration: this.videoTimeRef.current.duration || this.state.videoDuration
+                      } : { currentTime: this.state.currentVideoTime, totalDuration: this.state.videoDuration })}
                       onProgressUpdate={this.handleProgressUpdate}
                       onVideoCompleted={this.handleVideoCompleted}
                       showProgress={true}
                       showCompletionBadge={true}
                     />
-                    
+                    <div className="clases-page__video-box">
                     {selectedItem.videoUrl.includes('/uploads/videos/') ? (
                       <video
                         ref={this.handleVideoRef}
@@ -343,101 +347,64 @@ render() {
                         Tu navegador no soporta la reproducción de video.
                       </video>
                     )}
+                    </div>
                   </div>
 
-                  <div className="video-details">
-                    <div className="video-meta">
-                      <span className="subject-badge">{selectedItem.subject}</span>
+                  <div className="clases-page__details">
+                    <div className="clases-page__badges">
+                      <span className="clases-page__badge">{selectedItem.subject}</span>
                       {selectedItem.topic && (
-                        <span className="topic-badge">{selectedItem.topic}</span>
-                      )}
-                      {selectedItem.grade && (
-                        <span className="grade-badge">{selectedItem.grade}</span>
+                        <span className="clases-page__badge clases-page__badge--secondary">{selectedItem.topic}</span>
                       )}
                       {selectedItem.duration && (
-                        <span className="duration-badge">
-                          ⏱️ {this.formatDuration(selectedItem.duration)}
-                        </span>
+                        <span className="clases-page__badge">⏱️ {this.formatDuration(selectedItem.duration)}</span>
                       )}
-                      <span className="views-badge">
-                        👁️ {selectedItem.views || 0} visualizaciones
+                      <span className="clases-page__badge clases-page__badge--muted">
+                        👁️ {selectedItem.views || 0} vistas
                       </span>
                     </div>
 
                     {selectedItem.description && (
-                      <div className="video-description">
-                        <h4>📝 Descripción</h4>
+                      <div className="clases-page__description">
+                        <h4>Descripción</h4>
                         <p>{selectedItem.description}</p>
                       </div>
                     )}
 
-                    <div className="video-uploader">
-                      <h4>👨‍🏫 Instructor</h4>
-                      <div className="uploader-info">
-                        <div className="uploader-avatar">
-                          <span>
-                            {(selectedItem.uploadedBy?.personalInfo?.firstName || selectedItem.createdBy?.personalInfo?.firstName)?.[0]}
-                            {(selectedItem.uploadedBy?.personalInfo?.lastName || selectedItem.createdBy?.personalInfo?.lastName)?.[0]}
-                          </span>
-                        </div>
-                        <div className="uploader-details">
-                          <p className="uploader-name">
-                            {selectedItem.uploadedBy?.personalInfo?.firstName || selectedItem.createdBy?.personalInfo?.firstName} {selectedItem.uploadedBy?.personalInfo?.lastName || selectedItem.createdBy?.personalInfo?.lastName}
-                          </p>
-                          <p className="uploader-role">
-                            👨‍🏫 Tutor
-                          </p>
-                        </div>
+                    <div className="clases-page__instructor">
+                      <div className="clases-page__instructor-avatar">
+                        <span>
+                          {(selectedItem.uploadedBy?.personalInfo?.firstName || selectedItem.createdBy?.personalInfo?.firstName)?.[0]}
+                          {(selectedItem.uploadedBy?.personalInfo?.lastName || selectedItem.createdBy?.personalInfo?.lastName)?.[0]}
+                        </span>
+                      </div>
+                      <div>
+                        <p className="clases-page__instructor-name">
+                          {selectedItem.uploadedBy?.personalInfo?.firstName || selectedItem.createdBy?.personalInfo?.firstName}{' '}
+                          {selectedItem.uploadedBy?.personalInfo?.lastName || selectedItem.createdBy?.personalInfo?.lastName}
+                        </p>
+                        <p className="clases-page__instructor-role">Tutor</p>
                       </div>
                     </div>
 
-                    {selectedItem.tags && selectedItem.tags.length > 0 && (
-                      <div className="video-tags">
-                        <h4>🏷️ Etiquetas</h4>
-                        <div className="tags-list">
-                          {selectedItem.tags.map((tag, index) => (
-                            <span key={index} className="tag">{tag}</span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="video-stats-detailed">
-                      <div className="stat-item">
-                        <span className="stat-label">Subido el:</span>
-                        <span className="stat-value">
-                          {selectedItem.createdAt ? new Date(selectedItem.createdAt).toLocaleDateString('es-ES') : 'Fecha no disponible'}
-                        </span>
-                      </div>
-                      <div className="stat-item">
-                        <span className="stat-label">Última actualización:</span>
-                        <span className="stat-value">
-                          {selectedItem.updatedAt ? new Date(selectedItem.updatedAt).toLocaleDateString('es-ES') : 'No actualizado'}
-                        </span>
-                      </div>
+                    <div className="clases-page__meta">
+                      <span>Subido: {selectedItem.createdAt ? new Date(selectedItem.createdAt).toLocaleDateString('es-ES') : '—'}</span>
                     </div>
                   </div>
                 </div>
               </div>
             ) : (
-              <div className="video-placeholder">
-                <div className="placeholder-content">
-                  <span className="placeholder-icon">🎥</span>
-                  <h3>Selecciona un video</h3>
-                  <p>Haz clic en un video de la lista para comenzar a verlo</p>
-                  <div className="placeholder-tips">
-                    <h4>💡 Consejos:</h4>
-                    <ul>
-                      <li>Usa los filtros para encontrar videos específicos</li>
-                      <li>Los videos se organizan por materia y tema</li>
-                      <li>Puedes dar "me gusta" a tus videos favoritos</li>
-                      <li>Tu progreso se guarda automáticamente</li>
-                    </ul>
-                  </div>
-                </div>
+              <div className="clases-page__placeholder">
+                <span className="clases-page__placeholder-icon" aria-hidden>🎥</span>
+                <h3>Elige una clase</h3>
+                <p>Selecciona un video en la lista para reproducirlo</p>
+                <ul className="clases-page__placeholder-tips">
+                  <li>Usa la búsqueda o el filtro por materia</li>
+                  <li>Tu progreso se guarda automáticamente</li>
+                </ul>
               </div>
             )}
-          </div>
+          </section>
         </div>
       </div>
     );
@@ -483,15 +450,22 @@ render() {
 
   handleVideoMetadata = (event) => {
     const duration = event.target.duration;
-    console.log('Video metadata loaded, duration:', duration);
+    if (this.videoTimeRef.current) {
+      this.videoTimeRef.current.duration = duration;
+    }
     this.setState({
       videoDuration: duration
     });
   };
 
   handleVideoTimeUpdate = (event) => {
+    const currentTime = event.target.currentTime;
+    if (this.videoTimeRef.current) {
+      this.videoTimeRef.current.currentTime = currentTime;
+      this.videoTimeRef.current.duration = event.target.duration;
+    }
     this.setState({
-      currentVideoTime: event.target.currentTime
+      currentVideoTime: currentTime
     });
   };
 

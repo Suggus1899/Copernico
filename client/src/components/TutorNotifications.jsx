@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import TutorSidebarMenu from './TutorSidebarMenu';
 import apiClient from '../utils/axiosConfig';
 import './Dashboard.css';
+import './TutorNotifications.css';
 
 class TutorNotifications extends Component {
   state = {
@@ -235,194 +236,150 @@ class TutorNotifications extends Component {
       <div className="dashboard-container">
         <TutorSidebarMenu />
         <div className="dashboard-content">
-          <div className="dashboard-header" style={{position: 'relative', right: '35%', top: '5%'}}>
-            <h1>Notificaciones</h1>
-            <p>Mantente al día con todas tus actividades y actualizaciones</p>
-            <button 
-              className="btn btn-primary"
-              onClick={this.fetchNotifications}
-              disabled={loading}
-              style={{position: 'relative', left: '50%'}}
-            >
-              {loading ? '🔄 Actualizando...' : '🔄 Actualizar'}
-            </button>
-          </div>
+          <div className={loading ? 'notificaciones-page notificaciones-page--loading' : 'notificaciones-page'}>
+            <header className="notificaciones-page__header">
+              <h1 className="notificaciones-page__title">Notificaciones</h1>
+              <p className="notificaciones-page__subtitle">Mantente al día con todas tus actividades y actualizaciones</p>
+            </header>
 
-          {error && <div className="alert alert-danger">{error}</div>}
+            {error && (
+              <div className="notificaciones-page__alert" role="alert">
+                {error}
+              </div>
+            )}
 
-          {loading ? (
-            <div className="loading-container">
-              <div className="loading-spinner"></div>
-              <p>Cargando notificaciones...</p>
-            </div>
-          ) : (
-            <div className="dashboard-main">
-              <div className="notifications-controls" style={{position: 'relative', top: '43%', left: '370%'}}>
-                <div className="notifications-stats">
-                  <span className="unread-count">
-                    {unreadCount} sin leer
-                  </span>
-                  {unreadCount > 0 && (
-                    <button className="btn-secondary small" onClick={this.markAllAsRead}>
-                      Marcar todas como leídas
-                    </button>
-                  )}
+            {loading ? (
+              <>
+                <div className="notificaciones-page__spinner" />
+                <p>Cargando notificaciones...</p>
+              </>
+            ) : (
+              <>
+                <div className="notificaciones-page__toolbar">
+                  <div className="notificaciones-page__stats">
+                    <span className="notificaciones-page__unread">
+                      {unreadCount} sin leer
+                    </span>
+                    {unreadCount > 0 && (
+                      <button
+                        type="button"
+                        className="notificaciones-page__btn notificaciones-page__btn--secondary"
+                        onClick={this.markAllAsRead}
+                      >
+                        Marcar todas como leídas
+                      </button>
+                    )}
+                  </div>
+                  <label className="notificaciones-page__filter-wrap">
+                    <span className="notificaciones-page__filter-label">Filtrar</span>
+                    <select
+                      value={filter}
+                      onChange={(e) => this.setState({ filter: e.target.value })}
+                      className="notificaciones-page__select"
+                      aria-label="Filtrar notificaciones"
+                    >
+                      <option value="all">Todas las notificaciones</option>
+                      <option value="unread">Solo sin leer</option>
+                      <option value="appointment_reminder">Recordatorios de citas</option>
+                      <option value="assignment_due">Tareas por vencer</option>
+                      <option value="new_material">Nuevo material</option>
+                      <option value="system_alert">Alertas del sistema</option>
+                    </select>
+                  </label>
                 </div>
 
-                <select
-                  value={filter}
-                  onChange={(e) => this.setState({ filter: e.target.value })}
-                  className="filter-select"
-                >
-                  <option value="all">Todas las notificaciones</option>
-                  <option value="unread">Solo sin leer</option>
-                  <option value="appointment_reminder">Recordatorios de citas</option>
-                  <option value="assignment_due">Tareas por vencer</option>
-                  <option value="new_material">Nuevo material</option>
-                  <option value="system_alert">Alertas del sistema</option>
-                </select>
-              </div>
-
-              <div className="notifications-list" style={{position: 'relative', right: '24%', top: '50%',minHeight: '300px',display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',gap: '20px', margin: '0 auto',padding: '20px',maxWidth: '1200px',}}>
-                {filteredNotifications.length > 0 ? (
-                  filteredNotifications.map((notification) => (
-                    <div
-                      key={notification._id}
-                      className={`notification-item ${!notification.read ? 'unread' : ''} ${notification.priority}`}
-                      style={{background: "#d3cdcdff", borderRadius: '12px',border: '1px solid #eee', padding: '20px',boxShadow: '0 4px 6px rgba(0,0,0,0.05)'}}
-                    >
-                      
-
-                      <div className="notification-content">
-                        <div className="notification-header">
-                          <h4>{notification.title}</h4>
-                          <span className={`priority-badge ${notification.priority}`}>
-                            {notification.priority === 'high' && 'Alta'}
-                            {notification.priority === 'medium' && 'Media'}
-                            {notification.priority === 'low' && 'Baja'}
-                            {notification.priority === 'urgent' && 'Urgente'}
+                <div className="notificaciones-page__list">
+                  {filteredNotifications.length > 0 ? (
+                    filteredNotifications.map((notification) => (
+                      <article
+                        key={notification._id}
+                        className={`notificaciones-page__card ${!notification.read ? 'notificaciones-page__card--unread' : ''}`}
+                      >
+                        <span className="notificaciones-page__card-icon" aria-hidden>
+                          {this.getNotificationIcon(notification.type)}
+                        </span>
+                        <div className="notificaciones-page__card-content">
+                          <div className="notificaciones-page__card-header">
+                            <h3 className="notificaciones-page__card-title">{notification.title}</h3>
+                            {(notification.priority === 'high' || notification.priority === 'medium' || notification.priority === 'low' || notification.priority === 'urgent') && (
+                              <span className={`notificaciones-page__card-badge notificaciones-page__card-badge--${notification.priority || 'medium'}`}>
+                                {notification.priority === 'high' && 'Alta'}
+                                {notification.priority === 'medium' && 'Media'}
+                                {notification.priority === 'low' && 'Baja'}
+                                {notification.priority === 'urgent' && 'Urgente'}
+                              </span>
+                            )}
+                          </div>
+                          <p className="notificaciones-page__card-message">{notification.message}</p>
+                          <span className="notificaciones-page__card-time">
+                            {this.formatDate(notification.createdAt)}
                           </span>
                         </div>
-                        <p>{notification.message}</p>
-                        <span className="notification-time">
-                          {this.formatDate(notification.createdAt)}
-                        </span>
-                      </div>
 
-                      <div className="notification-actions">
-                        {!notification.read && (
-                          <button
-                            className="btn-outline small"
-                            onClick={() => this.markAsRead(notification._id)}
-                          >
-                            Marcar como leída
-                          </button>
-                        )}
-                        
-                        {/* Botones específicos para solicitudes de asesoría */}
-                        {notification.type === 'appointment_reminder' && 
-                         notification.relatedAppointment && 
-                         !notification.userResponse && (
-                          <div className="appointment-actions" style={{ 
-                            display: 'flex', 
-                            gap: '8px', 
-                            marginTop: '8px',
-                            flexWrap: 'wrap'
-                          }}>
+                        <div className="notificaciones-page__card-actions">
+                          {!notification.read && (
                             <button
-                              className="btn-success small"
-                              onClick={() => this.confirmAppointment(
-                                notification.relatedAppointment._id || notification.relatedAppointment,
-                                notification._id
-                              )}
-                              style={{ 
-                                backgroundColor: '#28a745', 
-                                color: 'white', 
-                                border: 'none',
-                                padding: '6px 12px',
-                                borderRadius: '4px',
-                                fontSize: '12px',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '4px'
-                              }}
+                              type="button"
+                              className="notificaciones-page__btn notificaciones-page__btn--outline"
+                              onClick={() => this.markAsRead(notification._id)}
                             >
-                              ✅ Aceptar Solicitud
+                              Marcar como leída
                             </button>
-                            <button
-                              className="btn-danger small"
-                              onClick={() => this.declineAppointment(
-                                notification.relatedAppointment._id || notification.relatedAppointment,
-                                notification._id
-                              )}
-                              style={{ 
-                                backgroundColor: '#dc3545', 
-                                color: 'white', 
-                                border: 'none',
-                                padding: '6px 12px',
-                                borderRadius: '4px',
-                                fontSize: '12px',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '4px'
-                              }}
-                            >
-                              ❌ Rechazar
-                            </button>
-                          </div>
-                        )}
+                          )}
 
-                        {/* Mostrar estado si ya respondió */}
-                        {notification.userResponse && (
-                          <div className="response-status" style={{ 
-                            marginTop: '8px',
-                            padding: '6px 12px',
-                            borderRadius: '4px',
-                            fontSize: '12px',
-                            fontWeight: 'bold'
-                          }}>
-                            {notification.userResponse === 'confirm' && (
-                              <span style={{ 
-                                color: '#28a745',
-                                backgroundColor: '#d4edda',
-                                padding: '4px 8px',
-                                borderRadius: '4px'
-                              }}>
-                                ✅ Solicitud Aceptada
-                              </span>
-                            )}
-                            {notification.userResponse === 'decline' && (
-                              <span style={{ 
-                                color: '#dc3545',
-                                backgroundColor: '#f8d7da',
-                                padding: '4px 8px',
-                                borderRadius: '4px'
-                              }}>
-                                ❌ Solicitud Rechazada
-                              </span>
-                            )}
-                          </div>
-                        )}
-                        
-                        {notification.actionUrl && !notification.userResponse && (
-                          <button className="btn-outline small">
-                            {notification.actionLabel || 'Ver detalles'}
-                          </button>
-                        )}
-                      </div>
+                          {notification.type === 'appointment_reminder' &&
+                           notification.relatedAppointment &&
+                           !notification.userResponse && (
+                            <div className="notificaciones-page__appointment-actions">
+                              <button
+                                type="button"
+                                className="notificaciones-page__btn notificaciones-page__btn--success"
+                                onClick={() => this.confirmAppointment(
+                                  notification.relatedAppointment._id || notification.relatedAppointment,
+                                  notification._id
+                                )}
+                              >
+                                Aceptar solicitud
+                              </button>
+                              <button
+                                type="button"
+                                className="notificaciones-page__btn notificaciones-page__btn--danger"
+                                onClick={() => this.declineAppointment(
+                                  notification.relatedAppointment._id || notification.relatedAppointment,
+                                  notification._id
+                                )}
+                              >
+                                Rechazar
+                              </button>
+                            </div>
+                          )}
+
+                          {notification.userResponse && (
+                            <div className={`notificaciones-page__response-status notificaciones-page__response-status--${notification.userResponse}`}>
+                              {notification.userResponse === 'confirm' && 'Solicitud aceptada'}
+                              {notification.userResponse === 'decline' && 'Solicitud rechazada'}
+                            </div>
+                          )}
+
+                          {notification.actionUrl && !notification.userResponse && (
+                            <button type="button" className="notificaciones-page__btn notificaciones-page__btn--outline">
+                              {notification.actionLabel || 'Ver detalles'}
+                            </button>
+                          )}
+                        </div>
+                      </article>
+                    ))
+                  ) : (
+                    <div className="notificaciones-page__empty">
+                      <span className="notificaciones-page__empty-icon" aria-hidden>🔔</span>
+                      <h3>No hay notificaciones</h3>
+                      <p>No tienes notificaciones con los filtros seleccionados</p>
                     </div>
-                  ))
-                ) : (
-                  <div className="empty-state" style={{position: 'relative', top: '10%', left: '90%'}}>
-                    <h3>No hay notificaciones</h3>
-                    <p>No tienes notificaciones con los filtros seleccionados</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
+                  )}
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
     );

@@ -190,6 +190,20 @@ class TutorHome extends Component {
         </div>
 
         <div className="dashboard-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '30px', position: 'relative',top: '150px' }}>
+          {/* Avisos importantes - Mueve esto a la izquierda */}
+          <div className="dashboard-card" style={{ background: 'white', height: '180px', padding: '25px', borderRadius: '15px', boxShadow: '0 4px 15px rgba(0, 0, 0, 0.1)' }}>
+            <h2 style={{ margin: '0 0 20px 0', color: '#2c3e50', fontSize: '1rem' }}>Avisos Importantes</h2>
+            <div className="announcements">
+              <div className="announcement-item" style={{ display: 'flex', alignItems: 'flex-start', gap: '15px', padding: '15px 0' }}>
+                <div className="announcement-icon" style={{ fontSize: '1.5rem' }}>🎓</div>
+                <div className="announcement-content">
+                  <h4 style={{ margin: '0 0 5px 0', color: '#2c3e50' }}>Actualización del sistema</h4>
+                  <p style={{ margin: '0', color: '#666', fontSize: '0.9rem' }}>Mantenimiento programado para el próximo fin de semana.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Próximas clases/asesorías */}
           <div className="dashboard-card" style={{ background: 'white', height: '140px',padding: '25px', borderRadius: '15px', boxShadow: '0 4px 15px rgba(0, 0, 0, 0.1)' }}>
             <h2 style={{ position: 'relative',bottom: '7px',margin: '0 0 20px 0', color: '#2c3e50', fontSize: '1rem' }}>{isAdvisor ? 'Próximas Asesorías' : 'Próximas Clases'}</h2>
@@ -202,7 +216,6 @@ class TutorHome extends Component {
                       <p style={{ margin: '0', color: '#666', fontSize: '0.9rem' }}>Estudiante: {classItem.student}</p>
                       <p style={{ margin: '0', color: '#666', fontSize: '0.9rem' }}>{classItem.date} a las {classItem.time}</p>
                     </div>
-                    <button className="btn-primary" style={{ padding: '8px 16px', background: '#2c3e50', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>Unirse</button>
                   </div>
                 ))
               ) : (
@@ -258,27 +271,6 @@ class TutorHome extends Component {
               )}
             </div>
             <Link to="/dashboard/notificaciones" className="view-all-link" style={{ position: 'relative', bottom: '7px', left: '285px', display: 'inline-block', marginTop: '15px', color: '#2c3e50', textDecoration: 'none', fontWeight: '500' }}>Ver todas las notificaciones →</Link>
-          </div>
-
-          {/* Avisos importantes */}
-          <div className="dashboard-card" style={{ position: 'relative',bottom: '330px', right: '590px', height: '200px',background: 'white', padding: '25px', borderRadius: '15px', boxShadow: '0 4px 15px rgba(0, 0, 0, 0.1)' }}>
-            <h2 style={{ margin: '0 0 20px 0', color: '#2c3e50', fontSize: '1rem' }}>Avisos Importantes</h2>
-            <div className="announcements" style={{position: 'relative', bottom: '23px'}} >
-              <div className="announcement-item" style={{ display: 'flex', alignItems: 'flex-start', gap: '15px', padding: '15px 0', borderBottom: '1px solid #eee' }}>
-                <div className="announcement-icon" style={{ fontSize: '1.5rem' }}>📢</div>
-                <div className="announcement-content">
-                  <h4 style={{ margin: '0 0 5px 0', color: '#2c3e50' }}>Nueva política de pagos</h4>
-                  <p style={{ margin: '0', color: '#666', fontSize: '0.9rem' }}>Los pagos se procesarán los primeros 5 días de cada mes.</p>
-                </div>
-              </div>
-              <div className="announcement-item" style={{ display: 'flex', alignItems: 'flex-start', gap: '15px', padding: '15px 0' }}>
-                <div className="announcement-icon" style={{ fontSize: '1.5rem' }}>🎓</div>
-                <div className="announcement-content">
-                  <h4 style={{ margin: '0 0 5px 0', color: '#2c3e50' }}>Actualización del sistema</h4>
-                  <p style={{ margin: '0', color: '#666', fontSize: '0.9rem' }}>Mantenimiento programado para el próximo fin de semana.</p>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </>
