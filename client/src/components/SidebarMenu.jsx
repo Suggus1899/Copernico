@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import apiClient from '../utils/axiosConfig';
 import './SidebarMenu.css';
 
 // Importación de activos (Asegúrate de que los nombres de archivo sean correctos)
@@ -16,6 +17,51 @@ import iconLogout from '../assets/logout.png';
 const SidebarMenu = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
+
+  useEffect(() => {
+    fetchUnreadMessagesCount();
+    
+    // Actualizar cada 15 segundos
+    const interval = setInterval(fetchUnreadMessagesCount, 15000);
+    
+    // Escuchar evento personalizado cuando se leen mensajes
+    const handleMessagesRead = () => {
+      fetchUnreadMessagesCount();
+    };
+    
+    window.addEventListener('messagesRead', handleMessagesRead);
+    
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('messagesRead', handleMessagesRead);
+    };
+  }, []);
+
+  // Actualizar el contador cuando cambia la ruta (especialmente al salir de Mensajes)
+  useEffect(() => {
+    if (location.pathname !== '/dashboard/mensajes') {
+      // Si no estamos en Mensajes, actualizar el contador
+      fetchUnreadMessagesCount();
+    }
+  }, [location.pathname]);
+
+  const fetchUnreadMessagesCount = async () => {
+    try {
+      const response = await apiClient.get('/notifications', {
+        params: {
+          type: 'message_received',
+          read: false,
+          limit: 100
+        }
+      });
+      
+      const count = response.data?.data?.length || 0;
+      setUnreadMessagesCount(count);
+    } catch (error) {
+      console.error('Error fetching unread messages count:', error);
+    }
+  };
 
   const handleLogout = (e) => {
     e.preventDefault();
@@ -29,6 +75,7 @@ const SidebarMenu = () => {
     { path: '/dashboard/progreso-videos', icon: iconVideos, label: 'Mi Progreso' },
     { path: '/dashboard/tutores', icon: iconTutores, label: 'Tutores' },
     { path: '/dashboard/notas', icon: iconNotas, label: 'Apuntes' },
+    { path: '/dashboard/mensajes', icon: iconAsesoria, label: 'Mensajes' },
     { path: '/dashboard/perfil', icon: iconPerfil, label: 'Perfil' },
     { path: '#', icon: iconLogout, label: 'Salir', isLogout: true }
   ];
@@ -53,6 +100,9 @@ const SidebarMenu = () => {
             >
               <img src={item.icon} alt={item.label} className="menu-icon-img" />
               <span className="menu-label">{item.label}</span>
+              {item.label === 'Mensajes' && unreadMessagesCount > 0 && (
+                <span className="notification-badge">{unreadMessagesCount > 9 ? '9+' : unreadMessagesCount}</span>
+              )}
             </Link>
           </li>
         ))}

@@ -362,8 +362,17 @@ class TutorNotifications extends Component {
                           )}
 
                           {notification.actionUrl && !notification.userResponse && (
-                            <button type="button" className="notificaciones-page__btn notificaciones-page__btn--outline">
-                              {notification.actionLabel || 'Ver detalles'}
+                            <button 
+                              type="button" 
+                              className="notificaciones-page__btn notificaciones-page__btn--outline"
+                              onClick={() => {
+                                this.markAsRead(notification._id);
+                                window.location.href = notification.actionUrl;
+                              }}
+                            >
+                              {notification.type === 'message_received' 
+                                ? '↩️ Responder' 
+                                : (notification.actionLabel || 'Ver detalles')}
                             </button>
                           )}
                         </div>

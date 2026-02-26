@@ -527,15 +527,16 @@ body {
 
 /* Tutor Videos Styles */
 .tutor-videos {
-  padding: 20px;
+  padding: 24px 32px;
   max-width: 1200px;
   margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
 }
 
 .videos-header {
-  position: relative;
-  width: 750px;
-  top: 150px;
+  width: 100%;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -543,15 +544,21 @@ body {
 }
 
 .videos-header h2 {
-  color: #2c3e50;
-  font-size: 2rem;
+  margin: 0 0 4px 0;
+  font-size: 1.75rem;
   font-weight: 700;
+  color: #1a1d21;
+  letter-spacing: -0.02em;
+}
+
+.videos-subtitle {
+  margin: 4px 0 0 0;
+  font-size: 0.95rem;
+  color: #6c757d;
 }
 
 .video-form-container {
-  position: relative;
-  top: 150px;
-  width: 1100px;
+  width: 100%;
   background: white;
   border-radius: 12px;
   padding: 25px;
@@ -634,6 +641,10 @@ body {
 .form-actions {
   text-align: center;
   margin-top: 20px;
+}
+
+.videos-list-section {
+  width: 100%;
 }
 
 .btn-primary {

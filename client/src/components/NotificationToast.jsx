@@ -8,8 +8,8 @@ const NotificationToast = ({ userRole }) => {
   const [lastNotificationId, setLastNotificationId] = useState(null);
 
   useEffect(() => {
-    // Solo mostrar para tutores y asesores
-    if (!['tutor', 'advisor'].includes(userRole)) {
+    // Mostrar notificaciones para todos los roles
+    if (!userRole) {
       return;
     }
 
@@ -62,12 +62,49 @@ const NotificationToast = ({ userRole }) => {
     }
   };
 
+  const getNotificationIcon = (type) => {
+    const icons = {
+      'message_received': '💬',
+      'appointment_reminder': '📅',
+      'appointment_confirmed': '✅',
+      'appointment_cancelled': '❌',
+      'assignment_due': '📝',
+      'new_material': '📚',
+      'grade_posted': '🎓',
+      'progress_update': '📊',
+      'system_alert': '⚠️',
+      'welcome': '👋',
+      'announcement': '📢'
+    };
+    return icons[type] || '🔔';
+  };
+
   const handleNotificationClick = (notification) => {
     // Marcar como leída
     markAsRead(notification._id);
     
-    // Redirigir a notificaciones
-    window.location.href = '/dashboard/notificaciones';
+    // Si tiene actionUrl, redirigir ahí, sino a notificaciones
+    if (notification.actionUrl) {
+      window.location.href = notification.actionUrl;
+    } else {
+      window.location.href = '/dashboard/notificaciones';
+    }
+  };
+
+  const handleRespond = (e, notification) => {
+    e.stopPropagation(); // Evitar que se dispare el click del contenedor
+    
+    // Marcar como leída
+    markAsRead(notification._id);
+    
+    // Redirigir a la conversación
+    if (notification.actionUrl) {
+      window.location.href = notification.actionUrl;
+    } else if (notification.relatedUser) {
+      window.location.href = `/dashboard/mensajes?userId=${notification.relatedUser}`;
+    } else {
+      window.location.href = '/dashboard/mensajes';
+    }
   };
 
   const markAsRead = async (notificationId) => {
@@ -115,7 +152,7 @@ const NotificationToast = ({ userRole }) => {
         <div className="toast-header">
           <div className="toast-title">
             <span className="toast-icon">🔔</span>
-            <h4>Nuevas Solicitudes</h4>
+            <h4>Nuevas Notificaciones</h4>
           </div>
           <button className="toast-close" onClick={closeToast}>
             ✕
@@ -130,15 +167,24 @@ const NotificationToast = ({ userRole }) => {
               onClick={() => handleNotificationClick(notification)}
             >
               <div className="toast-notification-icon">
-                📅
+                {getNotificationIcon(notification.type)}
               </div>
               <div className="toast-notification-content">
                 <h5>{notification.title}</h5>
-                <p>{notification.message.substring(0, 80)}...</p>
+                <p>{notification.message.substring(0, 80)}{notification.message.length > 80 ? '...' : ''}</p>
                 <span className="toast-time">
                   {formatTimeAgo(notification.createdAt)}
                 </span>
               </div>
+              {notification.type === 'message_received' && (
+                <button 
+                  className="toast-respond-btn"
+                  onClick={(e) => handleRespond(e, notification)}
+                  title="Responder mensaje"
+                >
+                  ↩️ Responder
+                </button>
+              )}
             </div>
           ))}
           

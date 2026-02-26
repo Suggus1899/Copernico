@@ -4,9 +4,20 @@ import axios from 'axios';
 // Preferir VITE_API_URL. En Docker: VITE_API_URL="http://api:4000/api"; en local: "http://localhost:4002/api"
 const API_BASE_URL = import.meta.env?.VITE_API_URL || 'http://localhost:4002/api';
 
+console.log('🔧 API Configuration:', {
+  'import.meta.env.VITE_API_URL': import.meta.env?.VITE_API_URL,
+  'API_BASE_URL': API_BASE_URL,
+  'All env vars': import.meta.env,
+  timestamp: new Date().toISOString()
+});
+
+// FORZAR el puerto correcto si detectamos 4000
+const CORRECTED_BASE_URL = API_BASE_URL.replace(':4000/', ':4002/');
+console.log('🔧 Corrected URL:', CORRECTED_BASE_URL);
+
 // Crear instancia de axios con configuración base
 const apiClient = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: CORRECTED_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },

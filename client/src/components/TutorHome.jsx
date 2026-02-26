@@ -191,7 +191,7 @@ class TutorHome extends Component {
 
         <div className="dashboard-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '30px', position: 'relative',top: '150px' }}>
           {/* Avisos importantes - Mueve esto a la izquierda */}
-          <div className="dashboard-card" style={{ background: 'white', height: '180px', padding: '25px', borderRadius: '15px', boxShadow: '0 4px 15px rgba(0, 0, 0, 0.1)' }}>
+          <div className="dashboard-card" style={{ background: 'white', height: '160px', padding: '25px', borderRadius: '15px', boxShadow: '0 4px 15px rgba(0, 0, 0, 0.1)' }}>
             <h2 style={{ margin: '0 0 20px 0', color: '#2c3e50', fontSize: '1rem' }}>Avisos Importantes</h2>
             <div className="announcements">
               <div className="announcement-item" style={{ display: 'flex', alignItems: 'flex-start', gap: '15px', padding: '15px 0' }}>
@@ -205,7 +205,7 @@ class TutorHome extends Component {
           </div>
 
           {/* Próximas clases/asesorías */}
-          <div className="dashboard-card" style={{ background: 'white', height: '140px',padding: '25px', borderRadius: '15px', boxShadow: '0 4px 15px rgba(0, 0, 0, 0.1)' }}>
+          <div className="dashboard-card" style={{ background: 'white', height: '140px',padding: '25px', borderRadius: '15px', boxShadow: '0 4px 15px rgba(0, 0, 0, 0.1)',  position: 'relative', top: '-110px' }}>
             <h2 style={{ position: 'relative',bottom: '7px',margin: '0 0 20px 0', color: '#2c3e50', fontSize: '1rem' }}>{isAdvisor ? 'Próximas Asesorías' : 'Próximas Clases'}</h2>
             <div className="upcoming-classes" style={{position: 'relative', bottom: '15px'}}>
               {upcomingClasses.length > 0 ? (
@@ -222,11 +222,11 @@ class TutorHome extends Component {
                 <p>No hay clases programadas próximamente.</p>
               )}
             </div>
-            <Link to="/dashboard/agenda" className="view-all-link" style={{ position: 'relative', bottom: '12px', left:'330px',display: 'inline-block', marginTop: '15px', color: '#2c3e50', textDecoration: 'none', fontWeight: '500' }}>Ver agenda completa →</Link>
+            <Link to="/dashboard/agenda" className="view-all-link" style={{ position: 'relative', bottom: '72px', left:'330px',display: 'inline-block', marginTop: '15px', color: '#2c3e50', textDecoration: 'none', fontWeight: '500' }}>Ver agenda completa →</Link>
           </div>
 
           {/* Actividad reciente */}
-          <div className="dashboard-card" style={{ background: 'white',position: 'relative', bottom: '35px', height: '140px', padding: '20px', borderRadius: '15px', boxShadow: '0 4px 15px rgba(0, 0, 0, 0.1)' }}>
+          <div className="dashboard-card" style={{ background: 'white',position: 'relative', bottom: '225px', height: '100px', padding: '20px', borderRadius: '15px', boxShadow: '0 4px 15px rgba(0, 0, 0, 0.1)' }}>
             <h2 style={{ margin: '0 0 2px 0', color: '#2c3e50', fontSize: '1rem' }}>Actividad Reciente</h2>
             <div className="recent-activity" style={{position: 'relative', top: '15px'}}>
               {recentActivities.length > 0 ? (
@@ -250,7 +250,7 @@ class TutorHome extends Component {
           </div>
 
           {/* Notificaciones */}
-          <div className="dashboard-card" style={{ background: 'white',position: 'relative', bottom: '70px', height: '140px', padding: '20px', borderRadius: '15px', boxShadow: '0 4px 15px rgba(0, 0, 0, 0.1)' }}>
+          <div className="dashboard-card" style={{ background: 'white',position: 'relative', bottom: '340px', height: '140px', padding: '20px', borderRadius: '15px', boxShadow: '0 4px 15px rgba(0, 0, 0, 0.1)' }}>
             <h2 style={{ margin: '0 0 20px 0', color: '#2c3e50', fontSize: '1rem' }}>Notificaciones</h2>
             <div className="notifications" style={{position: 'relative', bottom: '5px'}}>
               {notifications.length > 0 ? (

@@ -193,8 +193,17 @@ export const markAsRead = async (req, res, next) => {
 
 export const markAllAsRead = async (req, res, next) => {
   try {
-    await Notification.updateMany(
-      { userId: req.user.id, read: false },
+    const { type } = req.query;
+    
+    const filter = { userId: req.user.id, read: false };
+    
+    // Si se especifica un tipo, filtrar por ese tipo
+    if (type) {
+      filter.type = type;
+    }
+    
+    const result = await Notification.updateMany(
+      filter,
       { 
         $set: { 
           read: true,
@@ -211,7 +220,10 @@ export const markAllAsRead = async (req, res, next) => {
 
     res.json({
       success: true,
-      message: "All notifications marked as read"
+      message: type 
+        ? `All ${type} notifications marked as read` 
+        : "All notifications marked as read",
+      updated: result.modifiedCount
     });
   } catch (error) {
     next(error);

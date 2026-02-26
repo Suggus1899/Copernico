@@ -8,6 +8,7 @@
     "dev": "nodemon --exec \"node --max-old-space-size=4096 src/index.js\" --ignore client",
     "debug": "node --inspect src/index.js",
     "migrate:advisors": "node scripts/migrate_advisors_to_tutors.js",
+    "migrate:courses": "node scripts/create_courses_from_appointments.js",
     "init:dirs": "node scripts/init_directories.js",
     "postinstall": "node scripts/init_directories.js"
   },

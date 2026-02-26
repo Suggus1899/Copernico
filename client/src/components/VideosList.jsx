@@ -397,10 +397,10 @@ render() {
               <div className="clases-page__placeholder">
                 <span className="clases-page__placeholder-icon" aria-hidden>🎥</span>
                 <h3>Elige una clase</h3>
-                <p>Selecciona un video en la lista para reproducirlo</p>
+                <p>Selecciona un video de la lista para comenzar a reproducirlo</p>
                 <ul className="clases-page__placeholder-tips">
-                  <li>Usa la búsqueda o el filtro por materia</li>
-                  <li>Tu progreso se guarda automáticamente</li>
+                  <li>Usa la búsqueda o el filtro por materia para encontrar contenido</li>
+                  <li>Tu progreso se guarda automáticamente mientras ves los videos</li>
                 </ul>
               </div>
             )}

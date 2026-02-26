@@ -44,7 +44,7 @@ class VideoProgressDashboard extends Component {
   calculateOverallStats = () => {
     const { subjectStats } = this.state.dashboardData;
     
-    if (subjectStats.length === 0) {
+    if (!subjectStats || subjectStats.length === 0) {
       return {
         totalVideos: 0,
         completedVideos: 0,
@@ -54,17 +54,24 @@ class VideoProgressDashboard extends Component {
     }
 
     const totals = subjectStats.reduce((acc, stat) => {
-      acc.totalVideos += stat.totalVideos;
-      acc.completedVideos += stat.completedVideos;
-      acc.totalWatchTime += stat.totalWatchTimeHours;
+      acc.totalVideos += stat.totalVideos || 0;
+      acc.completedVideos += stat.completedVideos || 0;
+      acc.totalWatchTime += stat.totalWatchTimeHours || 0;
       return acc;
     }, { totalVideos: 0, completedVideos: 0, totalWatchTime: 0 });
 
-    const averageCompletion = subjectStats.reduce((sum, stat) => sum + stat.averageProgress, 0) / subjectStats.length;
+    // Calcular promedio ponderado de progreso
+    const totalProgress = subjectStats.reduce((sum, stat) => {
+      return sum + ((stat.averageProgress || 0) * (stat.totalVideos || 0));
+    }, 0);
+    
+    const averageCompletion = totals.totalVideos > 0 
+      ? Math.round((totalProgress / totals.totalVideos) * 10) / 10
+      : 0;
 
     return {
       ...totals,
-      averageCompletion: Math.round(averageCompletion * 10) / 10
+      averageCompletion
     };
   };
 
@@ -121,8 +128,18 @@ class VideoProgressDashboard extends Component {
     return (
       <div className="video-progress-dashboard">
         <header className="progress-dashboard-header">
-          <h2>📊 Mi Progreso</h2>
-          <p>Seguimiento de tu progreso en videos educativos</p>
+          <div>
+            <h2>📊 Mi Progreso</h2>
+            <p>Seguimiento de tu progreso en videos educativos</p>
+          </div>
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={this.loadDashboardData}
+            style={{ marginLeft: 'auto' }}
+          >
+            🔄 Actualizar
+          </button>
         </header>
 
         {/* Estadísticas generales */}
@@ -172,21 +189,22 @@ class VideoProgressDashboard extends Component {
                 <li>Regresa aquí para ver tus estadísticas</li>
               </ol>
             </div>
-            <button
-              type="button"
-              className="btn btn-primary"
-              onClick={() => window.location.href = '/dashboard/videos'}
-            >
-              🎥 Ver Videos de Clases
-            </button>
-            <button
-              type="button"
-              className="btn btn-secondary"
-              onClick={this.loadDashboardData}
-              style={{ marginTop: '12px' }}
-            >
-              🔄 Actualizar datos
-            </button>
+            <div className="progress-empty-actions">
+              <button
+                type="button"
+                className="btn btn-primary progress-empty-action-btn"
+                onClick={() => window.location.href = '/dashboard/videos'}
+              >
+                🎥 Ver Videos de Clases
+              </button>
+              <button
+                type="button"
+                className="btn btn-secondary progress-empty-action-btn"
+                onClick={this.loadDashboardData}
+              >
+                🔄 Actualizar datos
+              </button>
+            </div>
           </section>
         )}
 

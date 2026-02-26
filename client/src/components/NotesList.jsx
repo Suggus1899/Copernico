@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import apiClient from "../utils/axiosConfig";
 import { Link } from "react-router-dom";
+import "./Notes.css";
 
 function NotesList() {
   const [notes, setNotes] = useState([]);
@@ -120,155 +121,158 @@ function NotesList() {
 
   if (loading) {
     return (
-      <div className="loading-container">
-        <div className="loading-spinner"></div>
-        <p>Cargando tus apuntes...</p>
+      <div className="notes-page">
+        <div className="loading-container">
+          <div className="loading-spinner"></div>
+          <p>Cargando tus apuntes...</p>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="notes-page">
-      <div className="notes-header" style={{position: 'relative', top:'15%'}}>
-        <h2>📝 Mis Apuntes</h2>
-        <p>Organiza y gestiona tus apuntes de estudio</p>
+      <header className="notes-page__header">
+        <div>
+          <h1 className="notes-page__title">📝 Mis Apuntes</h1>
+          <p className="notes-page__subtitle">Organiza y gestiona tus apuntes de estudio</p>
+        </div>
         <button
-          className={`btn ${showCreateForm ? 'btn-secondary' : 'btn-primary'}`}
+          type="button"
+          className={`btn ${showCreateForm ? 'btn-secondary' : 'btn-primary'} notes-page__primary-btn`}
           onClick={() => setShowCreateForm(!showCreateForm)}
-          style={{position: 'relative', top:'-74px', left: '70%'}}
         >
           {showCreateForm ? '✕ Cancelar' : '+ Nuevo Apunte'}
         </button>
-      </div>
+      </header>
 
-      {error && <div className="alert alert-danger">{error}</div>}
+      {error && <div className="notes-page__alert">{error}</div>}
 
       {/* Formulario de creación */}
       {showCreateForm && (
-        <div className="create-form-container">
-          <div className="create-form">
-            <h3>✏️ Crear Nuevo Apunte</h3>
-            <form onSubmit={handleCreateNote}>
-              <div className="form-row">
-                <div className="form-group">
-                  <label>📌 Título *</label>
-                  <input
-                    type="text"
-                    name="title"
-                    value={newNote.title}
-                    onChange={handleFormChange}
-                    placeholder="Título del apunte"
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <label>📚 Materia</label>
-                  <input
-                    type="text"
-                    name="subject"
-                    value={newNote.subject}
-                    onChange={handleFormChange}
-                    placeholder="Ej: Matemáticas, Física"
-                  />
-                </div>
-              </div>
-
+        <section className="notes-page__form-section">
+          <h3>✏️ Crear Nuevo Apunte</h3>
+          <form onSubmit={handleCreateNote}>
+            <div className="form-row">
               <div className="form-group">
-                <label>📝 Contenido *</label>
-                <textarea
-                  name="content"
-                  value={newNote.content}
+                <label>📌 Título *</label>
+                <input
+                  type="text"
+                  name="title"
+                  value={newNote.title}
                   onChange={handleFormChange}
-                  placeholder="Escribe el contenido de tu apunte aquí..."
-                  rows="8"
+                  placeholder="Título del apunte"
                   required
                 />
               </div>
-
               <div className="form-group">
-                <label>🏷️ Etiquetas</label>
+                <label>📚 Materia</label>
                 <input
                   type="text"
-                  name="tags"
-                  value={newNote.tags}
+                  name="subject"
+                  value={newNote.subject}
                   onChange={handleFormChange}
-                  placeholder="Etiquetas separadas por comas (ej: examen, importante, repaso)"
+                  placeholder="Ej: Matemáticas, Física"
                 />
               </div>
+            </div>
 
-              <div className="form-actions">
-                <button type="submit" className="btn btn-primary">
-                  💾 Guardar Apunte
-                </button>
-                <button 
-                  type="button" 
-                  className="btn btn-secondary"
-                  onClick={() => setShowCreateForm(false)}
-                >
-                  Cancelar
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+            <div className="form-group">
+              <label>📝 Contenido *</label>
+              <textarea
+                name="content"
+                value={newNote.content}
+                onChange={handleFormChange}
+                placeholder="Escribe el contenido de tu apunte aquí..."
+                rows="8"
+                required
+              />
+            </div>
+
+            <div className="form-group">
+              <label>🏷️ Etiquetas</label>
+              <input
+                type="text"
+                name="tags"
+                value={newNote.tags}
+                onChange={handleFormChange}
+                placeholder="Etiquetas separadas por comas (ej: examen, importante, repaso)"
+              />
+            </div>
+
+            <div className="form-actions">
+              <button type="submit" className="btn btn-primary">
+                💾 Guardar Apunte
+              </button>
+              <button 
+                type="button" 
+                className="btn btn-secondary"
+                onClick={() => setShowCreateForm(false)}
+              >
+                Cancelar
+              </button>
+            </div>
+          </form>
+        </section>
       )}
 
       {/* Filtros y búsqueda */}
-      <div className="notes-filters" style={{position: 'relative', top:'10%'}}>
-        <div className="search-group" style={{position: 'relative', top:'50px',left:'110%'}}>
+      <section className="notes-page__toolbar">
+        <div className="notes-page__filters">
           <input
             type="text"
             placeholder="Buscar en tus apuntes..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="search-input"
+            className="notes-page__search"
           />
         </div>
-        <div className="filter-buttons" style={{width: '90%'}}>
+        <div className="notes-page__filter-btns">
           <button
-            className={`filter-btn ${filterBy === 'all' ? 'active' : ''}`}
+            type="button"
+            className={`notes-page__filter-btn ${filterBy === 'all' ? 'notes-page__filter-btn--active' : ''}`}
             onClick={() => setFilterBy('all')}
           >
             Todas ({notes.length})
           </button>
           <button
-            className={`filter-btn ${filterBy === 'recent' ? 'active' : ''}`}
+            type="button"
+            className={`notes-page__filter-btn ${filterBy === 'recent' ? 'notes-page__filter-btn--active' : ''}`}
             onClick={() => setFilterBy('recent')}
           >
             Recientes
           </button>
           <button
-            className={`filter-btn ${filterBy === 'favorites' ? 'active' : ''}`}
+            type="button"
+            className={`notes-page__filter-btn ${filterBy === 'favorites' ? 'notes-page__filter-btn--active' : ''}`}
             onClick={() => setFilterBy('favorites')}
           >
             Favoritas
           </button>
         </div>
-      </div>
-
-      {/* Estadísticas */}
-      <div className="notes-stats" style={{display: 'flex', flexDirection: 'column', gap: '20px',position: 'relative', left: '165%', width: '40%', top: '-60px'}}>
-        <div className="stat-item">
-          <span className="stat-number">{notes.length}</span>
-          <span className="stat-label">Total de apuntes</span>
+        <div className="notes-page__stats">
+          <div className="notes-page__stat">
+            <span className="notes-page__stat-num">{notes.length}</span>
+            <span className="notes-page__stat-label">Total de apuntes</span>
+          </div>
+          <div className="notes-page__stat">
+            <span className="notes-page__stat-num">{getSubjects().length}</span>
+            <span className="notes-page__stat-label">Materias</span>
+          </div>
+          <div className="notes-page__stat">
+            <span className="notes-page__stat-num">{notes.filter(n => n.isFavorite).length}</span>
+            <span className="notes-page__stat-label">Favoritas</span>
+          </div>
+          <div className="notes-page__stat">
+            <span className="notes-page__stat-num">{filteredNotes.length}</span>
+            <span className="notes-page__stat-label">Mostrando</span>
+          </div>
         </div>
-        <div className="stat-item">
-          <span className="stat-number">{getSubjects().length}</span>
-          <span className="stat-label">Materias</span>
-        </div>
-        <div className="stat-item">
-          <span className="stat-number">{notes.filter(n => n.isFavorite).length}</span>
-          <span className="stat-label">Favoritas</span>
-        </div>
-        <div className="stat-item">
-          <span className="stat-number">{filteredNotes.length}</span>
-          <span className="stat-label">Mostrando</span>
-        </div>
-      </div>
+      </section>
 
       {filteredNotes.length === 0 ? (
-        <div className="empty-state" style={{position: 'relative', bottom: '33%'}}>
-          <div className="empty-icon">📝</div>
+        <section className="notes-page__empty">
+          <div className="notes-page__empty-icon">📝</div>
           <h3>
             {notes.length === 0 
               ? 'No tienes apuntes aún' 
@@ -282,7 +286,7 @@ function NotesList() {
             }
           </p>
           {notes.length === 0 && (
-            <div className="empty-benefits">
+            <div className="notes-page__empty-benefits">
               <h4>💡 Los apuntes te ayudan a:</h4>
               <ul>
                 <li>📚 Organizar información importante</li>
@@ -294,15 +298,16 @@ function NotesList() {
           )}
           {notes.length === 0 && (
             <button
+              type="button"
               className="btn btn-primary"
               onClick={() => setShowCreateForm(true)}
             >
               ✏️ Crear mi primer apunte
             </button>
           )}
-        </div>
+        </section>
       ) : (
-        <div className="notes-grid">
+        <section className="notes-grid">
           {filteredNotes.map((note) => (
             <div className="note-card" key={note._id}>
               <div className="note-header">
@@ -358,7 +363,7 @@ function NotesList() {
               </div>
             </div>
           ))}
-        </div>
+        </section>
       )}
     </div>
   );

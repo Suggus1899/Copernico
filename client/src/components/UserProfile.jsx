@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import apiClient from '../utils/axiosConfig';
 import AvatarUploader from './AvatarUploader';
 import './UserProfile.css';
-import './Dashboard.css';
 
 const UserProfile = () => {
   const [user, setUser] = useState(null);
@@ -29,8 +28,6 @@ const UserProfile = () => {
       }
 
       const response = await apiClient.get('/auth/profile');
-      
-      // El backend ahora devuelve { success: true, data: user }
       const userData = response.data.data || response.data;
       setUser(userData);
       setEditForm({
@@ -94,41 +91,6 @@ const UserProfile = () => {
     setShowAvatarModal(false);
   };
 
-  if (loading) {
-    return (
-      <div className="loading-container">
-        <div className="loading-spinner"></div>
-        <p>Cargando perfil...</p>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="error-container">
-        <div className="error-icon">❌</div>
-        <h3>Error al cargar el perfil</h3>
-        <p>{error}</p>
-        <button className="btn btn-primary" onClick={fetchUserProfile}>
-          🔄 Reintentar
-        </button>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return (
-      <div className="error-container">
-        <div className="error-icon">👤</div>
-        <h3>No se pudo cargar la información del usuario</h3>
-        <button className="btn btn-primary" onClick={fetchUserProfile}>
-          🔄 Reintentar
-        </button>
-      </div>
-    );
-  }
-
-  // Get initials for avatar
   const getInitials = (user) => {
     if (!user) return 'U';
     const firstName = user.personalInfo?.firstName || '';
@@ -149,6 +111,7 @@ const UserProfile = () => {
     const map = {
       student: 'Estudiante',
       tutor: 'Tutor',
+      advisor: 'Asesor',
       admin: 'Administrador'
     };
     return map[role] || role;
@@ -171,27 +134,66 @@ const UserProfile = () => {
     return icons[role] || '👤';
   };
 
+  if (loading) {
+    return (
+      <div className="profile-page" style={{ paddingTop: '400px', marginTop: '100px' }}>
+        <div className="loading-container">
+          <div className="loading-spinner"></div>
+          <p>Cargando perfil...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="profile-page" style={{ paddingTop: '400px', marginTop: '100px' }}>
+        <div className="error-container">
+          <div className="error-icon">❌</div>
+          <h3>Error al cargar el perfil</h3>
+          <p>{error}</p>
+          <button className="profile-btn profile-btn-primary" onClick={fetchUserProfile}>
+            🔄 Reintentar
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="profile-page" style={{ paddingTop: '400px', marginTop: '100px' }}>
+        <div className="error-container">
+          <div className="error-icon">👤</div>
+          <h3>No se pudo cargar la información del usuario</h3>
+          <button className="profile-btn profile-btn-primary" onClick={fetchUserProfile}>
+            🔄 Reintentar
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="profile-page" style={{position: 'relative', top: '160px', left: '-130px', width: '800px'}}>
-      <div className="profile-header">
-        <div className="profile-avatar-section">
-          <div className="profile-avatar-container">
-            <div className="profile-avatar">
-              <div className="avatar-circle large">
-                {user.personalInfo?.avatar ? (
-                  <img 
-                    src={user.personalInfo.avatar} 
-                    alt="Avatar" 
-                    className="avatar-image"
-                  />
-                ) : (
-                  getInitials(user)
-                )}
-              </div>
-            </div>
-            <div className="avatar-controls">
+    <div className="profile-page" style={{ paddingTop: '400px', marginTop: '100px' }}>
+      {/* Header con información básica */}
+      <div className="profile-header-card">
+        <div className="profile-header-content">
+          <div className="profile-avatar-section">
+            <div className="profile-avatar-wrapper">
+              {user.personalInfo?.avatar ? (
+                <img 
+                  src={user.personalInfo.avatar} 
+                  alt="Avatar" 
+                  className="profile-avatar-img"
+                />
+              ) : (
+                <div className="profile-avatar-placeholder">
+                  {getInitials(user)}
+                </div>
+              )}
               <button 
-                className="avatar-change-btn"
+                className="profile-avatar-edit-btn"
                 onClick={() => setShowAvatarModal(true)}
                 title="Cambiar foto de perfil"
               >
@@ -199,282 +201,288 @@ const UserProfile = () => {
               </button>
             </div>
           </div>
-          <div className="profile-basic-info" style={{position: 'relative', left: '80%', top: '-175px', width: '400px' }}>
-            <h2 className="profile-name">{getFullName(user)}</h2>
+
+          <div className="profile-header-info">
+            <h1 className="profile-name">{getFullName(user)}</h1>
             <p className="profile-email">📧 {user.email}</p>
-            <div className="profile-role" style={{position: 'relative', top: '20px', left: '200px'}}>
-              <span className={`role-badge ${user.role}`}>
+            <div className="profile-badges">
+              <span className={`profile-role-badge profile-role-${user.role}`}>
                 {getRoleIcon(user.role)} {getRoleLabel(user.role)}
               </span>
-            </div>
-            <div className="profile-member-since">
-              <span>📅 Miembro desde {user.createdAt ? new Date(user.createdAt).toLocaleDateString('es-ES', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-              }) : 'Fecha no disponible'}</span>
+              <span className="profile-member-badge">
+                📅 Miembro desde {user.createdAt ? new Date(user.createdAt).toLocaleDateString('es-ES', {
+                  year: 'numeric',
+                  month: 'long'
+                }) : 'Fecha no disponible'}
+              </span>
             </div>
           </div>
-        </div>
-        
-        <div className="profile-actions">
-          {!editMode ? (
-            <div className="profile-actions-grid">
-              <button 
-                className="btn btn-primary"
-                onClick={() => setEditMode(true)}
-                style={{position: 'relative', bottom: '-140px', right: '285px',width: '170px'}}
-              >
-                ✏️ Editar Perfil
-              </button>
-              <button 
-                className="btn btn-outline" 
-                onClick={() => navigate('/account/change-email')}
-                style={{position: 'relative', bottom: '-140px', right: '285px',width: '170px'}}
-              >
-                📧 Cambiar Email
-              </button>
-              <button 
-                className="btn btn-outline" 
-                onClick={() => navigate('/account/change-password')}
-                style={{position: 'relative', bottom: '-83px', left: '77px',width: '220px'}}
-              >
-                🔒 Cambiar Contraseña
-              </button>
-            </div>
-          ) : (
-            <div className="profile-actions-grid">
-              <button 
-                className="btn btn-primary"
-                onClick={handleEditSubmit}
-                disabled={saving}
-                style={{position: 'relative', bottom: '-150px', left: '105px',width: '320px'}}
-              >
-                {saving ? '💾 Guardando...' : '💾 Guardar Cambios'}
-              </button>
-              <button 
-              style={{position: 'relative', bottom: '-92px', right: '245px',width: '320px'}}
-                className="btn btn-secondary"
-                onClick={() => {
-                  setEditMode(false);
-                  setEditForm({
-                    firstName: user.personalInfo?.firstName || '',
-                    lastName: user.personalInfo?.lastName || '',
-                    username: user.personalInfo?.username || '',
-                    phone: user.personalInfo?.phone || '',
-                    address: user.personalInfo?.address || '',
-                    city: user.personalInfo?.city || '',
-                    province: user.personalInfo?.province || '',
-                    country: user.personalInfo?.country || '',
-                    postalCode: user.personalInfo?.postalCode || ''
-                  });
-                }}
-              >
-                ❌ Cancelar
-              </button>
-            </div>
-          )}
+
+          <div className="profile-header-actions">
+            {!editMode ? (
+              <>
+                <button 
+                  className="profile-btn profile-btn-primary"
+                  onClick={() => setEditMode(true)}
+                >
+                  ✏️ Editar Perfil
+                </button>
+                <button 
+                  className="profile-btn profile-btn-outline"
+                  onClick={() => navigate('/account/change-password')}
+                >
+                  🔒 Cambiar Contraseña
+                </button>
+              </>
+            ) : (
+              <>
+                <button 
+                  className="profile-btn profile-btn-success"
+                  onClick={handleEditSubmit}
+                  disabled={saving}
+                >
+                  {saving ? '💾 Guardando...' : '💾 Guardar Cambios'}
+                </button>
+                <button 
+                  className="profile-btn profile-btn-secondary"
+                  onClick={() => {
+                    setEditMode(false);
+                    setEditForm({
+                      firstName: user.personalInfo?.firstName || '',
+                      lastName: user.personalInfo?.lastName || '',
+                      username: user.personalInfo?.username || '',
+                      phone: user.personalInfo?.phone || '',
+                      address: user.personalInfo?.address || '',
+                      city: user.personalInfo?.city || '',
+                      province: user.personalInfo?.province || '',
+                      country: user.personalInfo?.country || '',
+                      postalCode: user.personalInfo?.postalCode || ''
+                    });
+                  }}
+                >
+                  ❌ Cancelar
+                </button>
+              </>
+            )}
+          </div>
         </div>
       </div>
-      
-      <div className="profile-content" style={{width: '1200px',position: 'relative', left: '15%',borderRadius: '12px',padding: '20px', background: '#F8F9FA', border: '1px solid #eee'}}>
+
+      {/* Contenido del perfil */}
+      <div className="profile-content-grid">
         {editMode ? (
           <form onSubmit={handleEditSubmit} className="profile-edit-form">
-            <div className="form-section">
-              <h3>👤 Información Personal</h3>
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Nombre</label>
-                  <input
-                    type="text"
-                    name="firstName"
-                    value={editForm.firstName}
-                    onChange={handleFormChange}
-                    placeholder="Tu nombre"
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Apellido</label>
-                  <input
-                    type="text"
-                    name="lastName"
-                    value={editForm.lastName}
-                    onChange={handleFormChange}
-                    placeholder="Tu apellido"
-                  />
-                </div>
+            {/* Información Personal */}
+            <div className="profile-card">
+              <div className="profile-card-header">
+                <h3>👤 Información Personal</h3>
               </div>
-              
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Nombre de usuario</label>
-                  <input
-                    type="text"
-                    name="username"
-                    value={editForm.username}
-                    onChange={handleFormChange}
-                    placeholder="Tu nombre de usuario"
-                  />
+              <div className="profile-card-body">
+                <div className="profile-form-row">
+                  <div className="profile-form-group">
+                    <label>Nombre</label>
+                    <input
+                      type="text"
+                      name="firstName"
+                      value={editForm.firstName}
+                      onChange={handleFormChange}
+                      placeholder="Tu nombre"
+                      className="profile-input"
+                    />
+                  </div>
+                  <div className="profile-form-group">
+                    <label>Apellido</label>
+                    <input
+                      type="text"
+                      name="lastName"
+                      value={editForm.lastName}
+                      onChange={handleFormChange}
+                      placeholder="Tu apellido"
+                      className="profile-input"
+                    />
+                  </div>
                 </div>
-                <div className="form-group">
-                  <label>Teléfono</label>
-                  <input
-                    type="tel"
-                    name="phone"
-                    value={editForm.phone}
-                    onChange={handleFormChange}
-                    placeholder="Tu número de teléfono"
-                  />
+                
+                <div className="profile-form-row">
+                  <div className="profile-form-group">
+                    <label>Nombre de usuario</label>
+                    <input
+                      type="text"
+                      name="username"
+                      value={editForm.username}
+                      onChange={handleFormChange}
+                      placeholder="Tu nombre de usuario"
+                      className="profile-input"
+                    />
+                  </div>
+                  <div className="profile-form-group">
+                    <label>Teléfono</label>
+                    <input
+                      type="tel"
+                      name="phone"
+                      value={editForm.phone}
+                      onChange={handleFormChange}
+                      placeholder="Tu número de teléfono"
+                      className="profile-input"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
 
-            <div className="form-section">
-              <h3>📍 Información de Ubicación</h3>
-              <div className="form-group">
-                <label>Dirección</label>
-                <input
-                  type="text"
-                  name="address"
-                  value={editForm.address}
-                  onChange={handleFormChange}
-                  placeholder="Tu dirección completa"
-                />
+            {/* Información de Ubicación */}
+            <div className="profile-card">
+              <div className="profile-card-header">
+                <h3>📍 Información de Ubicación</h3>
               </div>
-              
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Ciudad</label>
+              <div className="profile-card-body">
+                <div className="profile-form-group">
+                  <label>Dirección</label>
                   <input
                     type="text"
-                    name="city"
-                    value={editForm.city}
+                    name="address"
+                    value={editForm.address}
                     onChange={handleFormChange}
-                    placeholder="Tu ciudad"
+                    placeholder="Tu dirección completa"
+                    className="profile-input"
                   />
                 </div>
-                <div className="form-group">
-                  <label>Provincia/Estado</label>
-                  <input
-                    type="text"
-                    name="province"
-                    value={editForm.province}
-                    onChange={handleFormChange}
-                    placeholder="Tu provincia o estado"
-                  />
+                
+                <div className="profile-form-row">
+                  <div className="profile-form-group">
+                    <label>Ciudad</label>
+                    <input
+                      type="text"
+                      name="city"
+                      value={editForm.city}
+                      onChange={handleFormChange}
+                      placeholder="Tu ciudad"
+                      className="profile-input"
+                    />
+                  </div>
+                  <div className="profile-form-group">
+                    <label>Provincia/Estado</label>
+                    <input
+                      type="text"
+                      name="province"
+                      value={editForm.province}
+                      onChange={handleFormChange}
+                      placeholder="Tu provincia o estado"
+                      className="profile-input"
+                    />
+                  </div>
                 </div>
-              </div>
-              
-              <div className="form-row">
-                <div className="form-group">
-                  <label>País</label>
-                  <input
-                    type="text"
-                    name="country"
-                    value={editForm.country}
-                    onChange={handleFormChange}
-                    placeholder="Tu país"
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Código Postal</label>
-                  <input
-                    type="text"
-                    name="postalCode"
-                    value={editForm.postalCode}
-                    onChange={handleFormChange}
-                    placeholder="Tu código postal"
-                  />
+                
+                <div className="profile-form-row">
+                  <div className="profile-form-group">
+                    <label>País</label>
+                    <input
+                      type="text"
+                      name="country"
+                      value={editForm.country}
+                      onChange={handleFormChange}
+                      placeholder="Tu país"
+                      className="profile-input"
+                    />
+                  </div>
+                  <div className="profile-form-group">
+                    <label>Código Postal</label>
+                    <input
+                      type="text"
+                      name="postalCode"
+                      value={editForm.postalCode}
+                      onChange={handleFormChange}
+                      placeholder="Tu código postal"
+                      className="profile-input"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
           </form>
         ) : (
-          <div className="profile-details" >
-            <div className="details-section">
-              <h3>👤 Información Personal</h3>
-              <div className="details-grid">
-                <div className="detail-item">
-                  <span className="detail-label">Nombre:</span>
-                  <span className="detail-value">{user.personalInfo?.firstName || 'No especificado'}</span>
+          <>
+            {/* Información Personal */}
+            <div className="profile-card">
+              <div className="profile-card-header">
+                <h3>👤 Información Personal</h3>
+              </div>
+              <div className="profile-card-body">
+                <div className="profile-detail-item">
+                  <span className="profile-detail-label">Nombre:</span>
+                  <span className="profile-detail-value">{user.personalInfo?.firstName || 'No especificado'}</span>
                 </div>
-                <div className="detail-item">
-                  <span className="detail-label">Apellido:</span>
-                  <span className="detail-value">{user.personalInfo?.lastName || 'No especificado'}</span>
+                <div className="profile-detail-item">
+                  <span className="profile-detail-label">Apellido:</span>
+                  <span className="profile-detail-value">{user.personalInfo?.lastName || 'No especificado'}</span>
                 </div>
-                <div className="detail-item">
-                  <span className="detail-label">Usuario:</span>
-                  <span className="detail-value">{user.personalInfo?.username || 'No especificado'}</span>
+                <div className="profile-detail-item">
+                  <span className="profile-detail-label">Usuario:</span>
+                  <span className="profile-detail-value">{user.personalInfo?.username || 'No especificado'}</span>
                 </div>
-                <div className="detail-item">
-                  <span className="detail-label">Teléfono:</span>
-                  <span className="detail-value">{user.personalInfo?.phone || 'No especificado'}</span>
+                <div className="profile-detail-item">
+                  <span className="profile-detail-label">Teléfono:</span>
+                  <span className="profile-detail-value">{user.personalInfo?.phone || 'No especificado'}</span>
                 </div>
               </div>
             </div>
 
-            <div className="details-section">
-              <h3>📧 Información de Contacto</h3>
-              <div className="details-grid">
-                <div className="detail-item">
-                  <span className="detail-label">Correo principal:</span>
-                  <span className="detail-value">{user.email}</span>
-                </div>
-                {user.personalInfo?.email && user.personalInfo.email !== user.email && (
-                  <div className="detail-item">
-                    <span className="detail-label">Correo alterno:</span>
-                    <span className="detail-value">{user.personalInfo.email}</span>
-                  </div>
-                )}
+            {/* Información de Ubicación */}
+            <div className="profile-card">
+              <div className="profile-card-header">
+                <h3>📍 Información de Ubicación</h3>
               </div>
-            </div>
-
-            <div className="details-section">
-              <h3>📍 Información de Ubicación</h3>
-              <div className="details-grid">
-                <div className="detail-item">
-                  <span className="detail-label">Dirección:</span>
-                  <span className="detail-value">{user.personalInfo?.address || 'No especificada'}</span>
+              <div className="profile-card-body">
+                <div className="profile-detail-item">
+                  <span className="profile-detail-label">Dirección:</span>
+                  <span className="profile-detail-value">{user.personalInfo?.address || 'No especificada'}</span>
                 </div>
-                <div className="detail-item">
-                  <span className="detail-label">Ciudad:</span>
-                  <span className="detail-value">{user.personalInfo?.city || 'No especificada'}</span>
+                <div className="profile-detail-item">
+                  <span className="profile-detail-label">Ciudad:</span>
+                  <span className="profile-detail-value">{user.personalInfo?.city || 'No especificada'}</span>
                 </div>
-                <div className="detail-item">
-                  <span className="detail-label">Provincia:</span>
-                  <span className="detail-value">{user.personalInfo?.province || 'No especificada'}</span>
+                <div className="profile-detail-item">
+                  <span className="profile-detail-label">Provincia:</span>
+                  <span className="profile-detail-value">{user.personalInfo?.province || 'No especificada'}</span>
                 </div>
-                <div className="detail-item">
-                  <span className="detail-label">País:</span>
-                  <span className="detail-value">{user.personalInfo?.country || 'No especificado'}</span>
+                <div className="profile-detail-item">
+                  <span className="profile-detail-label">País:</span>
+                  <span className="profile-detail-value">{user.personalInfo?.country || 'No especificado'}</span>
                 </div>
-                <div className="detail-item">
-                  <span className="detail-label">Código Postal:</span>
-                  <span className="detail-value">{user.personalInfo?.postalCode || 'No especificado'}</span>
+                <div className="profile-detail-item">
+                  <span className="profile-detail-label">Código Postal:</span>
+                  <span className="profile-detail-value">{user.personalInfo?.postalCode || 'No especificado'}</span>
                 </div>
               </div>
             </div>
 
-            <div className="details-section">
-              <h3>🔐 Información de Cuenta</h3>
-              <div className="details-grid">
-                <div className="detail-item">
-                  <span className="detail-label">Rol:</span>
-                  <span className="detail-value">
-                    <span className={`role-badge ${user.role}`}>
+            {/* Información de Cuenta */}
+            <div className="profile-card">
+              <div className="profile-card-header">
+                <h3>🔐 Información de Cuenta</h3>
+              </div>
+              <div className="profile-card-body">
+                <div className="profile-detail-item">
+                  <span className="profile-detail-label">Correo electrónico:</span>
+                  <span className="profile-detail-value">{user.email}</span>
+                </div>
+                <div className="profile-detail-item">
+                  <span className="profile-detail-label">Rol:</span>
+                  <span className="profile-detail-value">
+                    <span className={`profile-role-badge profile-role-${user.role}`}>
                       {getRoleIcon(user.role)} {getRoleLabel(user.role)}
                     </span>
                   </span>
                 </div>
-                <div className="detail-item">
-                  <span className="detail-label">Estado de la cuenta:</span>
-                  <span className="detail-value">
-                    <span className="status-badge active">✅ Activa</span>
+                <div className="profile-detail-item">
+                  <span className="profile-detail-label">Estado:</span>
+                  <span className="profile-detail-value">
+                    <span className="profile-status-badge profile-status-active">✅ Activa</span>
                   </span>
                 </div>
-                <div className="detail-item">
-                  <span className="detail-label">Última actualización:</span>
-                  <span className="detail-value">
+                <div className="profile-detail-item">
+                  <span className="profile-detail-label">Última actualización:</span>
+                  <span className="profile-detail-value">
                     {user.updatedAt ? new Date(user.updatedAt).toLocaleDateString('es-ES', {
                       year: 'numeric',
                       month: 'long',
@@ -486,24 +494,24 @@ const UserProfile = () => {
                 </div>
               </div>
             </div>
-          </div>
+          </>
         )}
       </div>
 
       {/* Modal para cambiar avatar */}
       {showAvatarModal && (
-        <div className="modal-overlay" onClick={() => setShowAvatarModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
+        <div className="profile-modal-overlay" onClick={() => setShowAvatarModal(false)}>
+          <div className="profile-modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="profile-modal-header">
               <h3>📷 Cambiar Foto de Perfil</h3>
               <button 
-                className="modal-close-btn"
+                className="profile-modal-close-btn"
                 onClick={() => setShowAvatarModal(false)}
               >
                 ✕
               </button>
             </div>
-            <div className="modal-body">
+            <div className="profile-modal-body">
               <AvatarUploader 
                 onAvatarUpdate={handleAvatarUpdate}
                 currentAvatar={user.personalInfo?.avatar}
@@ -517,4 +525,3 @@ const UserProfile = () => {
 };
 
 export default UserProfile;
-

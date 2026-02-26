@@ -67,7 +67,8 @@
 
 /* Stats bar */
 .estudiantes-page__stats {
-  display: grid;
+  width: 950px;
+  display: flex;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: 20px;
 }

@@ -5,6 +5,9 @@ WORKDIR /app
 # Copiar archivos de dependencias
 COPY package*.json ./
 
+# Copiar scripts necesarios para postinstall
+COPY scripts ./scripts
+
 # Instalar dependencias
 RUN npm install
 

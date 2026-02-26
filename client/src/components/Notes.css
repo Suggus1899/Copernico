@@ -1,0 +1,354 @@
+/* ===== Página Apuntes (Notes) - Estilos profesionales ===== */
+
+.notes-page {
+  display: flex;
+  flex-direction: column;
+  padding: 24px 32px;
+  max-width: 1100px;
+  margin: 0 auto;
+  gap: 24px;
+}
+
+.notes-page__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.notes-page__title {
+  margin: 0 0 4px 0;
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #1a1d21;
+  letter-spacing: -0.02em;
+}
+
+.notes-page__subtitle {
+  margin: 0;
+  font-size: 1rem;
+  color: #6b7280;
+}
+
+.notes-page__primary-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-weight: 500;
+}
+
+.notes-page__alert {
+  padding: 12px 16px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  color: #b91c1c;
+  font-size: 0.9375rem;
+}
+
+/* Formulario de creación */
+.notes-page__form-section {
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  padding: 20px 24px;
+}
+
+.notes-page__form-section h3 {
+  margin: 0 0 16px 0;
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #1a1d21;
+}
+
+/* Barra de filtros + estadísticas */
+.notes-page__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 16px 20px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e5e7eb;
+}
+
+.notes-page__filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.notes-page__search {
+  width: 260px;
+  padding: 10px 14px;
+  font-size: 0.9375rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #f9fafb;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.notes-page__search::placeholder {
+  color: #9ca3af;
+}
+
+.notes-page__search:hover {
+  background: #fff;
+}
+
+.notes-page__search:focus {
+  outline: none;
+  border-color: #2563eb;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.notes-page__filter-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.notes-page__filter-btn {
+  padding: 8px 14px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #f9fafb;
+  color: #374151;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
+}
+
+.notes-page__filter-btn:hover {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+}
+
+.notes-page__filter-btn--active {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #fff;
+}
+
+.notes-page__stats {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.notes-page__stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 72px;
+}
+
+.notes-page__stat-num {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #1a1d21;
+}
+
+.notes-page__stat-label {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+/* Grid de apuntes */
+.notes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.note-card {
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  padding: 16px 18px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  transition: box-shadow 0.2s, border-color 0.2s;
+}
+
+.note-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border-color: #d1d5db;
+}
+
+.note-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.note-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1a1d21;
+}
+
+.note-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.btn-small {
+  padding: 6px 10px;
+  font-size: 0.8rem;
+}
+
+.note-content {
+  margin-bottom: 10px;
+}
+
+.note-text {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #4b5563;
+  line-height: 1.4;
+}
+
+.note-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.note-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tag-more {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.note-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
+.note-info {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.note-updated {
+  font-style: italic;
+}
+
+/* Estado vacío */
+.notes-page__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  text-align: center;
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  color: #6b7280;
+}
+
+.notes-page__empty-icon {
+  font-size: 3rem;
+  margin-bottom: 16px;
+  display: block;
+  opacity: 0.8;
+}
+
+.notes-page__empty h3 {
+  margin: 0 0 8px 0;
+  font-size: 1.25rem;
+  color: #374151;
+}
+
+.notes-page__empty p {
+  margin: 0 0 20px 0;
+  font-size: 0.9375rem;
+}
+
+.notes-page__empty-benefits {
+  margin-top: 16px;
+  padding: 20px;
+  background: #f9fafb;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  text-align: left;
+  max-width: 420px;
+}
+
+.notes-page__empty-benefits h4 {
+  margin: 0 0 12px 0;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.notes-page__empty-benefits ul {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 0.875rem;
+  color: #6b7280;
+  line-height: 1.6;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .notes-page {
+    padding: 16px;
+  }
+
+  .notes-page__header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .notes-page__toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .notes-page__filters {
+    flex-direction: column;
+  }
+
+  .notes-page__search {
+    width: 100%;
+  }
+
+  .notes-page__stats {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .notes-grid {
+    grid-template-columns: 1fr;
+  }
+}
+

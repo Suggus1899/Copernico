@@ -23,6 +23,7 @@ import progressTrackingRoutes from "./routes/progressTracking.routes.js";
 import reportRoutes from "./routes/report.routes.js";
 import notificationRoutes from "./routes/notification.routes.js";
 import videoProgressRoutes from "./routes/videoProgress.routes.js";
+import messageRoutes from "./routes/message.routes.js";
 
 // settings
 app.set("port", process.env.PORT || 4002);
@@ -75,6 +76,7 @@ app.use("/api/progress", progressTrackingRoutes);
 app.use("/api/video-progress", videoProgressRoutes);
 app.use("/api/reports", reportRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/messages", messageRoutes);
 console.log('Rutas montadas exitosamente');
 
 // Ruta de salud/status
@@ -93,7 +95,8 @@ app.get("/api/health", (req, res) => {
       "assignments",
       "progress_tracking",
       "reports",
-      "notifications"
+      "notifications",
+      "messages"
     ]
   });
 });
@@ -179,6 +182,12 @@ app.get("/", (req, res) => {
         mark_read: "PATCH /api/notifications/:id/read",
         mark_all_read: "PATCH /api/notifications/read-all",
         respond: "POST /api/notifications/:id/respond"
+      },
+      messages: {
+        conversations: "GET /api/messages/conversations",
+        with_user: "GET /api/messages/:otherUserId",
+        send: "POST /api/messages",
+        mark_read: "PATCH /api/messages/:otherUserId/read"
       },
       
       // Utilidades

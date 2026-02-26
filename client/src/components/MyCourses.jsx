@@ -336,8 +336,8 @@ const MyCourses = () => {
                   )}
                 </dl>
 
-                {course.status !== 'active' && (
-                  <div className="cursos-page__card-actions">
+                <div className="cursos-page__card-actions">
+                  {course.status !== 'active' ? (
                     <button
                       type="button"
                       className="cursos-page__btn-outline"
@@ -345,8 +345,16 @@ const MyCourses = () => {
                     >
                       Solicitar más sesiones
                     </button>
-                  </div>
-                )}
+                  ) : (
+                    <button
+                      type="button"
+                      className="cursos-page__btn-outline"
+                      onClick={() => window.location.href = `/dashboard/mensajes?userId=${course.tutorId}`}
+                    >
+                      Enviar mensaje
+                    </button>
+                  )}
+                </div>
               </article>
             );
           })}

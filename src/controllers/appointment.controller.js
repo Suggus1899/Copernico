@@ -2,6 +2,86 @@ import Appointment from "../models/Appointment.js";
 import User from "../models/User.js";
 import AvailabilitySlot from "../models/AvailabilitySlot.js";
 import Notification from "../models/Notification.js";
+import Course from "../models/Course.js";
+
+// Helper function to create or update course relationship when appointment is confirmed
+const ensureCourseRelationship = async (appointment) => {
+  try {
+    // Extraer IDs - pueden ser objetos poblados o IDs directos
+    const professionalId = appointment.professionalId?._id || appointment.professionalId;
+    const studentId = appointment.studentId?._id || appointment.studentId;
+    const subject = appointment.subject;
+    
+    console.log('=== CREAR RELACIÓN DE CURSO ===');
+    console.log('Professional ID:', professionalId);
+    console.log('Student ID:', studentId);
+    console.log('Subject:', subject);
+    
+    if (!professionalId || !studentId || !subject) {
+      console.log('❌ Faltan campos requeridos para crear relación de curso');
+      console.log('professionalId:', professionalId);
+      console.log('studentId:', studentId);
+      console.log('subject:', subject);
+      return;
+    }
+
+    // Buscar si ya existe un curso para este tutor y materia
+    let course = await Course.findOne({
+      instructor: professionalId,
+      title: subject
+    });
+
+    if (!course) {
+      // Crear nuevo curso
+      course = await Course.create({
+        title: subject,
+        description: `Curso de ${subject} - Generado automáticamente desde asesorías`,
+        instructor: professionalId,
+        category: subject,
+        level: 'intermediate',
+        isPublished: true,
+        enrolledStudents: [{
+          student: studentId,
+          enrolledAt: new Date(),
+          progress: 0,
+          completed: false
+        }]
+      });
+      console.log(`✅ Curso creado automáticamente: ${course._id} para ${subject}`);
+    } else {
+      // Verificar si el estudiante ya está inscrito
+      const isEnrolled = course.enrolledStudents.some(
+        enrollment => enrollment.student.toString() === studentId.toString()
+      );
+
+      if (!isEnrolled) {
+        // Agregar estudiante al curso existente
+        course.enrolledStudents.push({
+          student: studentId,
+          enrolledAt: new Date(),
+          progress: 0,
+          completed: false
+        });
+        await course.save();
+        console.log(`✅ Estudiante agregado al curso existente: ${course._id}`);
+      } else {
+        console.log(`ℹ️  Estudiante ya inscrito en el curso: ${course._id}`);
+      }
+    }
+
+    // También actualizar el perfil del estudiante
+    await User.findByIdAndUpdate(studentId, {
+      $addToSet: { "studentProfile.enrolledCourses": course._id }
+    });
+
+    console.log('✅ Relación de curso asegurada exitosamente');
+    return course;
+  } catch (error) {
+    console.error('❌ Error ensuring course relationship:', error);
+    console.error('Stack:', error.stack);
+    // No lanzar error para no interrumpir el flujo principal
+  }
+};
 
 export const getAppointments = async (req, res, next) => {
   try {
@@ -268,6 +348,12 @@ export const createAppointment = async (req, res, next) => {
         .populate('professionalId', 'personalInfo email tutorProfile advisorProfile')
         .populate('availabilitySlotId', 'subject topic duration');
 
+      // Si la cita se crea con estado 'confirmed', crear/actualizar la relación del curso
+      if (appointmentSaved.status === 'confirmed') {
+        console.log('Cita creada con estado confirmado, creando relación de curso...');
+        await ensureCourseRelationship(populatedAppointment);
+      }
+
       // Crear notificación para el tutor/asesor
       try {
         const studentName = `${student.personalInfo?.firstName || ''} ${student.personalInfo?.lastName || ''}`.trim() || student.email;
@@ -359,6 +445,12 @@ export const updateAppointment = async (req, res, next) => {
       const error = new Error("Appointment not found");
       error.status = 404;
       throw error;
+    }
+
+    // Si la cita se confirma, crear/actualizar la relación del curso
+    if (updateData.status === 'confirmed' && appointment.status === 'confirmed') {
+      console.log('Cita confirmada, creando relación de curso...');
+      await ensureCourseRelationship(appointment);
     }
 
     console.log('Cita actualizada exitosamente:', appointment._id);

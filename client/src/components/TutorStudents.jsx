@@ -86,34 +86,8 @@ class TutorStudents extends Component {
     }));
   };
 
-  handleSendMessage = async (student) => {
-    const studentName = `${student.personalInfo?.firstName || ''} ${student.personalInfo?.lastName || ''}`.trim() || 'el estudiante';
-    const message = window.prompt(`Escribe un mensaje para ${studentName}:`);
-
-    if (!message || !message.trim()) {
-      return;
-    }
-
-    const tutorName = `${this.state.user?.personalInfo?.firstName || ''} ${this.state.user?.personalInfo?.lastName || ''}`.trim() || 'tu tutor';
-
-    try {
-      await apiClient.post('/notifications', {
-        userId: student._id,
-        title: `Mensaje de ${tutorName}`,
-        message: message.trim(),
-        type: 'message_received',
-        priority: 'medium',
-        category: 'communication',
-        deliveryMethod: ['in_app'],
-        relatedUser: this.state.user?._id || undefined
-      });
-
-      alert('Mensaje enviado correctamente.');
-    } catch (error) {
-      console.error('Error sending message:', error);
-      const errorMessage = error.response?.data?.error || error.response?.data?.message || 'No se pudo enviar el mensaje.';
-      alert(errorMessage);
-    }
+  handleSendMessage = (student) => {
+    window.location.href = `/dashboard/mensajes?userId=${student._id}`;
   };
 
   render() {

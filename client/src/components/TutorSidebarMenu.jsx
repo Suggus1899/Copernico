@@ -61,6 +61,7 @@ const TutorSidebarMenu = ({ userRole = 'tutor' }) => {
       hasNotifications: unreadCount > 0,
       notificationCount: unreadCount
     },
+    { path: '/dashboard/mensajes-tutor', icon: iconNotas, label: 'Mensajes' },
     { path: '/dashboard/perfil-tutor', icon: iconPerfil, label: 'Perfil' },
     { path: '#', icon: iconLogout, label: 'Salir', isLogout: true }
   ];

@@ -34,7 +34,6 @@ const Homepage = () => {
                     <h3>Copernico Academy</h3>
                   </div>
                   <div className="certificate-body">
-                    <p className="certificate-name">Estudiante Ejemplo</p>
                     <p className="certificate-course">TUTORÍA PERSONALIZADA</p>
                     <div className="certificate-qr">
                       <div className="qr-placeholder"></div>

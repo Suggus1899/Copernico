@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import TutorSidebarMenu from './TutorSidebarMenu';
 import apiClient from '../utils/axiosConfig';
@@ -32,8 +32,6 @@ const TutorProfile = () => {
       }
 
       const response = await apiClient.get('/auth/profile');
-      
-      // El backend ahora devuelve { success: true, data: user }
       const userData = response.data.data || response.data;
       setUser(userData);
       setEditForm({
@@ -57,7 +55,6 @@ const TutorProfile = () => {
 
   const fetchUserStats = async () => {
     try {
-      // Obtener estadísticas del tutor/asesor
       const appointmentsResponse = await apiClient.get('/appointments');
       const appointments = appointmentsResponse.data.data || [];
       
@@ -70,7 +67,6 @@ const TutorProfile = () => {
         apt.status === 'confirmed' && new Date(apt.scheduledDate) > new Date()
       );
       
-      // Estudiantes únicos
       const uniqueStudents = new Set();
       confirmedAppointments.forEach(apt => {
         if (apt.studentId?._id) {
@@ -78,7 +74,6 @@ const TutorProfile = () => {
         }
       });
       
-      // Materias únicas
       const uniqueSubjects = new Set();
       confirmedAppointments.forEach(apt => {
         if (apt.subject) {
@@ -91,12 +86,10 @@ const TutorProfile = () => {
         completedSessions: completedAppointments.length,
         upcomingSessions: upcomingAppointments.length,
         totalStudents: uniqueStudents.size,
-        subjects: Array.from(uniqueSubjects),
-        joinDate: null // Se calculará desde user.createdAt
+        subjects: Array.from(uniqueSubjects)
       });
     } catch (error) {
       console.error('Error fetching user stats:', error);
-      // No es crítico, continúa sin estadísticas
     }
   };
 
@@ -142,56 +135,6 @@ const TutorProfile = () => {
     setShowAvatarModal(false);
   };
 
-  if (loading) {
-    return (
-      <div className="dashboard-container">
-        <TutorSidebarMenu userRole={user?.role} />
-        <div className="dashboard-content">
-          <div className="loading-container">
-            <div className="loading-spinner"></div>
-            <p>Cargando perfil...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="dashboard-container">
-        <TutorSidebarMenu userRole={user?.role} />
-        <div className="dashboard-content">
-          <div className="error-container">
-            <div className="error-icon">❌</div>
-            <h3>Error al cargar el perfil</h3>
-            <p>{error}</p>
-            <button className="btn btn-primary" onClick={fetchUserProfile}>
-              🔄 Reintentar
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return (
-      <div className="dashboard-container">
-        <TutorSidebarMenu userRole={user?.role} />
-        <div className="dashboard-content">
-          <div className="error-container">
-            <div className="error-icon">👤</div>
-            <h3>No se pudo cargar la información del usuario</h3>
-            <button className="btn btn-primary" onClick={fetchUserProfile}>
-              🔄 Reintentar
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Get initials for avatar
   const getInitials = (user) => {
     if (!user) return 'U';
     const firstName = user.personalInfo?.firstName || '';
@@ -212,6 +155,7 @@ const TutorProfile = () => {
     const map = {
       student: 'Estudiante',
       tutor: 'Tutor',
+      advisor: 'Asesor',
       admin: 'Administrador'
     };
     return map[role] || role;
@@ -242,163 +186,200 @@ const TutorProfile = () => {
     return descriptions[role] || 'Miembro de la plataforma educativa';
   };
 
-  const isAdvisor = user.role === 'advisor';
+  const isAdvisor = user?.role === 'advisor';
+
+  if (loading) {
+    return (
+      <div className="dashboard-container">
+        <TutorSidebarMenu userRole={user?.role} />
+        <div className="dashboard-content">
+          <div className="loading-container">
+            <div className="loading-spinner"></div>
+            <p>Cargando perfil...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="dashboard-container">
+        <TutorSidebarMenu userRole={user?.role} />
+        <div className="dashboard-content">
+          <div className="error-container">
+            <div className="error-icon">❌</div>
+            <h3>Error al cargar el perfil</h3>
+            <p>{error}</p>
+            <button className="profile-btn profile-btn-primary" onClick={fetchUserProfile}>
+              🔄 Reintentar
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="dashboard-container">
+        <TutorSidebarMenu userRole={user?.role} />
+        <div className="dashboard-content">
+          <div className="error-container">
+            <div className="error-icon">👤</div>
+            <h3>No se pudo cargar la información del usuario</h3>
+            <button className="profile-btn profile-btn-primary" onClick={fetchUserProfile}>
+              🔄 Reintentar
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="dashboard-container">
       <TutorSidebarMenu userRole={user.role} />
-      <div className="dashboard-content" style={{position: 'relative', top: '30px', right: '25px'}}>
+      <div className="dashboard-content">
         <div className="profile-page">
-          <div className="profile-header">
-            <div className="profile-avatar-section">
-              <div className="profile-avatar-container" style={{position: 'relative', top: '-5px', right: '350px'}}>
-                <div className="profile-avatar">
-                  <div className="avatar-circle large">
-                    {user.personalInfo?.avatar ? (
-                      <img 
-                        src={user.personalInfo.avatar} 
-                        alt="Avatar" 
-                        className="avatar-image"
-                      />
-                    ) : (
-                      getInitials(user)
-                    )}
-                  </div>
-                </div>
-                <div className="avatar-controls">
+          {/* Header con información básica */}
+          <div className="profile-header-card">
+            <div className="profile-header-content">
+              <div className="profile-avatar-section">
+                <div className="profile-avatar-wrapper">
+                  {user.personalInfo?.avatar ? (
+                    <img 
+                      src={user.personalInfo.avatar} 
+                      alt="Avatar" 
+                      className="profile-avatar-img"
+                    />
+                  ) : (
+                    <div className="profile-avatar-placeholder">
+                      {getInitials(user)}
+                    </div>
+                  )}
                   <button 
-                    className="avatar-change-btn"
+                    className="profile-avatar-edit-btn"
                     onClick={() => setShowAvatarModal(true)}
                     title="Cambiar foto de perfil"
                   >
-                    📷
+                    �
                   </button>
                 </div>
               </div>
-              <div className="profile-basic-info" style={{position: 'relative', bottom: '180px', width: '800px', left: '150px'}}>
-                <h2 className="profile-name">{getFullName(user)}</h2>
+
+              <div className="profile-header-info">
+                <h1 className="profile-name">{getFullName(user)}</h1>
                 <p className="profile-email">📧 {user.email}</p>
-                <div className="profile-role">
-                  <span className={`role-badge ${user.role}`}>
+                <div className="profile-badges">
+                  <span className={`profile-role-badge profile-role-${user.role}`}>
                     {getRoleIcon(user.role)} {getRoleLabel(user.role)}
+                  </span>
+                  <span className="profile-member-badge">
+                    📅 Miembro desde {user.createdAt ? new Date(user.createdAt).toLocaleDateString('es-ES', {
+                      year: 'numeric',
+                      month: 'long'
+                    }) : 'Fecha no disponible'}
                   </span>
                 </div>
                 <p className="profile-description">
                   {getRoleDescription(user.role)}
                 </p>
-                <div className="profile-member-since">
-                  <span>📅 Miembro desde {user.createdAt ? new Date(user.createdAt).toLocaleDateString('es-ES', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
-                  }) : 'Fecha no disponible'}</span>
-                </div>
               </div>
-            </div>
-            
-            <div className="profile-actions">
-              {!editMode ? (
-                <div className="profile-actions-grid">
-                  <button 
-                    className="btn btn-primary"
-                    onClick={() => setEditMode(true)}
-                    style={{position: 'relative', bottom: '-150px', right: '840px',width: '170px'}}
-                  >
-                    ✏️ Editar Perfil
-                  </button>
-                  <button 
-                    className="btn btn-outline" 
-                    onClick={() => navigate('/account/change-email')}
-                    style={{position: 'relative', top: '92px',left: '-660px', width: '170px'}}
-                  >
-                    📧 Cambiar Email
-                  </button>
-                  <button 
-                    className="btn btn-outline" 
-                    onClick={() => navigate('/account/change-password')}
-                    style={{position: 'relative', top: '35px', right: '480px', width: '220px'}}
-                  >
-                    🔒 Cambiar Contraseña
-                  </button>
-                </div>
-              ) : (
-                <div className="profile-actions-grid">
-                  <button 
-                    className="btn btn-primary"
-                    onClick={handleEditSubmit}
-                    disabled={saving}
-                    style={{position: 'relative', top: '130px', width: '320px', right: '450px'}}
-                  >
-                    {saving ? '💾 Guardando...' : '💾 Guardar Cambios'}
-                  </button>
-                  <button 
-                    className="btn btn-secondary"
-                    style={{position: 'relative', top: '72px', right: '800px', width: '320px'}}
-                    onClick={() => {
-                      setEditMode(false);
-                      setEditForm({
-                        firstName: user.personalInfo?.firstName || '',
-                        lastName: user.personalInfo?.lastName || '',
-                        username: user.personalInfo?.username || '',
-                        phone: user.personalInfo?.phone || '',
-                        specialty: user.personalInfo?.specialty || '',
-                        degrees: user.personalInfo?.degrees || '',
-                        experience: user.personalInfo?.experience || '',
-                        certifications: user.personalInfo?.certifications || '',
-                        bio: user.personalInfo?.bio || ''
-                      });
-                    }}
-                  >
-                    ❌ Cancelar
-                  </button>
-                </div>
-              )}
+
+              <div className="profile-header-actions">
+                {!editMode ? (
+                  <>
+                    <button 
+                      className="profile-btn profile-btn-primary"
+                      onClick={() => setEditMode(true)}
+                    >
+                      ✏️ Editar Perfil
+                    </button>
+                    <button 
+                      className="profile-btn profile-btn-outline"
+                      onClick={() => navigate('/account/change-password')}
+                    >
+                      🔒 Cambiar Contraseña
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button 
+                      className="profile-btn profile-btn-success"
+                      onClick={handleEditSubmit}
+                      disabled={saving}
+                    >
+                      {saving ? '💾 Guardando...' : '💾 Guardar Cambios'}
+                    </button>
+                    <button 
+                      className="profile-btn profile-btn-secondary"
+                      onClick={() => {
+                        setEditMode(false);
+                        setEditForm({
+                          firstName: user.personalInfo?.firstName || '',
+                          lastName: user.personalInfo?.lastName || '',
+                          username: user.personalInfo?.username || '',
+                          phone: user.personalInfo?.phone || '',
+                          specialty: user.personalInfo?.specialty || '',
+                          degrees: user.personalInfo?.degrees || '',
+                          experience: user.personalInfo?.experience || '',
+                          certifications: user.personalInfo?.certifications || '',
+                          bio: user.personalInfo?.bio || ''
+                        });
+                      }}
+                    >
+                      ❌ Cancelar
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
           </div>
 
           {/* Estadísticas del tutor/asesor */}
           {stats && !editMode && (
-            <div className="profile-stats" style={{position: 'relative', bottom: '360px', left: '620px', width:'540px', height: '300px'}}>
-              <h3>📊 Estadísticas de Tutorías</h3>
-              <div className="stats-grid">
-                <div className="stat-card"  style={{height: '80px'}}>
-                  <div className="stat-icon">{isAdvisor ? '🎯' : '📚'}</div>
-                  <div className="stat-content">
-                    <span className="stat-number">{stats.totalSessions}</span>
-                    <span className="stat-label">
-                      Total Tutorías
-                    </span>
+            <div className="profile-stats-card">
+              <div className="profile-card-header">
+                <h3>📊 Estadísticas de Tutorías</h3>
+              </div>
+              <div className="profile-stats-grid">
+                <div className="profile-stat-item">
+                  <div className="profile-stat-icon">{isAdvisor ? '🎯' : '📚'}</div>
+                  <div className="profile-stat-content">
+                    <span className="profile-stat-number">{stats.totalSessions}</span>
+                    <span className="profile-stat-label">Total Tutorías</span>
                   </div>
                 </div>
-                <div className="stat-card"  style={{height: '80px'}}>
-                  <div className="stat-icon">✅</div>
-                  <div className="stat-content">
-                    <span className="stat-number">{stats.completedSessions}</span>
-                    <span className="stat-label">Sesiones Completadas</span>
+                <div className="profile-stat-item">
+                  <div className="profile-stat-icon">✅</div>
+                  <div className="profile-stat-content">
+                    <span className="profile-stat-number">{stats.completedSessions}</span>
+                    <span className="profile-stat-label">Sesiones Completadas</span>
                   </div>
                 </div>
-                <div className="stat-card"  style={{height: '80px'}}>
-                  <div className="stat-icon">📅</div>
-                  <div className="stat-content">
-                    <span className="stat-number">{stats.upcomingSessions}</span>
-                    <span className="stat-label">Sesiones Programadas</span>
+                <div className="profile-stat-item">
+                  <div className="profile-stat-icon">📅</div>
+                  <div className="profile-stat-content">
+                    <span className="profile-stat-number">{stats.upcomingSessions}</span>
+                    <span className="profile-stat-label">Sesiones Programadas</span>
                   </div>
                 </div>
-                <div className="stat-card"  style={{height: '80px'}}>
-                  <div className="stat-icon">👨‍🎓</div>
-                  <div className="stat-content">
-                    <span className="stat-number">{stats.totalStudents}</span>
-                    <span className="stat-label">Estudiantes Atendidos</span>
+                <div className="profile-stat-item">
+                  <div className="profile-stat-icon">👨‍🎓</div>
+                  <div className="profile-stat-content">
+                    <span className="profile-stat-number">{stats.totalStudents}</span>
+                    <span className="profile-stat-label">Estudiantes Atendidos</span>
                   </div>
                 </div>
               </div>
               
               {stats.subjects.length > 0 && (
-                <div className="subjects-section"  style={{position: 'relative', bottom: '30px'}}>
+                <div className="profile-subjects-section">
                   <h4>📚 Materias Impartidas</h4>
-                  <div className="subjects-list"  style={{position: 'relative', bottom: '40px', left: '300px'}}>
+                  <div className="profile-subjects-list">
                     {stats.subjects.map((subject, index) => (
-                      <span key={index} className="subject-tag">
+                      <span key={index} className="profile-subject-tag">
                         {subject}
                       </span>
                     ))}
@@ -408,202 +389,219 @@ const TutorProfile = () => {
             </div>
           )}
           
-          <div className="profile-content">
+          {/* Contenido del perfil */}
+          <div className="profile-content-grid">
             {editMode ? (
               <form onSubmit={handleEditSubmit} className="profile-edit-form">
-                <div className="form-section">
-                  <h3>👤 Información Personal</h3>
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label>Nombre</label>
-                      <input
-                        type="text"
-                        name="firstName"
-                        value={editForm.firstName}
-                        onChange={handleFormChange}
-                        placeholder="Tu nombre"
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label>Apellido</label>
-                      <input
-                        type="text"
-                        name="lastName"
-                        value={editForm.lastName}
-                        onChange={handleFormChange}
-                        placeholder="Tu apellido"
-                      />
-                    </div>
+                {/* Información Personal */}
+                <div className="profile-card">
+                  <div className="profile-card-header">
+                    <h3>👤 Información Personal</h3>
                   </div>
-                  
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label>Nombre de usuario</label>
-                      <input
-                        type="text"
-                        name="username"
-                        value={editForm.username}
-                        onChange={handleFormChange}
-                        placeholder="Tu nombre de usuario"
-                      />
+                  <div className="profile-card-body">
+                    <div className="profile-form-row">
+                      <div className="profile-form-group">
+                        <label>Nombre</label>
+                        <input
+                          type="text"
+                          name="firstName"
+                          value={editForm.firstName}
+                          onChange={handleFormChange}
+                          placeholder="Tu nombre"
+                          className="profile-input"
+                        />
+                      </div>
+                      <div className="profile-form-group">
+                        <label>Apellido</label>
+                        <input
+                          type="text"
+                          name="lastName"
+                          value={editForm.lastName}
+                          onChange={handleFormChange}
+                          placeholder="Tu apellido"
+                          className="profile-input"
+                        />
+                      </div>
                     </div>
-                    <div className="form-group">
-                      <label>Teléfono</label>
-                      <input
-                        type="tel"
-                        name="phone"
-                        value={editForm.phone}
-                        onChange={handleFormChange}
-                        placeholder="Tu número de teléfono"
-                      />
+                    
+                    <div className="profile-form-row">
+                      <div className="profile-form-group">
+                        <label>Nombre de usuario</label>
+                        <input
+                          type="text"
+                          name="username"
+                          value={editForm.username}
+                          onChange={handleFormChange}
+                          placeholder="Tu nombre de usuario"
+                          className="profile-input"
+                        />
+                      </div>
+                      <div className="profile-form-group">
+                        <label>Teléfono</label>
+                        <input
+                          type="tel"
+                          name="phone"
+                          value={editForm.phone}
+                          onChange={handleFormChange}
+                          placeholder="Tu número de teléfono"
+                          className="profile-input"
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                <div className="form-section">
-                  <h3>🎓 Información Académica</h3>
-                  <div className="form-group">
-                    <label>Especialización</label>
-                    <input
-                      type="text"
-                      name="specialty"
-                      value={editForm.specialty}
-                      onChange={handleFormChange}
-                      placeholder="Tu área de especialización (ej: Matemáticas avanzadas, Física, Química)"
-                    />
+                {/* Información Académica */}
+                <div className="profile-card">
+                  <div className="profile-card-header">
+                    <h3>🎓 Información Académica</h3>
                   </div>
-                  
-                  <div className="form-group">
-                    <label>Títulos y Grados</label>
-                    <textarea
-                      name="degrees"
-                      value={editForm.degrees}
-                      onChange={handleFormChange}
-                      placeholder="Títulos académicos obtenidos (ej: Ingeniero Civil, Licenciado en Matemáticas, Maestría en Física)"
-                      rows="3"
-                    />
-                  </div>
-                  
-                  <div className="form-group">
-                    <label>Experiencia Docente</label>
-                    <textarea
-                      name="experience"
-                      value={editForm.experience}
-                      onChange={handleFormChange}
-                      placeholder="Descripción de tu experiencia como tutor (ej: 5 años enseñando matemáticas a nivel universitario, experiencia con estudiantes de Bachillerato)"
-                      rows="3"
-                    />
-                  </div>
-                  
-                  <div className="form-group">
-                    <label>Certificaciones</label>
-                    <input
-                      type="text"
-                      name="certifications"
-                      value={editForm.certifications}
-                      onChange={handleFormChange}
-                      placeholder="Certificaciones relevantes (ej: Certificado en enseñanza de matemáticas, TOEFL, etc.)"
-                    />
-                  </div>
-                  
-                  <div className="form-group">
-                    <label>Biografía Académica</label>
-                    <textarea
-                      name="bio"
-                      value={editForm.bio}
-                      onChange={handleFormChange}
-                      placeholder="Cuéntanos sobre tu formación y pasión por la enseñanza"
-                      rows="4"
-                    />
+                  <div className="profile-card-body">
+                    <div className="profile-form-group">
+                      <label>Especialización</label>
+                      <input
+                        type="text"
+                        name="specialty"
+                        value={editForm.specialty}
+                        onChange={handleFormChange}
+                        placeholder="Tu área de especialización"
+                        className="profile-input"
+                      />
+                    </div>
+                    
+                    <div className="profile-form-group">
+                      <label>Títulos y Grados</label>
+                      <textarea
+                        name="degrees"
+                        value={editForm.degrees}
+                        onChange={handleFormChange}
+                        placeholder="Títulos académicos obtenidos"
+                        rows="3"
+                        className="profile-input"
+                      />
+                    </div>
+                    
+                    <div className="profile-form-group">
+                      <label>Experiencia Docente</label>
+                      <textarea
+                        name="experience"
+                        value={editForm.experience}
+                        onChange={handleFormChange}
+                        placeholder="Descripción de tu experiencia como tutor"
+                        rows="3"
+                        className="profile-input"
+                      />
+                    </div>
+                    
+                    <div className="profile-form-group">
+                      <label>Certificaciones</label>
+                      <input
+                        type="text"
+                        name="certifications"
+                        value={editForm.certifications}
+                        onChange={handleFormChange}
+                        placeholder="Certificaciones relevantes"
+                        className="profile-input"
+                      />
+                    </div>
+                    
+                    <div className="profile-form-group">
+                      <label>Biografía Académica</label>
+                      <textarea
+                        name="bio"
+                        value={editForm.bio}
+                        onChange={handleFormChange}
+                        placeholder="Cuéntanos sobre tu formación y pasión por la enseñanza"
+                        rows="4"
+                        className="profile-input"
+                      />
+                    </div>
                   </div>
                 </div>
               </form>
             ) : (
-              <div className="profile-details"  style={{position: 'relative', bottom: '330px',borderRadius: '12px',padding: '20px', background: '#F8F9FA', border: '1px solid #eee' }}>
-                <div className="details-section" >
-                  <h3>👤 Información Personal</h3>
-                  <div className="details-grid">
-                    <div className="detail-item">
-                      <span className="detail-label">Nombre:</span>
-                      <span className="detail-value">{user.personalInfo?.firstName || 'No especificado'}</span>
+              <>
+                {/* Información Personal */}
+                <div className="profile-card">
+                  <div className="profile-card-header">
+                    <h3>👤 Información Personal</h3>
+                  </div>
+                  <div className="profile-card-body">
+                    <div className="profile-detail-item">
+                      <span className="profile-detail-label">Nombre:</span>
+                      <span className="profile-detail-value">{user.personalInfo?.firstName || 'No especificado'}</span>
                     </div>
-                    <div className="detail-item">
-                      <span className="detail-label">Apellido:</span>
-                      <span className="detail-value">{user.personalInfo?.lastName || 'No especificado'}</span>
+                    <div className="profile-detail-item">
+                      <span className="profile-detail-label">Apellido:</span>
+                      <span className="profile-detail-value">{user.personalInfo?.lastName || 'No especificado'}</span>
                     </div>
-                    <div className="detail-item">
-                      <span className="detail-label">Usuario:</span>
-                      <span className="detail-value">{user.personalInfo?.username || 'No especificado'}</span>
+                    <div className="profile-detail-item">
+                      <span className="profile-detail-label">Usuario:</span>
+                      <span className="profile-detail-value">{user.personalInfo?.username || 'No especificado'}</span>
                     </div>
-                    <div className="detail-item">
-                      <span className="detail-label">Teléfono:</span>
-                      <span className="detail-value">{user.personalInfo?.phone || 'No especificado'}</span>
+                    <div className="profile-detail-item">
+                      <span className="profile-detail-label">Teléfono:</span>
+                      <span className="profile-detail-value">{user.personalInfo?.phone || 'No especificado'}</span>
                     </div>
                   </div>
                 </div>
 
-                <div className="details-section">
-                  <h3>📧 Información de Contacto</h3>
-                  <div className="details-grid">
-                    <div className="detail-item">
-                      <span className="detail-label">Correo principal:</span>
-                      <span className="detail-value">{user.email}</span>
-                    </div>
-                    {user.personalInfo?.email && user.personalInfo.email !== user.email && (
-                      <div className="detail-item">
-                        <span className="detail-label">Correo alterno:</span>
-                        <span className="detail-value">{user.personalInfo.email}</span>
-                      </div>
-                    )}
+                {/* Información Académica */}
+                <div className="profile-card">
+                  <div className="profile-card-header">
+                    <h3>🎓 Información Académica</h3>
                   </div>
-                </div>
-
-                <div className="details-section">
-                  <h3>🎓 Información Académica</h3>
-                  <div className="details-grid">
-                    <div className="detail-item">
-                      <span className="detail-label">Especialización:</span>
-                      <span className="detail-value">{user.personalInfo?.specialty || 'No especificada'}</span>
+                  <div className="profile-card-body">
+                    <div className="profile-detail-item">
+                      <span className="profile-detail-label">Especialización:</span>
+                      <span className="profile-detail-value">{user.personalInfo?.specialty || 'No especificada'}</span>
                     </div>
-                    <div className="detail-item">
-                      <span className="detail-label">Títulos y Grados:</span>
-                      <span className="detail-value">{user.personalInfo?.degrees || 'No especificados'}</span>
+                    <div className="profile-detail-item">
+                      <span className="profile-detail-label">Títulos y Grados:</span>
+                      <span className="profile-detail-value">{user.personalInfo?.degrees || 'No especificados'}</span>
                     </div>
-                    <div className="detail-item">
-                      <span className="detail-label">Experiencia Docente:</span>
-                      <span className="detail-value">{user.personalInfo?.experience || 'No especificada'}</span>
+                    <div className="profile-detail-item">
+                      <span className="profile-detail-label">Experiencia Docente:</span>
+                      <span className="profile-detail-value">{user.personalInfo?.experience || 'No especificada'}</span>
                     </div>
-                    <div className="detail-item">
-                      <span className="detail-label">Certificaciones:</span>
-                      <span className="detail-value">{user.personalInfo?.certifications || 'No especificadas'}</span>
+                    <div className="profile-detail-item">
+                      <span className="profile-detail-label">Certificaciones:</span>
+                      <span className="profile-detail-value">{user.personalInfo?.certifications || 'No especificadas'}</span>
                     </div>
-                    <div className="detail-item">
-                      <span className="detail-label">Biografía Académica:</span>
-                      <span className="detail-value">{user.personalInfo?.bio || 'No especificada'}</span>
+                    <div className="profile-detail-item">
+                      <span className="profile-detail-label">Biografía Académica:</span>
+                      <span className="profile-detail-value">{user.personalInfo?.bio || 'No especificada'}</span>
                     </div>
                   </div>
                 </div>
 
-                <div className="details-section">
-                  <h3>🔐 Información de Cuenta</h3>
-                  <div className="details-grid">
-                    <div className="detail-item">
-                      <span className="detail-label">Rol:</span>
-                      <span className="detail-value">
-                        <span className={`role-badge ${user.role}`}>
+                {/* Información de Cuenta */}
+                <div className="profile-card">
+                  <div className="profile-card-header">
+                    <h3>🔐 Información de Cuenta</h3>
+                  </div>
+                  <div className="profile-card-body">
+                    <div className="profile-detail-item">
+                      <span className="profile-detail-label">Correo electrónico:</span>
+                      <span className="profile-detail-value">{user.email}</span>
+                    </div>
+                    <div className="profile-detail-item">
+                      <span className="profile-detail-label">Rol:</span>
+                      <span className="profile-detail-value">
+                        <span className={`profile-role-badge profile-role-${user.role}`}>
                           {getRoleIcon(user.role)} {getRoleLabel(user.role)}
                         </span>
                       </span>
                     </div>
-                    <div className="detail-item">
-                      <span className="detail-label">Estado de la cuenta:</span>
-                      <span className="detail-value">
-                        <span className="status-badge active">✅ Activa</span>
+                    <div className="profile-detail-item">
+                      <span className="profile-detail-label">Estado:</span>
+                      <span className="profile-detail-value">
+                        <span className="profile-status-badge profile-status-active">✅ Activa</span>
                       </span>
                     </div>
-                    <div className="detail-item">
-                      <span className="detail-label">Última actualización:</span>
-                      <span className="detail-value">
+                    <div className="profile-detail-item">
+                      <span className="profile-detail-label">Última actualización:</span>
+                      <span className="profile-detail-value">
                         {user.updatedAt ? new Date(user.updatedAt).toLocaleDateString('es-ES', {
                           year: 'numeric',
                           month: 'long',
@@ -615,24 +613,24 @@ const TutorProfile = () => {
                     </div>
                   </div>
                 </div>
-              </div>
+              </>
             )}
           </div>
 
           {/* Modal para cambiar avatar */}
           {showAvatarModal && (
-            <div className="modal-overlay" onClick={() => setShowAvatarModal(false)}>
-              <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-                <div className="modal-header">
+            <div className="profile-modal-overlay" onClick={() => setShowAvatarModal(false)}>
+              <div className="profile-modal-content" onClick={(e) => e.stopPropagation()}>
+                <div className="profile-modal-header">
                   <h3>📷 Cambiar Foto de Perfil</h3>
                   <button 
-                    className="modal-close-btn"
+                    className="profile-modal-close-btn"
                     onClick={() => setShowAvatarModal(false)}
                   >
                     ✕
                   </button>
                 </div>
-                <div className="modal-body">
+                <div className="profile-modal-body">
                   <AvatarUploader 
                     onAvatarUpdate={handleAvatarUpdate}
                     currentAvatar={user.personalInfo?.avatar}

@@ -1,0 +1,123 @@
+/* ===== Página Tutores (estudiante) - Estilos alineados con el dashboard ===== */
+
+.tutors-page {
+  display: flex;
+  flex-direction: column;
+  padding: 24px 32px;
+  max-width: 1200px;
+  margin: 0 auto;
+  gap: 24px;
+}
+
+.tutors-header {
+  flex-shrink: 0;
+}
+
+.tutors-header h2 {
+  margin: 0 0 4px 0;
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #1a1d21;
+  letter-spacing: -0.02em;
+}
+
+.tutors-header p {
+  margin: 0 0 12px 0;
+  font-size: 1rem;
+  color: #6b7280;
+}
+
+.tutors-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 16px 20px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e5e7eb;
+}
+
+.tutors-filters {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.tutors-search {
+  width: 260px;
+  padding: 10px 14px;
+  font-size: 0.9375rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #f9fafb;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.tutors-search::placeholder {
+  color: #9ca3af;
+}
+
+.tutors-search:hover {
+  background: #fff;
+}
+
+.tutors-search:focus {
+  outline: none;
+  border-color: #2563eb;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.tutors-stats {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.tutors-stats .stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 72px;
+}
+
+.tutors-stats .stat-number {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #1a1d21;
+}
+
+.tutors-stats .stat-label {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+/* Grid de tutores reutiliza .educators-grid / .educator-card de index.css */
+
+@media (max-width: 768px) {
+  .tutors-page {
+    padding: 16px;
+  }
+
+  .tutors-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .tutors-filters {
+    width: 100%;
+  }
+
+  .tutors-search {
+    width: 100%;
+  }
+
+  .tutors-stats {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+}
+

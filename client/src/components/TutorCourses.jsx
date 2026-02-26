@@ -334,6 +334,16 @@ const TutorCourses = () => {
                         </div>
                       )}
                     </dl>
+
+                    <div className="cursos-page__card-actions">
+                      <button
+                        type="button"
+                        className="cursos-page__btn-outline"
+                        onClick={() => window.location.href = `/dashboard/mensajes?userId=${course.studentId}`}
+                      >
+                        Enviar mensaje
+                      </button>
+                    </div>
                   </article>
                 );
               })}

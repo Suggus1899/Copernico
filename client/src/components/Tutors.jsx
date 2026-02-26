@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import apiClient from '../utils/axiosConfig';
 import './Dashboard.css';
+import './Tutors.css';
 
 const Tutors = () => {
   const [tutors, setTutors] = useState([]);
@@ -128,8 +129,9 @@ const Tutors = () => {
   };
 
   const handleSendMessage = (tutor) => {
-    // Implementar funcionalidad de mensajería
-    alert(`Función de mensajería con ${tutor.personalInfo?.firstName} ${tutor.personalInfo?.lastName} próximamente disponible`);
+    if (!tutor?._id) return;
+    // Redirigir a la vista de mensajes con el tutor seleccionado
+    window.location.href = `/dashboard/mensajes?userId=${tutor._id}`;
   };
 
   const handleViewProfile = (tutor) => {
@@ -140,7 +142,7 @@ const Tutors = () => {
 
   return (
     <div className="tutors-page">
-      <div className="tutors-header" style={{position: 'relative', top:'15%'}}>
+      <header className="tutors-header">
         <h2>👨‍🏫 Tutores Disponibles</h2>
         <p>Encuentra tutores especializados para reforzar tus conocimientos académicos</p>
         <div className="info-banner">
@@ -149,20 +151,42 @@ const Tutors = () => {
             <strong>Nota:</strong> Solo se muestran tutores disponibles. Los tutores con los que ya tienes citas confirmadas no aparecen en esta lista.
           </div>
         </div>
-      </div>
+      </header>
 
-      {/* Filtros */}
-      <div className="tutors-filters" style={{position: 'relative', top: '-3%', left: '110%'}}>
-        <div className="search-group">
+      {/* Filtros + estadísticas */}
+      <section className="tutors-toolbar">
+        <div className="tutors-filters">
           <input
             type="text"
             placeholder="Buscar por nombre, especialidad..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="search-input"
+            className="tutors-search"
           />
         </div>
-      </div>
+        <div className="tutors-stats">
+          <div className="stat-item">
+            <span className="stat-number">{filteredTutors.length}</span>
+            <span className="stat-label">Tutores encontrados</span>
+          </div>
+          <div className="stat-item">
+            <span className="stat-number">{tutors.length}</span>
+            <span className="stat-label">Tutores disponibles</span>
+          </div>
+          <div className="stat-item">
+            <span className="stat-number">
+              {tutors.filter(t => t.tutorProfile?.available).length}
+            </span>
+            <span className="stat-label">Disponibles ahora</span>
+          </div>
+          <div className="stat-item">
+            <span className="stat-number">
+              {tutors.reduce((sum, t) => sum + (t.tutorProfile?.specialties?.length || 0), 0)}
+            </span>
+            <span className="stat-label">Especialidades totales</span>
+          </div>
+        </div>
+      </section>
 
       {error && <div className="alert alert-danger">{error}</div>}
 
@@ -173,30 +197,6 @@ const Tutors = () => {
         </div>
       ) : (
         <>
-          {/* Estadísticas */}
-          <div className="educators-stats" style={{display: 'flex', flexDirection: 'column', gap: '20px',position: 'relative', left: '165%', width: '40%', top: '-125px'}}>
-            <div className="stat-item">
-              <span className="stat-number">{filteredTutors.length}</span>
-              <span className="stat-label">Tutores encontrados</span>
-            </div>
-            <div className="stat-item">
-              <span className="stat-number">{tutors.length}</span>
-              <span className="stat-label">Tutores disponibles</span>
-            </div>
-            <div className="stat-item">
-              <span className="stat-number">
-                {tutors.filter(t => t.tutorProfile?.available).length}
-              </span>
-              <span className="stat-label">Disponibles ahora</span>
-            </div>
-            <div className="stat-item">
-              <span className="stat-number">
-                {tutors.reduce((sum, t) => sum + (t.tutorProfile?.specialties?.length || 0), 0)}
-              </span>
-              <span className="stat-label">Especialidades totales</span>
-            </div>
-          </div>
-
           <div className="educators-grid">
             {filteredTutors.map((tutor) => {
               const profile = tutor.tutorProfile;
@@ -284,12 +284,6 @@ const Tutors = () => {
                       onClick={() => handleViewProfile(tutor)}
                     >
                       {selectedTutor?._id === tutor._id ? '✕ Menos info' : 'ℹ️ Ver perfil'}
-                    </button>
-                    <button
-                      className="btn btn-outline"
-                      onClick={() => handleSendMessage(tutor)}
-                    >
-                      💬 Mensaje
                     </button>
                     <button
                       className="btn btn-primary"
@@ -515,7 +509,7 @@ const Tutors = () => {
           </div>
 
           {filteredTutors.length === 0 && !loading && (
-            <div className="empty-state" style={{position: 'relative', top: '-35%'}}>
+            <div className="empty-state">
               <div className="empty-icon">👨‍🏫</div>
               <h3>No se encontraron tutores disponibles</h3>
               {searchTerm ? (

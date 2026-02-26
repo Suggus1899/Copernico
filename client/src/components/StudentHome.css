@@ -1,0 +1,311 @@
+/* ===== Página Home Estudiante - Estilos profesionales ===== */
+
+/* Sobrescribir el posicionamiento problemático del dashboard-main */
+.dashboard-main:has(.student-home) {
+  position: static !important;
+  bottom: auto !important;
+  display: block !important;
+  grid-template-columns: none !important;
+}
+
+.student-home {
+  display: flex;
+  flex-direction: column;
+  padding: 24px 32px;
+  max-width: 1200px;
+  margin: 0 auto;
+  gap: 32px;
+  min-height: calc(100vh - 180px);
+}
+
+/* Header */
+.student-home__header {
+  text-align: center;
+  padding: 20px 0;
+}
+
+.student-home__title {
+  margin: 0 0 8px 0;
+  font-size: 2.25rem;
+  font-weight: 700;
+  color: #1a1d21;
+  letter-spacing: -0.02em;
+  background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.student-home__subtitle {
+  margin: 0;
+  font-size: 1.125rem;
+  color: #6b7280;
+}
+
+/* Welcome Card */
+.student-home__welcome {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 40px 32px;
+  background: linear-gradient(135deg, #eff6ff 0%, #f5f3ff 100%);
+  border-radius: 16px;
+  border: 1px solid #e0e7ff;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.08);
+}
+
+.student-home__welcome-icon {
+  font-size: 4rem;
+  margin-bottom: 16px;
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.student-home__welcome-title {
+  margin: 0 0 12px 0;
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #1a1d21;
+}
+
+.student-home__welcome-text {
+  margin: 0;
+  font-size: 1.0625rem;
+  color: #4b5563;
+  line-height: 1.6;
+  max-width: 700px;
+}
+
+/* Section Title */
+.student-home__section-title {
+  margin: 0 0 20px 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1a1d21;
+}
+
+/* Quick Links Grid */
+.student-home__quick-links {
+  display: flex;
+  flex-direction: column;
+}
+
+.student-home__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 20px;
+}
+
+.student-home__card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 24px;
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.student-home__card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--card-color, #2563eb);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.3s ease;
+}
+
+.student-home__card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+  border-color: var(--card-color, #2563eb);
+}
+
+.student-home__card:hover::before {
+  transform: scaleX(1);
+}
+
+.student-home__card-icon {
+  font-size: 2.5rem;
+  margin-bottom: 12px;
+  transition: transform 0.3s ease;
+}
+
+.student-home__card:hover .student-home__card-icon {
+  transform: scale(1.1);
+}
+
+.student-home__card-title {
+  margin: 0 0 8px 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1a1d21;
+}
+
+.student-home__card-description {
+  margin: 0 0 16px 0;
+  font-size: 0.9375rem;
+  color: #6b7280;
+  line-height: 1.5;
+  flex: 1;
+}
+
+.student-home__card-arrow {
+  align-self: flex-end;
+  font-size: 1.25rem;
+  color: var(--card-color, #2563eb);
+  font-weight: 600;
+  transition: transform 0.3s ease;
+}
+
+.student-home__card:hover .student-home__card-arrow {
+  transform: translateX(4px);
+}
+
+/* Tips Section */
+.student-home__tips {
+  display: flex;
+  flex-direction: column;
+  padding: 32px;
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.student-home__tips-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+}
+
+.student-home__tip {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 20px;
+  background: #f9fafb;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  transition: all 0.2s ease;
+}
+
+.student-home__tip:hover {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+}
+
+.student-home__tip-number {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
+  border-radius: 50%;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+}
+
+.student-home__tip-content h4 {
+  margin: 0 0 6px 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1a1d21;
+}
+
+.student-home__tip-content p {
+  margin: 0;
+  font-size: 0.9375rem;
+  color: #6b7280;
+  line-height: 1.5;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .student-home {
+    padding: 16px;
+    gap: 24px;
+  }
+
+  .student-home__title {
+    font-size: 1.75rem;
+  }
+
+  .student-home__subtitle {
+    font-size: 1rem;
+  }
+
+  .student-home__welcome {
+    padding: 32px 20px;
+  }
+
+  .student-home__welcome-icon {
+    font-size: 3rem;
+  }
+
+  .student-home__welcome-title {
+    font-size: 1.5rem;
+  }
+
+  .student-home__welcome-text {
+    font-size: 1rem;
+  }
+
+  .student-home__section-title {
+    font-size: 1.25rem;
+  }
+
+  .student-home__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .student-home__tips {
+    padding: 24px 20px;
+  }
+
+  .student-home__tips-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .student-home__card {
+    padding: 20px;
+  }
+
+  .student-home__card-icon {
+    font-size: 2rem;
+  }
+
+  .student-home__tip {
+    padding: 16px;
+  }
+
+  .student-home__tip-number {
+    width: 36px;
+    height: 36px;
+    font-size: 1.125rem;
+  }
+}

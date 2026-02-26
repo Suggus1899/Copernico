@@ -98,23 +98,23 @@
 }
 /* Notification Badge Styles */
 .notification-badge {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  background: #dc3545;
+  position: relative;
+  background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
   color: white;
-  border-radius: 50%;
-  min-width: 18px;
-  height: 18px;
-  font-size: 10px;
+  border-radius: 12px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  font-size: 11px;
   font-weight: bold;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   line-height: 1;
-  z-index: 10;
+  margin-left: 6px;
   animation: pulse 2s infinite;
-  box-shadow: 0 2px 4px rgba(220, 53, 69, 0.3);
+  box-shadow: 0 2px 6px rgba(220, 53, 69, 0.4);
+  border: 2px solid white;
 }
 
 .menu-link {
@@ -126,7 +126,7 @@
     box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7);
   }
   70% {
-    box-shadow: 0 0 0 10px rgba(220, 53, 69, 0);
+    box-shadow: 0 0 0 8px rgba(220, 53, 69, 0);
   }
   100% {
     box-shadow: 0 0 0 0 rgba(220, 53, 69, 0);
@@ -135,24 +135,38 @@
 
 /* Notification badge hover effect */
 .menu-link:hover .notification-badge {
-  background: #c82333;
+  background: linear-gradient(135deg, #c82333 0%, #bd2130 100%);
   transform: scale(1.1);
   transition: all 0.2s ease;
 }
 
-/* Hide badge when menu item is active */
+/* Badge when menu item is active */
 .menu-link.active .notification-badge {
-  background: #28a745;
+  background: linear-gradient(135deg, #28a745 0%, #218838 100%);
   animation: none;
+  box-shadow: 0 2px 6px rgba(40, 167, 69, 0.4);
 }
 
 /* Responsive notification badge */
-@media (max-width: 768px) {
+@media (max-width: 850px) {
   .notification-badge {
-    top: 4px;
-    right: 4px;
+    position: absolute;
+    top: 8px;
+    right: 8px;
     min-width: 16px;
     height: 16px;
     font-size: 9px;
+    padding: 0 4px;
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .notification-badge {
+    top: 6px;
+    right: 6px;
+    min-width: 14px;
+    height: 14px;
+    font-size: 8px;
   }
 }

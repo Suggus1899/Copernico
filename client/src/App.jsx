@@ -27,6 +27,7 @@ import TutorProgress from "./components/TutorProgress";
 import TutorNotifications from "./components/TutorNotifications";
 import TutorProfile from "./components/TutorProfile";
 import VideoProgressDashboard from "./components/VideoProgressDashboard";
+import Messages from "./components/Messages";
 
 import "./App.css";
 
@@ -75,6 +76,7 @@ function App() {
               <Route path="progreso-videos" element={<VideoProgressDashboard />} />
               <Route path="tutores" element={<Tutors />} />
               <Route path="notas" element={<NotesList />} />
+              <Route path="mensajes" element={<Messages />} />
               <Route path="perfil" element={<UserProfile />} />
               {/* Rutas específicas para tutores */}
               <Route path="cursos-tutor" element={<TutorCourses />} />
@@ -82,6 +84,7 @@ function App() {
               <Route path="agenda" element={<TutorAgenda />} />
               <Route path="videos-tutor" element={<TutorVideos />} />
               <Route path="progreso" element={<TutorProgress />} />
+              <Route path="mensajes-tutor" element={<Messages />} />
               <Route path="notificaciones" element={<TutorNotifications />} />
               <Route path="perfil-tutor" element={<TutorProfile />} />
             </Route>
