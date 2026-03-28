@@ -6,7 +6,7 @@ import { createAccessToken } from "../libs/jwt.js";
 
 export const register = async (req, res) => {
   try {
-    const { username, email, password } = req.body;
+    const { username, email, password, role } = req.body;
 
     const userFound = await User.findOne({ email });
 
@@ -18,11 +18,12 @@ export const register = async (req, res) => {
     // hashing the password
     const passwordHash = await bcrypt.hash(password, 10);
 
-    // creating the user
+    // creating the user (admin role cannot be self-assigned via registration)
     const newUser = new User({
       username,
       email,
       password: passwordHash,
+      role: role === "admin" ? "student" : (role || "student"),
     });
 
     // saving the user in the database
@@ -31,6 +32,7 @@ export const register = async (req, res) => {
     // create access token
     const token = await createAccessToken({
       id: userSaved._id,
+      role: userSaved.role,
     });
 
     res.cookie("token", token, {
@@ -43,6 +45,7 @@ export const register = async (req, res) => {
       id: userSaved._id,
       username: userSaved.username,
       email: userSaved.email,
+      role: userSaved.role,
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -69,6 +72,7 @@ export const login = async (req, res) => {
     const token = await createAccessToken({
       id: userFound._id,
       username: userFound.username,
+      role: userFound.role,
     });
 
     res.cookie("token", token, {
@@ -81,6 +85,7 @@ export const login = async (req, res) => {
       id: userFound._id,
       username: userFound.username,
       email: userFound.email,
+      role: userFound.role,
     });
   } catch (error) {
     return res.status(500).json({ message: error.message });
@@ -101,6 +106,7 @@ export const verifyToken = async (req, res) => {
       id: userFound._id,
       username: userFound.username,
       email: userFound.email,
+      role: userFound.role,
     });
   });
 };

@@ -14,6 +14,7 @@ function Register() {
     formState: { errors },
   } = useForm({
     resolver: zodResolver(registerSchema),
+    defaultValues: { role: "student" },
   });
   const navigate = useNavigate();
 
@@ -76,6 +77,20 @@ function Register() {
           {errors.confirmPassword?.message && (
             <p className="text-red-500">{errors.confirmPassword?.message}</p>
           )}
+
+          <Label htmlFor="role">Role:</Label>
+          <select
+            id="role"
+            className="w-full bg-zinc-700 text-white px-4 py-2 rounded-md my-2"
+            {...register("role")}
+          >
+            <option value="student">Student</option>
+            <option value="tutor">Tutor</option>
+          </select>
+          {errors.role?.message && (
+            <p className="text-red-500">{errors.role?.message}</p>
+          )}
+
           <Button>Submit</Button>
         </form>
         <p>

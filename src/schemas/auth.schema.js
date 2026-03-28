@@ -18,6 +18,11 @@ export const registerSchema = z.object({
     .min(6, {
       message: "Password must be at least 6 characters",
     }),
+  role: z
+    .enum(["student", "tutor"], {
+      message: "Role must be student or tutor",
+    })
+    .optional(),
 });
 
 export const loginSchema = z.object({
