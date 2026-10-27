@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { APPOINTMENT_STATUSES } from '../models/Appointment.js';
 
-const objectId = z.string().regex(/^[a-f\d]{24}$/i, 'Identificador inválido');
+import { objectId } from './common.js';
 
 /** Fecha ISO 8601 con zona horaria; se devuelve como Date (UTC internamente). */
 const isoDate = z

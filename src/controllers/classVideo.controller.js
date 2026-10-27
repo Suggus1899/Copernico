@@ -1,450 +1,191 @@
-import ClassVideo from "../models/ClassVideo.js";
-import VideoProgress from "../models/VideoProgress.js";
-import multer from 'multer';
-import path from 'path';
-import fs from 'fs';
+import ClassVideo from '../models/ClassVideo.js';
+import VideoProgress from '../models/VideoProgress.js';
+import { AppError } from '../utils/AppError.js';
+import { asyncHandler } from '../utils/asyncHandler.js';
+import { escapeRegex } from '../utils/escapeRegex.js';
+import { parseYouTubeId } from '../utils/youtube.js';
 
-// Configuración de multer para subida de archivos
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    let uploadPath;
-    if (file.fieldname === 'videoFile') {
-      uploadPath = 'uploads/videos/';
-    } else if (file.fieldname === 'thumbnailFile') {
-      uploadPath = 'uploads/thumbnails/';
-    }
-    
-    // Crear directorio si no existe
-    if (!fs.existsSync(uploadPath)) {
-      fs.mkdirSync(uploadPath, { recursive: true });
-      console.log(`📁 Directorio creado: ${uploadPath}`);
-    }
-    
-    cb(null, uploadPath);
-  },
-  filename: (req, file, cb) => {
-    // Generar nombre único para evitar conflictos
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
-  }
+const AUTHOR_FIELDS = 'personalInfo.firstName personalInfo.lastName personalInfo.avatar';
+
+const isAdmin = (user) => user.role === 'admin';
+const isOwner = (user, video) => String(video.uploadedBy?._id ?? video.uploadedBy) === user.id;
+const canManage = (user, video) => isAdmin(user) || isOwner(user, video);
+
+/**
+ * Filtro Mongo equivalente a `ClassVideo#canAccess`: el propietario ve sus vídeos
+ * (también archivados); el resto solo los publicados que puede ver.
+ */
+const visibleTo = (user) => {
+  if (isAdmin(user)) return {};
+  return {
+    $or: [
+      { uploadedBy: user.id },
+      {
+        status: 'published',
+        $or: [{ visibility: { $in: ['public', 'students'] } }, { allowedStudents: user.id }]
+      }
+    ]
+  };
+};
+
+const subjectFilter = (subject) => new RegExp(escapeRegex(subject), 'i');
+
+const pageInfo = (page, limit, total) => ({
+  page,
+  limit,
+  total,
+  pages: Math.ceil(total / limit)
 });
 
-const fileFilter = (req, file, cb) => {
-  if (file.fieldname === 'videoFile') {
-    // Permitir solo archivos de video
-    if (file.mimetype.startsWith('video/')) {
-      cb(null, true);
-    } else {
-      cb(new Error('Solo se permiten archivos de video'), false);
-    }
-  } else if (file.fieldname === 'thumbnailFile') {
-    // Permitir solo imágenes
-    if (file.mimetype.startsWith('image/')) {
-      cb(null, true);
-    } else {
-      cb(new Error('Solo se permiten archivos de imagen'), false);
-    }
-  } else {
-    cb(new Error('Tipo de archivo no permitido'), false);
+const progressSummary = (progress) => (progress ? {
+  progressPercentage: progress.progressPercentage,
+  isCompleted: progress.isCompleted,
+  watchTime: progress.watchTime,
+  status: progress.status,
+  lastWatchedAt: progress.lastWatchedAt
+} : null);
+
+/** Carga un vídeo que el usuario puede ver; si no, responde 404 para no revelar su existencia. */
+const findVisibleVideo = async (id, user) => {
+  const video = await ClassVideo.findById(id);
+  if (!video || !video.canAccess(user)) {
+    throw new AppError(404, 'NOT_FOUND', 'Vídeo no encontrado');
   }
+  return video;
 };
 
-const upload = multer({
-  storage: storage,
-  fileFilter: fileFilter,
-  limits: {
-    fileSize: 500 * 1024 * 1024, // 500MB para videos
+/** Carga un vídeo que el usuario puede gestionar (propietario o admin). */
+const findManageableVideo = async (id, user) => {
+  const video = await findVisibleVideo(id, user);
+  if (!canManage(user, video)) {
+    throw new AppError(403, 'FORBIDDEN', 'No puedes modificar este vídeo');
   }
+  return video;
+};
+
+export const getClassVideos = asyncHandler(async (req, res) => {
+  const { subject, status, visibility, uploadedBy, tag, page, limit } = req.query;
+
+  const filter = { ...visibleTo(req.user) };
+  if (subject) filter.subject = subjectFilter(subject);
+  if (status) filter.status = status;
+  if (visibility) filter.visibility = visibility;
+  if (uploadedBy) filter.uploadedBy = uploadedBy;
+  if (tag) filter.tags = tag.toLowerCase();
+
+  const [videos, total] = await Promise.all([
+    ClassVideo.find(filter)
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .populate('uploadedBy', AUTHOR_FIELDS),
+    ClassVideo.countDocuments(filter)
+  ]);
+
+  res.json({ success: true, data: videos, pagination: pageInfo(page, limit, total) });
 });
 
-// Middleware para subida múltiple
-export const uploadVideoFiles = upload.fields([
-  { name: 'videoFile', maxCount: 1 },
-  { name: 'thumbnailFile', maxCount: 1 }
-]);
+export const getPopularClassVideos = asyncHandler(async (req, res) => {
+  const { subject, limit } = req.query;
 
-export const getClassVideos = async (req, res, next) => {
-  try {
-    const {
-      subject,
-      status = 'published',
-      uploadedBy,
-      visibility,
-      tags,
-      page = 1,
-      limit = 20
-    } = req.query;
+  const filter = { ...visibleTo(req.user), status: 'published' };
+  if (subject) filter.subject = subjectFilter(subject);
 
-    const filter = { status };
+  const videos = await ClassVideo.find(filter)
+    .sort({ views: -1, likes: -1 })
+    .limit(limit)
+    .populate('uploadedBy', AUTHOR_FIELDS);
 
-    // Filtros básicos
-    if (subject) filter.subject = new RegExp(subject, 'i');
-    if (uploadedBy) filter.uploadedBy = uploadedBy;
-    if (visibility) filter.visibility = visibility;
+  res.json({ success: true, data: videos });
+});
 
-    // Filtro por tags
-    if (tags) {
-      const tagArray = tags.split(',').map(tag => tag.trim().toLowerCase());
-      filter.tags = { $in: tagArray };
-    }
+export const getMyClassVideos = asyncHandler(async (req, res) => {
+  const { status, page, limit } = req.query;
 
-    // Filtrar por acceso del usuario
-    if (req.user.role === 'student') {
-      filter.$or = [
-        { visibility: 'public' },
-        { visibility: 'students' },
-        { uploadedBy: req.user.id },
-        { allowedStudents: req.user.id }
-      ];
-    } else if (['tutor'].includes(req.user.role)) {
-      filter.$or = [
-        { visibility: { $in: ['public', 'students'] } },
-        { uploadedBy: req.user.id }
-      ];
-    }
+  const filter = { uploadedBy: req.user.id };
+  if (status) filter.status = status;
 
-    const options = {
-      page: parseInt(page),
-      limit: parseInt(limit),
-      sort: { createdAt: -1 }
-    };
+  const [videos, total] = await Promise.all([
+    ClassVideo.find(filter).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit),
+    ClassVideo.countDocuments(filter)
+  ]);
 
-    const videos = await ClassVideo.find(filter)
-      .populate('uploadedBy', 'personalInfo email tutorProfile advisorProfile')
-      .populate('allowedStudents', 'personalInfo email')
-      .populate('likedBy', 'personalInfo')
-      .populate('updatedBy', 'personalInfo')
-      .limit(options.limit * 1)
-      .skip((options.page - 1) * options.limit)
-      .sort(options.sort);
+  res.json({ success: true, data: videos, pagination: pageInfo(page, limit, total) });
+});
 
-    const total = await ClassVideo.countDocuments(filter);
+export const getClassVideoById = asyncHandler(async (req, res) => {
+  const video = await findVisibleVideo(req.params.id, req.user);
 
-    res.json({
-      success: true,
-      data: videos,
-      pagination: {
-        page: options.page,
-        limit: options.limit,
-        total,
-        pages: Math.ceil(total / options.limit)
-      }
-    });
-  } catch (error) {
-    next(error);
+  // Contador de vistas atómico; el documento de respuesta refleja el nuevo valor.
+  await ClassVideo.updateOne({ _id: video._id }, { $inc: { views: 1 } });
+  video.views += 1;
+
+  await video.populate([
+    { path: 'uploadedBy', select: AUTHOR_FIELDS },
+    { path: 'updatedBy', select: AUTHOR_FIELDS }
+  ]);
+
+  const data = {
+    ...video.toObject(),
+    likedByMe: video.likedBy.some((id) => String(id) === req.user.id)
+  };
+  if (!canManage(req.user, video)) {
+    delete data.allowedStudents;
+    delete data.likedBy;
   }
-};
 
-export const getClassVideoById = async (req, res, next) => {
-  try {
-    const video = await ClassVideo.findById(req.params.id)
-      .populate('uploadedBy', 'personalInfo email tutorProfile advisorProfile')
-      .populate('allowedStudents', 'personalInfo email')
-      .populate('likedBy', 'personalInfo')
-      .populate('updatedBy', 'personalInfo');
-
-    if (!video) {
-      const error = new Error("Class video not found");
-      error.status = 404;
-      throw error;
-    }
-
-    // Verificar permisos de acceso
-    if (!video.canAccess(req.user)) {
-      const error = new Error("Access denied to this class video");
-      error.status = 403;
-      throw error;
-    }
-
-    // Incrementar vistas
-    await video.incrementViews();
-
-    // Si es un estudiante, obtener su progreso en este video
-    let videoProgress = null;
-    if (req.user.role === 'student') {
-      videoProgress = await VideoProgress.findOne({
-        studentId: req.user.id,
-        videoId: req.params.id
-      });
-    }
-
-    res.json({
-      success: true,
-      data: {
-        ...video.toObject(),
-        progress: videoProgress ? {
-          progressPercentage: videoProgress.progressPercentage,
-          isCompleted: videoProgress.isCompleted,
-          watchTime: videoProgress.watchTime,
-          status: videoProgress.status,
-          lastWatchedAt: videoProgress.lastWatchedAt
-        } : null
-      }
-    });
-  } catch (error) {
-    next(error);
+  if (req.user.role === 'student') {
+    const progress = await VideoProgress.findOne({ studentId: req.user.id, videoId: video._id });
+    data.progress = progressSummary(progress);
   }
-};
 
-export const createClassVideo = async (req, res, next) => {
-  try {
-    console.log('=== CREATE VIDEO REQUEST ===');
-    console.log('User:', req.user);
-    console.log('Body:', req.body);
-    console.log('Files:', req.files);
+  res.json({ success: true, data });
+});
 
-    const videoData = { ...req.body };
+export const createClassVideo = asyncHandler(async (req, res) => {
+  const { youtubeUrl, ...fields } = req.body;
 
-    // Asignar uploadedBy al usuario actual
-    videoData.uploadedBy = req.user.id;
+  const video = await ClassVideo.create({
+    ...fields,
+    youtubeId: parseYouTubeId(youtubeUrl),
+    uploadedBy: req.user.id
+  });
 
-    // Verificar permisos para subir videos
-    if (!['tutor', 'admin'].includes(req.user.role)) {
-      console.log('User role not allowed:', req.user.role);
-      const error = new Error("Only tutors and admins can upload class videos");
-      error.status = 403;
-      throw error;
-    }
+  res.status(201).json({ success: true, message: 'Vídeo creado', data: video });
+});
 
-    // Validar que se proporcione una URL de video o un archivo
-    if (!req.body.videoUrl && (!req.files || !req.files.videoFile || !req.files.videoFile[0])) {
-      const error = new Error("Se requiere una URL de video o un archivo de video");
-      error.status = 400;
-      throw error;
-    }
+export const updateClassVideo = asyncHandler(async (req, res) => {
+  const video = await findManageableVideo(req.params.id, req.user);
+  const { youtubeUrl, ...fields } = req.body;
 
-    // Procesar archivos subidos
-    if (req.files) {
-      if (req.files.videoFile && req.files.videoFile[0]) {
-        // Usar URL completa del backend para que el frontend pueda acceder
-        const backendUrl = process.env.BACKEND_URL || 'http://localhost:4002';
-        videoData.videoUrl = `${backendUrl}/uploads/videos/${req.files.videoFile[0].filename}`;
-        videoData.fileSize = req.files.videoFile[0].size;
-        console.log('Video file processed:', req.files.videoFile[0].filename);
-      }
+  video.set(fields);
+  if (youtubeUrl !== undefined) video.youtubeId = parseYouTubeId(youtubeUrl);
+  video.updatedBy = req.user.id;
+  await video.save();
 
-      if (req.files.thumbnailFile && req.files.thumbnailFile[0]) {
-        // Usar URL completa del backend para thumbnails también
-        const backendUrl = process.env.BACKEND_URL || 'http://localhost:4002';
-        videoData.thumbnailUrl = `${backendUrl}/uploads/thumbnails/${req.files.thumbnailFile[0].filename}`;
-        console.log('Thumbnail file processed:', req.files.thumbnailFile[0].filename);
-      }
-    }
+  res.json({ success: true, message: 'Vídeo actualizado', data: video });
+});
 
-    // Si no se subió archivo pero se proporcionó URL, usar la URL proporcionada
-    if (!videoData.videoUrl && req.body.videoUrl) {
-      videoData.videoUrl = req.body.videoUrl.trim();
-      console.log('Using provided video URL:', videoData.videoUrl);
-    }
+export const deleteClassVideo = asyncHandler(async (req, res) => {
+  const video = await findManageableVideo(req.params.id, req.user);
+  await video.deleteOne();
 
-    // Parsear tags si vienen como string
-    if (videoData.tags && typeof videoData.tags === 'string') {
-      try {
-        videoData.tags = JSON.parse(videoData.tags);
-        console.log('Tags parsed:', videoData.tags);
-      } catch (e) {
-        console.log('Could not parse tags, keeping as string');
-        // Si no es JSON, mantener como string y dejar que el modelo lo maneje
-      }
-    }
+  res.json({ success: true, message: 'Vídeo eliminado' });
+});
 
-    // Convertir duration a número si viene como string
-    if (videoData.duration && typeof videoData.duration === 'string') {
-      const durationNum = parseInt(videoData.duration);
-      if (!isNaN(durationNum)) {
-        videoData.duration = durationNum;
-      } else {
-        delete videoData.duration; // Eliminar si no es un número válido
-      }
-    }
-
-    console.log('Final videoData:', videoData);
-
-    const newVideo = new ClassVideo(videoData);
-    const videoSaved = await newVideo.save();
-    console.log('Video saved to database:', videoSaved._id);
-
-    // Populate para la respuesta
-    const populatedVideo = await ClassVideo.findById(videoSaved._id)
-      .populate('uploadedBy', 'personalInfo email tutorProfile advisorProfile')
-      .populate('allowedStudents', 'personalInfo email');
-
-    console.log('Video creation successful');
-
-    res.status(201).json({
-      success: true,
-      message: "Class video uploaded successfully",
-      data: populatedVideo
-    });
-  } catch (error) {
-    console.error('Error in createClassVideo:', error);
-    next(error);
+export const toggleLikeVideo = asyncHandler(async (req, res) => {
+  const video = await findVisibleVideo(req.params.id, req.user);
+  if (isOwner(req.user, video)) {
+    throw new AppError(400, 'OWN_VIDEO', 'No puedes dar like a tu propio vídeo');
   }
-};
 
-export const updateClassVideo = async (req, res, next) => {
-  try {
-    const video = await ClassVideo.findById(req.params.id);
+  await video.toggleLike(req.user.id);
 
-    if (!video) {
-      const error = new Error("Class video not found");
-      error.status = 404;
-      throw error;
+  res.json({
+    success: true,
+    data: {
+      likes: video.likes,
+      likedByMe: video.likedBy.some((id) => String(id) === req.user.id)
     }
-
-    // Verificar permisos - solo uploader o admin puede editar
-    if (video.uploadedBy.toString() !== req.user.id && req.user.role !== 'admin') {
-      const error = new Error("Not authorized to update this video");
-      error.status = 403;
-      throw error;
-    }
-
-    const updateData = {
-      ...req.body,
-      updatedBy: req.user.id
-    };
-
-    const updatedVideo = await ClassVideo.findByIdAndUpdate(
-      req.params.id,
-      updateData,
-      { new: true, runValidators: true }
-    )
-    .populate('uploadedBy', 'personalInfo email tutorProfile advisorProfile')
-    .populate('allowedStudents', 'personalInfo email')
-    .populate('updatedBy', 'personalInfo');
-
-    res.json({
-      success: true,
-      message: "Class video updated successfully",
-      data: updatedVideo
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-export const deleteClassVideo = async (req, res, next) => {
-  try {
-    const video = await ClassVideo.findById(req.params.id);
-
-    if (!video) {
-      const error = new Error("Class video not found");
-      error.status = 404;
-      throw error;
-    }
-
-    // Verificar permisos - solo uploader o admin puede eliminar
-    if (video.uploadedBy.toString() !== req.user.id && req.user.role !== 'admin') {
-      const error = new Error("Not authorized to delete this video");
-      error.status = 403;
-      throw error;
-    }
-
-    await ClassVideo.findByIdAndDelete(req.params.id);
-
-    res.json({
-      success: true,
-      message: "Class video deleted successfully"
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-export const toggleLikeVideo = async (req, res, next) => {
-  try {
-    const video = await ClassVideo.findById(req.params.id);
-
-    if (!video) {
-      const error = new Error("Class video not found");
-      error.status = 404;
-      throw error;
-    }
-
-    // Verificar que el usuario puede acceder al video
-    if (!video.canAccess(req.user)) {
-      const error = new Error("Access denied to this class video");
-      error.status = 403;
-      throw error;
-    }
-
-    // Verificar que el usuario no sea el uploader
-    if (video.uploadedBy.toString() === req.user.id) {
-      const error = new Error("Cannot like your own video");
-      error.status = 400;
-      throw error;
-    }
-
-    await video.toggleLike(req.user.id);
-
-    const updatedVideo = await ClassVideo.findById(req.params.id)
-      .populate('likedBy', 'personalInfo');
-
-    res.json({
-      success: true,
-      message: "Video like toggled successfully",
-      data: {
-        likes: updatedVideo.likes,
-        likedBy: updatedVideo.likedBy,
-        isLiked: updatedVideo.likedBy.some(user => user._id.toString() === req.user.id)
-      }
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-export const getMyClassVideos = async (req, res, next) => {
-  try {
-    const { status } = req.query;
-
-    const filter = { uploadedBy: req.user.id };
-
-    if (status) filter.status = status;
-
-    const videos = await ClassVideo.find(filter)
-      .populate('allowedStudents', 'personalInfo email')
-      .sort({ createdAt: -1 });
-
-    res.json({
-      success: true,
-      data: videos
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-export const getPopularVideos = async (req, res, next) => {
-  try {
-    const { subject, limit = 10 } = req.query;
-
-    const filter = {
-      status: 'published',
-      visibility: { $in: ['public', 'students'] }
-    };
-
-    if (subject) filter.subject = new RegExp(subject, 'i');
-
-    // Filtrar por acceso del usuario
-    if (req.user.role === 'student') {
-      filter.$or = [
-        { visibility: 'public' },
-        { visibility: 'students' },
-        { allowedStudents: req.user.id }
-      ];
-    }
-
-    const videos = await ClassVideo.find(filter)
-      .populate('uploadedBy', 'personalInfo email tutorProfile advisorProfile')
-      .sort({ views: -1, likes: -1 })
-      .limit(parseInt(limit));
-
-    res.json({
-      success: true,
-      data: videos
-    });
-  } catch (error) {
-    next(error);
-  }
-};
+  });
+});

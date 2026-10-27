@@ -1,48 +1,41 @@
 import { Router } from 'express';
 import {
-  getClassVideos,
-  getClassVideoById,
   createClassVideo,
-  updateClassVideo,
   deleteClassVideo,
-  toggleLikeVideo,
+  getClassVideoById,
+  getClassVideos,
   getMyClassVideos,
-  getPopularVideos,
-  uploadVideoFiles
+  getPopularClassVideos,
+  toggleLikeVideo,
+  updateClassVideo
 } from '../controllers/classVideo.controller.js';
+import { authenticateToken } from '../middlewares/auth.middleware.js';
+import { requireRole } from '../middlewares/role.middleware.js';
 import { schemaValidator } from '../middlewares/schemaValidator.js';
 import {
   createClassVideoSchema,
+  listClassVideosSchema,
+  myClassVideosSchema,
+  popularClassVideosSchema,
   updateClassVideoSchema,
-  toggleLikeVideoSchema
+  videoIdParamSchema
 } from '../schemas/classVideo.schema.js';
-import { requireRole } from '../middlewares/role.middleware.js';
-import { authenticateToken } from '../middlewares/auth.middleware.js';
 
 const router = Router();
+const TEACHERS = ['tutor', 'admin'];
 
-// Middleware de autenticación para todas las rutas
 router.use(authenticateToken);
 
-// Rutas básicas para probar conectividad
-router.get('/test', (req, res) => {
-  res.json({ message: 'Video routes working', user: req.user?.id });
-});
+// Las rutas fijas (/popular, /my/videos) van antes de /:id.
+router.get('/', schemaValidator(listClassVideosSchema), getClassVideos);
+router.get('/popular', schemaValidator(popularClassVideosSchema), getPopularClassVideos);
+router.get('/my/videos', requireRole(TEACHERS), schemaValidator(myClassVideosSchema), getMyClassVideos);
+router.get('/:id', schemaValidator(videoIdParamSchema), getClassVideoById);
 
-// Rutas para obtener videos
-router.get('/', getClassVideos);
-router.get('/popular', getPopularVideos);
-router.get('/my/videos', requireRole(['tutor', 'admin']), getMyClassVideos);
-router.get('/:id', getClassVideoById);
+router.post('/', requireRole(TEACHERS), schemaValidator(createClassVideoSchema), createClassVideo);
+router.put('/:id', requireRole(TEACHERS), schemaValidator(updateClassVideoSchema), updateClassVideo);
+router.delete('/:id', requireRole(TEACHERS), schemaValidator(videoIdParamSchema), deleteClassVideo);
 
-// Ruta para crear video con subida de archivos
-router.post('/', requireRole(['tutor', 'admin']), uploadVideoFiles, createClassVideo);
-
-// Rutas para modificar videos
-router.put('/:id', requireRole(['tutor', 'admin']), updateClassVideo);
-router.delete('/:id', requireRole(['tutor', 'admin']), deleteClassVideo);
-
-// Rutas de interacción
-router.post('/:id/like', toggleLikeVideo);
+router.post('/:id/like', schemaValidator(videoIdParamSchema), toggleLikeVideo);
 
 export default router;

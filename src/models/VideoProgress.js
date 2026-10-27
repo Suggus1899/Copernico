@@ -1,5 +1,7 @@
 import mongoose from 'mongoose';
 
+export const VIDEO_COMPLETION_THRESHOLD = 90;
+
 const videoProgressSchema = new mongoose.Schema({
   // Relaciones
   studentId: {
@@ -112,17 +114,15 @@ videoProgressSchema.pre('save', function(next) {
     this.progressPercentage = Math.min(100, Math.round(Math.max(watchTimePct, positionPct)));
   }
   
-  // Determinar si está completado (consideramos completado si llegó al 90% o más)
-  if (this.progressPercentage >= 90 && !this.isCompleted) {
+  // Completado es permanente: retroceder en el vídeo no lo deshace
+  if (!this.isCompleted && this.progressPercentage >= VIDEO_COMPLETION_THRESHOLD) {
     this.isCompleted = true;
     this.completedAt = new Date();
-    this.status = 'completed';
-  } else if (this.progressPercentage > 0 && this.progressPercentage < 90) {
-    this.status = 'in_progress';
-  } else if (this.progressPercentage === 0) {
-    this.status = 'not_started';
   }
-  
+  if (this.isCompleted) this.status = 'completed';
+  else if (this.progressPercentage > 0) this.status = 'in_progress';
+  else this.status = 'not_started';
+
   // Calcular duración promedio de sesiones
   if (this.viewingSessions.length > 0) {
     const totalSessionTime = this.viewingSessions.reduce((sum, session) => {
@@ -131,13 +131,6 @@ videoProgressSchema.pre('save', function(next) {
     this.averageSessionDuration = Math.round(totalSessionTime / this.viewingSessions.length);
   }
   
-  console.log('VideoProgress pre-save:', {
-    watchTime: this.watchTime,
-    totalDuration: this.totalDuration,
-    progressPercentage: this.progressPercentage,
-    status: this.status,
-    isCompleted: this.isCompleted
-  });
   
   next();
 });

@@ -9,96 +9,62 @@ export const updateVideoProgress = async (req, res, next) => {
     const { currentTime, watchedSeconds, totalDuration } = req.body;
     const studentId = req.user.id;
 
-    console.log('updateVideoProgress called:', {
-      videoId,
-      studentId,
-      currentTime,
-      watchedSeconds,
-      totalDuration
-    });
-
-    // Verificar que el video existe y el usuario puede accederlo
     const video = await ClassVideo.findById(videoId);
-    if (!video) {
-      throw new AppError(404, 'NOT_FOUND', "Video not found");
+    if (!video || !video.canAccess(req.user)) {
+      throw new AppError(404, 'NOT_FOUND', 'Vídeo no encontrado');
     }
 
-    if (!video.canAccess(req.user)) {
-      throw new AppError(403, 'FORBIDDEN', "Access denied to this video");
-    }
-
-    // Buscar o crear registro de progreso
-    let videoProgress = await VideoProgress.findOne({
-      studentId,
-      videoId
-    });
-
+    let videoProgress = await VideoProgress.findOne({ studentId, videoId });
     if (!videoProgress) {
-      // Crear nuevo registro de progreso
-      const duration = totalDuration || (video.duration ? video.duration * 60 : 0);
-      console.log('Creating new video progress:', {
-        studentId,
-        videoId,
-        totalDuration: duration,
-        videoTitle: video.title
-      });
-
       videoProgress = new VideoProgress({
         studentId,
         videoId,
-        totalDuration: duration,
+        totalDuration: totalDuration ?? (video.duration ? video.duration * 60 : 0),
         videoTitle: video.title,
         videoSubject: video.subject,
         videoTopic: video.topic,
         uploadedBy: video.uploadedBy,
         watchTime: 0
       });
+    } else if (totalDuration) {
+      // La duración la informa el reproductor de YouTube; se conserva la última conocida.
+      videoProgress.totalDuration = totalDuration;
     }
 
-    // Actualizar progreso
-    if (watchedSeconds && watchedSeconds > 0) {
+    const wasCompleted = videoProgress.isCompleted;
+
+    if (watchedSeconds) {
       videoProgress.watchTime += watchedSeconds;
-      console.log('Updated watchTime:', videoProgress.watchTime);
     }
 
-    // Actualizar o crear sesión de visualización (por si se envió progreso sin haber llamado /start)
-    if (videoProgress.viewingSessions.length > 0) {
-      const lastSession = videoProgress.viewingSessions[videoProgress.viewingSessions.length - 1];
+    // Actualiza la última sesión, o abre una si el progreso llega sin /start.
+    const lastSession = videoProgress.viewingSessions[videoProgress.viewingSessions.length - 1];
+    if (lastSession) {
       lastSession.endTime = new Date();
-      lastSession.lastPosition = currentTime != null ? Number(currentTime) : lastSession.lastPosition;
-      if (watchedSeconds) {
-        lastSession.watchedSeconds = (lastSession.watchedSeconds || 0) + watchedSeconds;
-      }
+      lastSession.lastPosition = currentTime;
+      lastSession.watchedSeconds = (lastSession.watchedSeconds || 0) + (watchedSeconds || 0);
     } else {
       videoProgress.viewingSessions.push({
         startTime: new Date(),
         endTime: new Date(),
         watchedSeconds: watchedSeconds || 0,
-        lastPosition: currentTime != null ? Number(currentTime) : 0
+        lastPosition: currentTime
       });
-      videoProgress.totalSessions = videoProgress.viewingSessions.length;
     }
-
+    videoProgress.totalSessions = videoProgress.viewingSessions.length;
     videoProgress.lastWatchedAt = new Date();
-    
-    // Guardar cambios (esto activará el middleware pre-save)
+
+    // El middleware pre-save recalcula porcentaje y estado.
     await videoProgress.save();
 
-    console.log('Video progress saved:', {
-      progressPercentage: videoProgress.progressPercentage,
-      isCompleted: videoProgress.isCompleted,
-      watchTime: videoProgress.watchTime,
-      status: videoProgress.status
-    });
-
-    // Si el video se completó por primera vez, actualizar ProgressTracking
-    if (videoProgress.isCompleted && videoProgress.completedAt) {
+    // ProgressTracking solo se actualiza la primera vez que el vídeo se completa.
+    if (!wasCompleted && videoProgress.isCompleted) {
       await updateProgressTrackingFromVideo(studentId, video, videoProgress);
     }
 
     res.json({
       success: true,
-      message: "Video progress updated successfully",
+      message: 'Progreso de vídeo actualizado',
       data: {
         progressPercentage: videoProgress.progressPercentage,
         isCompleted: videoProgress.isCompleted,
@@ -107,7 +73,6 @@ export const updateVideoProgress = async (req, res, next) => {
       }
     });
   } catch (error) {
-    console.error('Error in updateVideoProgress:', error);
     next(error);
   }
 };
@@ -148,12 +113,12 @@ export const getStudentVideoStats = async (req, res, next) => {
     const studentId = req.user.role === 'student' ? req.user.id : req.query.studentId;
     
     if (!studentId) {
-      throw new AppError(400, 'BAD_REQUEST', "Student ID is required");
+      throw new AppError(400, 'BAD_REQUEST', "Se requiere el identificador del estudiante");
     }
 
     // Verificar permisos
     if (req.user.role === 'student' && req.user.id !== studentId) {
-      throw new AppError(403, 'FORBIDDEN', "Access denied");
+      throw new AppError(403, 'FORBIDDEN', "Acceso denegado");
     }
 
     const stats = await VideoProgress.getStudentVideoStats(studentId);
@@ -187,12 +152,12 @@ export const getStudentProgressBySubject = async (req, res, next) => {
     const studentId = req.user.role === 'student' ? req.user.id : req.query.studentId;
     
     if (!studentId) {
-      throw new AppError(400, 'BAD_REQUEST', "Student ID is required");
+      throw new AppError(400, 'BAD_REQUEST', "Se requiere el identificador del estudiante");
     }
 
     // Verificar permisos
     if (req.user.role === 'student' && req.user.id !== studentId) {
-      throw new AppError(403, 'FORBIDDEN', "Access denied");
+      throw new AppError(403, 'FORBIDDEN', "Acceso denegado");
     }
 
     const progress = await VideoProgress.getStudentProgressBySubject(studentId, subject);
@@ -212,12 +177,12 @@ export const getMostWatchedVideos = async (req, res, next) => {
     const studentId = req.user.role === 'student' ? req.user.id : req.query.studentId;
     
     if (!studentId) {
-      throw new AppError(400, 'BAD_REQUEST', "Student ID is required");
+      throw new AppError(400, 'BAD_REQUEST', "Se requiere el identificador del estudiante");
     }
 
     // Verificar permisos
     if (req.user.role === 'student' && req.user.id !== studentId) {
-      throw new AppError(403, 'FORBIDDEN', "Access denied");
+      throw new AppError(403, 'FORBIDDEN', "Acceso denegado");
     }
 
     const mostWatched = await VideoProgress.getMostWatchedVideos(studentId, parseInt(limit));
@@ -236,16 +201,15 @@ export const startVideoSession = async (req, res, next) => {
     const { videoId } = req.params;
     const studentId = req.user.id;
 
-    console.log('startVideoSession called:', { videoId, studentId });
 
     // Verificar que el video existe y el usuario puede accederlo
     const video = await ClassVideo.findById(videoId);
     if (!video) {
-      throw new AppError(404, 'NOT_FOUND', "Video not found");
+      throw new AppError(404, 'NOT_FOUND', "Vídeo no encontrado");
     }
 
     if (!video.canAccess(req.user)) {
-      throw new AppError(403, 'FORBIDDEN', "Access denied to this video");
+      throw new AppError(403, 'FORBIDDEN', "No puedes acceder a este vídeo");
     }
 
     // Buscar o crear registro de progreso
@@ -257,12 +221,6 @@ export const startVideoSession = async (req, res, next) => {
     if (!videoProgress) {
       // Crear nuevo registro de progreso
       const duration = video.duration ? video.duration * 60 : 0; // convertir minutos a segundos
-      console.log('Creating new video progress for session:', {
-        studentId,
-        videoId,
-        totalDuration: duration,
-        videoTitle: video.title
-      });
 
       videoProgress = new VideoProgress({
         studentId,
@@ -290,15 +248,10 @@ export const startVideoSession = async (req, res, next) => {
 
     await videoProgress.save();
 
-    console.log('Video session started:', {
-      sessionId: newSession._id,
-      currentProgress: videoProgress.progressPercentage,
-      totalSessions: videoProgress.totalSessions
-    });
 
     res.json({
       success: true,
-      message: "Video session started",
+      message: "Sesión de vídeo iniciada",
       data: {
         sessionId: newSession._id,
         currentProgress: videoProgress.progressPercentage,
@@ -309,7 +262,6 @@ export const startVideoSession = async (req, res, next) => {
       }
     });
   } catch (error) {
-    console.error('Error in startVideoSession:', error);
     next(error);
   }
 };
@@ -319,12 +271,12 @@ export const getVideoProgressDashboard = async (req, res, next) => {
     const studentId = req.user.role === 'student' ? req.user.id : req.query.studentId;
     
     if (!studentId) {
-      throw new AppError(400, 'BAD_REQUEST', "Student ID is required");
+      throw new AppError(400, 'BAD_REQUEST', "Se requiere el identificador del estudiante");
     }
 
     // Verificar permisos
     if (req.user.role === 'student' && req.user.id !== studentId) {
-      throw new AppError(403, 'FORBIDDEN', "Access denied");
+      throw new AppError(403, 'FORBIDDEN', "Acceso denegado");
     }
 
     // Obtener estadísticas por materia
@@ -436,9 +388,8 @@ const updateProgressTrackingFromVideo = async (studentId, video, videoProgress) 
 
     await progressTracking.save();
     
-    console.log(`Progress tracking updated for student ${studentId} in subject ${video.subject}`);
   } catch (error) {
-    console.error('Error updating progress tracking from video:', error);
-    // No lanzar error para no interrumpir el flujo principal
+    // Fallo no crítico: el progreso del vídeo ya está guardado y no debe convertir
+    // la respuesta en un error. Queda pendiente un logger estructurado (ver informe).
   }
 };
