@@ -50,7 +50,9 @@ services:
       - MONGODB_URI=mongodb://db:27017/copernico?replicaSet=rs0
       - JWT_SECRET=${JWT_SECRET:-dev-only-insecure-secret-change-me-0123456789}
       - FRONTEND_URL=http://localhost:5173
-      - STORAGE_DRIVER=local
+      - SUPABASE_URL=${SUPABASE_URL:-}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY:-}
+      - SUPABASE_STORAGE_BUCKET=${SUPABASE_STORAGE_BUCKET:-copernico-private}
       - CHOKIDAR_USEPOLLING=true
     depends_on:
       db-init:

@@ -5,54 +5,46 @@ import {
   createEducationalMaterial,
   updateEducationalMaterial,
   deleteEducationalMaterial,
+  downloadEducationalMaterial,
   rateEducationalMaterial,
-  incrementDownloads,
   shareEducationalMaterial,
   getMyEducationalMaterials,
   changeMaterialStatus,
   getPopularMaterials,
-  uploadMaterialFile
 } from '../controllers/educationalMaterial.controller.js';
-import { schemaValidator } from '../middlewares/schemaValidator.js';
-import { 
-  createEducationalMaterialSchema, 
-  updateEducationalMaterialSchema, 
-  rateMaterialSchema,
-  shareMaterialSchema 
-} from '../schemas/educationalMaterial.schema.js';
-import { requireRole } from '../middlewares/role.middleware.js';
 import { authenticateToken } from '../middlewares/auth.middleware.js';
+import { requireRole } from '../middlewares/role.middleware.js';
+import { schemaValidator } from '../middlewares/schemaValidator.js';
+import { materialUpload } from '../middlewares/upload.middleware.js';
+import {
+  changeMaterialStatusSchema,
+  rateMaterialSchema,
+  shareMaterialSchema,
+  updateEducationalMaterialSchema,
+} from '../schemas/educationalMaterial.schema.js';
+import { validateObjectIdParam } from '../utils/validators.js';
 
 const router = Router();
+const validId = validateObjectIdParam('id');
+const creatorOnly = requireRole(['tutor', 'admin']);
 
-// Aplicar autenticación a todas las rutas
 router.use(authenticateToken);
 
-// Rutas públicas (para usuarios autenticados)
+// Lectura: estudiantes ven sólo materiales publicados (lo aplica el controlador)
 router.get('/', getEducationalMaterials);
 router.get('/popular', getPopularMaterials);
-router.get('/:id', getEducationalMaterialById);
-router.patch('/:id/download', incrementDownloads);
+router.get('/my/materials', creatorOnly, getMyEducationalMaterials);
+router.get('/:id', validId, getEducationalMaterialById);
+router.get('/:id/download', validId, downloadEducationalMaterial);
 
-// Rutas para creadores (tutores, asesores, admin)
-router.get('/my/materials', requireRole(['tutor', 'advisor', 'admin']), getMyEducationalMaterials);
+// Gestión: sólo tutores y administradores
+router.post('/', creatorOnly, materialUpload, createEducationalMaterial);
+router.put('/:id', validId, creatorOnly, schemaValidator(updateEducationalMaterialSchema), updateEducationalMaterial);
+router.delete('/:id', validId, creatorOnly, deleteEducationalMaterial);
+router.patch('/:id/share', validId, creatorOnly, schemaValidator(shareMaterialSchema), shareEducationalMaterial);
+router.patch('/:id/status', validId, creatorOnly, schemaValidator(changeMaterialStatusSchema), changeMaterialStatus);
 
-// Endpoint de prueba
-router.post('/test', requireRole(['tutor', 'advisor', 'admin']), (req, res) => {
-  console.log('=== TEST ENDPOINT ===');
-  console.log('Body:', req.body);
-  console.log('File:', req.file);
-  console.log('User:', req.user?.id, req.user?.role);
-  res.json({ success: true, message: 'Test endpoint working', data: { body: req.body, hasFile: !!req.file } });
-});
-
-router.post('/', requireRole(['tutor', 'advisor', 'admin']), uploadMaterialFile, createEducationalMaterial);
-router.put('/:id', requireRole(['tutor', 'advisor', 'admin']), schemaValidator(updateEducationalMaterialSchema), updateEducationalMaterial);
-router.delete('/:id', requireRole(['tutor', 'advisor', 'admin']), deleteEducationalMaterial);
-router.patch('/:id/share', requireRole(['tutor', 'advisor', 'admin']), schemaValidator(shareMaterialSchema), shareEducationalMaterial);
-router.patch('/:id/status', requireRole(['tutor', 'advisor', 'admin']), changeMaterialStatus);
-
-// Rutas de interacción
-router.post('/:id/rate', schemaValidator(rateMaterialSchema), rateEducationalMaterial);
+// Interacción
+router.post('/:id/rate', validId, schemaValidator(rateMaterialSchema), rateEducationalMaterial);
 
 export default router;

@@ -1,5 +1,8 @@
 import mongoose from 'mongoose';
 
+// Acepta un ObjectId, un documento o un documento poblado.
+const idOf = (value) => String(value?._id ?? value);
+
 const educationalMaterialSchema = new mongoose.Schema({
   // Información del material
   title: {
@@ -45,10 +48,21 @@ const educationalMaterialSchema = new mongoose.Schema({
     index: true
   },
   
-  // Archivo o recurso
-  fileUrl: {
+  // Archivo en almacenamiento privado: la clave es interna y no se devuelve en JSON
+  fileKey: {
     type: String,
-    trim: true
+    trim: true,
+    select: false
+  },
+  originalFileName: {
+    type: String,
+    trim: true,
+    maxlength: 255
+  },
+  mimeType: {
+    type: String,
+    trim: true,
+    maxlength: 100
   },
   fileSize: {
     type: Number, // bytes
@@ -214,8 +228,9 @@ educationalMaterialSchema.index({ 'assignmentDetails.dueDate': 1 });
 
 // Middleware para validaciones
 educationalMaterialSchema.pre('save', function(next) {
-  // Validar que tenga al menos un recurso (fileUrl, externalLink o content)
-  if (!this.fileUrl && !this.externalLink && !this.content) {
+  // Un material nuevo necesita un recurso (archivo, enlace o contenido).
+  // Los documentos cargados sin fileKey (select:false) ya cumplían la regla.
+  if (this.isNew && !this.fileKey && !this.externalLink && !this.content) {
     return next(new Error('Material must have at least one resource (file, link, or content)'));
   }
   
@@ -274,20 +289,29 @@ educationalMaterialSchema.methods.addRating = function(userId, rating, comment =
 
 // Método para verificar si un usuario puede acceder al material
 educationalMaterialSchema.methods.canAccess = function(user) {
-  if (this.visibility === 'public') return true;
+  const userId = String(user._id);
   if (user.role === 'admin') return true;
-  if (this.createdBy.toString() === user._id.toString()) return true;
-  
-  if (this.visibility === 'students') {
-    if (user.role === 'student') return true;
-    if (['tutor', 'advisor'].includes(user.role)) return true;
-  }
-  
-  if (this.allowedStudents.includes(user._id)) return true;
+  if (idOf(this.createdBy) === userId) return true;
+
+  // Los borradores y el material en revisión solo los ve su autor (y el administrador).
+  if (this.status !== 'published') return false;
+
+  if (this.visibility === 'public') return true;
+  if (this.visibility === 'students' && ['student', 'tutor'].includes(user.role)) return true;
+
+  if (this.allowedStudents.some((student) => idOf(student) === userId)) return true;
   if (user.role === 'student' && this.allowedGroups.some(group => 
     user.studentProfile?.enrolledCourses?.includes(group))) return true;
   
   return false;
 };
+
+// La clave de almacenamiento es interna: nunca sale en las respuestas JSON.
+educationalMaterialSchema.set('toJSON', {
+  transform: (_doc, ret) => {
+    delete ret.fileKey;
+    return ret;
+  }
+});
 
 export default mongoose.model('EducationalMaterial', educationalMaterialSchema);

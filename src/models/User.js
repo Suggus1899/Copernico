@@ -4,6 +4,22 @@ import { isStrongPassword, PASSWORD_POLICY_MESSAGE } from '../utils/passwordPoli
 
 const SALT_ROUNDS = 10;
 
+// Documentos privados del tutor/asesor. La clave del objeto en Storage nunca sale en JSON.
+const UserDocumentSchema = new mongoose.Schema({
+  name: { type: String, required: true, trim: true, maxlength: 120 },
+  key: { type: String, required: true },
+  mimeType: { type: String, required: true },
+  size: { type: Number, required: true },
+  tags: { type: [String], default: [] },
+  uploadedAt: { type: Date, default: Date.now },
+});
+UserDocumentSchema.set('toJSON', {
+  transform: (_doc, ret) => {
+    delete ret.key;
+    return ret;
+  },
+});
+
 const UserSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true, lowercase: true, trim: true, index: true },
   password: { 
@@ -48,6 +64,10 @@ const UserSchema = new mongoose.Schema({
   lockedUntil: Date,
   // Se incrementa al cambiar contraseña o email y al desactivar: invalida sesiones anteriores.
   sessionVersion: { type: Number, default: 0 },
+  // Clave del avatar en Storage privado. Solo se lee explícitamente (+avatarKey).
+  avatarKey: { type: String, select: false },
+  // Documentos: solo se leen en endpoints del propio usuario (+documents).
+  documents: { type: [UserDocumentSchema], select: false },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   deletedAt: Date
@@ -68,7 +88,7 @@ UserSchema.methods.comparePassword = function (candidate) {
 };
 
 // Campos internos: nunca se devuelven al cliente.
-const INTERNAL_FIELDS = ['password', 'loginAttempts', 'lockedUntil', 'sessionVersion', '__v'];
+const INTERNAL_FIELDS = ['password', 'loginAttempts', 'lockedUntil', 'sessionVersion', 'avatarKey', '__v'];
 UserSchema.set('toJSON', {
   transform: (_doc, ret) => {
     for (const field of INTERNAL_FIELDS) delete ret[field];

@@ -11,6 +11,7 @@ const DURATION_UNITS_MS = { s: 1000, m: 60_000, h: 3_600_000, d: 86_400_000 };
 /** Limits compartidos por los módulos de almacenamiento. */
 export const DOCUMENT_MAX_BYTES = 10 * 1024 * 1024;
 export const AVATAR_MAX_BYTES = 2 * 1024 * 1024;
+export const MATERIAL_MAX_BYTES = 50 * 1024 * 1024;
 
 /** Convierte "15m", "12h" o "7d" a milisegundos. Devuelve null si el formato no es válido. */
 export function durationToMs(value) {
@@ -86,18 +87,17 @@ export function buildConfig(env = process.env) {
     problems.push("TRUST_PROXY debe ser un entero mayor o igual a 0 (número de proxies confiables)");
   }
 
-  const storageDriver = env.STORAGE_DRIVER || (isProduction ? "supabase" : "local");
-  if (!["local", "supabase"].includes(storageDriver)) {
-    problems.push("STORAGE_DRIVER debe ser 'local' o 'supabase'");
-  }
-  if (isProduction && storageDriver === "local") {
-    problems.push("STORAGE_DRIVER=local no está permitido en producción; usa 'supabase'");
-  }
   const supabaseUrl = (env.SUPABASE_URL || "").replace(/\/+$/, "");
   const supabaseServiceKey = env.SUPABASE_SERVICE_ROLE_KEY || "";
-  if (storageDriver === "supabase") {
-    if (!supabaseUrl) problems.push("SUPABASE_URL es obligatorio cuando STORAGE_DRIVER=supabase");
-    if (!supabaseServiceKey) problems.push("SUPABASE_SERVICE_ROLE_KEY es obligatorio cuando STORAGE_DRIVER=supabase");
+  const storageConfigured = Boolean(supabaseUrl && supabaseServiceKey);
+  if (Boolean(supabaseUrl) !== Boolean(supabaseServiceKey)) {
+    problems.push("SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY deben configurarse juntas");
+  }
+  if (isProduction && !storageConfigured) {
+    problems.push("SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY son obligatorios en producción (almacenamiento privado)");
+  }
+  if (!storageConfigured && !isProduction) {
+    warnings.push("Almacenamiento no configurado: avatares, documentos y materiales responderán 503");
   }
 
   if (problems.length > 0) {
@@ -116,7 +116,6 @@ export function buildConfig(env = process.env) {
       SESSION_MAX_AGE_MS: sessionMaxAgeMs,
       FRONTEND_ORIGINS: Object.freeze(frontendOrigins),
       TRUST_PROXY: trustProxy,
-      STORAGE_DRIVER: storageDriver,
       SUPABASE_URL: supabaseUrl,
       SUPABASE_SERVICE_ROLE_KEY: supabaseServiceKey,
       SUPABASE_STORAGE_BUCKET: env.SUPABASE_STORAGE_BUCKET || "copernico-private",
