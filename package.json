@@ -1,43 +1,39 @@
 {
-  "name": "backend",
+  "name": "copernico-api",
   "version": "1.0.0",
-  "description": "",
-  "main": "src/index.js",
+  "private": true,
+  "description": "API de Copérnico Academy (Express + MongoDB)",
   "type": "module",
-  "scripts": {
-    "dev": "nodemon --exec \"node --max-old-space-size=4096 src/index.js\" --ignore client",
-    "debug": "node --inspect src/index.js",
-    "migrate:advisors": "node scripts/migrate_advisors_to_tutors.js",
-    "migrate:courses": "node scripts/create_courses_from_appointments.js",
-    "init:dirs": "node scripts/init_directories.js",
-    "postinstall": "node scripts/init_directories.js"
+  "main": "src/index.js",
+  "engines": {
+    "node": ">=24"
   },
-  "keywords": [],
-  "author": "",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "test": "node --test --test-reporter=spec \"test/**/*.test.js\"",
+    "migrate:advisors": "node scripts/migrate_advisors_to_tutors.js",
+    "migrate:courses": "node scripts/create_courses_from_appointments.js"
+  },
   "license": "ISC",
   "dependencies": {
-    "@emotion/react": "^11.14.0",
-    "@emotion/styled": "^11.14.1",
-    "@mui/icons-material": "^7.3.6",
-    "@mui/material": "^7.3.6",
-    "@tailwindcss/vite": "^4.1.17",
-    "@untitledui/icons": "^0.0.19",
     "bcryptjs": "^2.4.3",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
-    "dotenv": "^16.0.3",
-    "express": "^4.18.2",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2",
     "express-mongo-sanitize": "^2.2.0",
-    "express-rate-limit": "^7.1.5",
-    "helmet": "^7.0.0",
+    "express-rate-limit": "^7.5.0",
+    "helmet": "^7.2.0",
     "hpp": "^0.2.3",
-    "jsonwebtoken": "^9.0.0",
-    "mongoose": "^6.8.3",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.9.5",
     "morgan": "^1.10.0",
     "multer": "^2.0.2",
-    "tailwindcss": "^4.1.17",
-    "zod": "^3.20.2"
+    "zod": "^3.23.8"
   },
   "devDependencies": {
-    "nodemon": "^2.0.20"
+    "mongodb-memory-server": "^10.1.4",
+    "supertest": "^7.0.0"
   }
 }

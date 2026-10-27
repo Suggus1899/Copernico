@@ -1,49 +1,62 @@
+# Entorno de desarrollo completo: MongoDB (replica set), API y cliente.
+# Uso: docker compose up --build
+#   Cliente: http://localhost:5173 (Vite reenvía /api a la API)
+#   API:     http://localhost:4002/api/health
+# Fuera de Docker, la API necesita su propio replica set local (ver README).
 
+x-api-build: &api-build
+  build:
+    context: .
+    dockerfile: Dockerfile.dev
+  networks:
+    - copernico-network
 
 services:
-  # Base de datos MongoDB
   db:
-    image: mongo:latest
+    image: mongo:8
     container_name: copernico-db
+    command: ["--replSet", "rs0", "--bind_ip_all"]
     ports:
       - "27017:27017"
     volumes:
       - mongodb_data:/data/db
-    environment:
-      MONGO_INITDB_DATABASE: merndatabase
     networks:
       - copernico-network
     restart: unless-stopped
 
-  # Backend (API Express)
+  # Inicializa el replica set una sola vez; la API espera a que termine.
+  db-init:
+    <<: *api-build
+    container_name: copernico-db-init
+    command: ["node", "scripts/init-replica-set.js"]
+    environment:
+      - MONGODB_URI=mongodb://db:27017/?directConnection=true
+      - RS_MEMBER_HOST=db:27017
+    depends_on:
+      - db
+    restart: "no"
+
   api:
-    build:
-      context: .
-      dockerfile: Dockerfile.dev
+    <<: *api-build
     container_name: copernico-api
     ports:
-      - "4000:4000"
+      - "4002:4002"
     volumes:
-      # Montar código fuente para hot-reload
-      - ./src:/app/src
-      - ./package.json:/app/package.json
-      - ./package-lock.json:/app/package-lock.json
-      # Excluir node_modules del volumen (usar los del contenedor)
+      - .:/app
       - /app/node_modules
     environment:
       - NODE_ENV=development
-      - PORT=4000
-      - MONGODB_URI=mongodb://db:27017/merndatabase
-      - JWT_SECRET=${JWT_SECRET:-your-secret-key-change-in-production}
+      - PORT=4002
+      - MONGODB_URI=mongodb://db:27017/copernico?replicaSet=rs0
+      - JWT_SECRET=${JWT_SECRET:-dev-only-insecure-secret-change-me-0123456789}
       - FRONTEND_URL=http://localhost:5173
+      - STORAGE_DRIVER=local
+      - CHOKIDAR_USEPOLLING=true
     depends_on:
-      - db
-    networks:
-      - copernico-network
+      db-init:
+        condition: service_completed_successfully
     restart: unless-stopped
-    command: npm run dev
 
-  # Frontend (React + Vite)
   client:
     build:
       context: ./client
@@ -52,25 +65,16 @@ services:
     ports:
       - "5173:5173"
     volumes:
-      # Montar código fuente para hot-reload
-      - ./client/src:/app/src
-      - ./client/public:/app/public
-      - ./client/index.html:/app/index.html
-      - ./client/vite.config.js:/app/vite.config.js
-      - ./client/package.json:/app/package.json
-      - ./client/package-lock.json:/app/package-lock.json
-      # Excluir node_modules del volumen
+      - ./client:/app
       - /app/node_modules
     environment:
-      - NODE_ENV=development
-      # Importante: el navegador accede via host, no por nombre de servicio Docker
-      - VITE_API_URL=http://localhost:4000/api
+      - API_PROXY_TARGET=http://api:4002
+      - CHOKIDAR_USEPOLLING=true
     depends_on:
       - api
     networks:
       - copernico-network
     restart: unless-stopped
-    command: npm run dev -- --host 0.0.0.0
 
 volumes:
   mongodb_data:

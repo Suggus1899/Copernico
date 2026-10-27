@@ -1,21 +1,7 @@
-FROM node:18
-
+FROM node:24-alpine
 WORKDIR /app
-
-# Copiar archivos de dependencias
-COPY package*.json ./
-
-# Copiar scripts necesarios para postinstall
-COPY scripts ./scripts
-
-# Instalar dependencias
-RUN npm install
-
-# Copiar código fuente
+COPY package.json package-lock.json ./
+RUN npm ci
 COPY . .
-
-# Exponer puerto del backend
-EXPOSE 4000
-
-# Comando para desarrollo (con nodemon para hot-reload)
+EXPOSE 4002
 CMD ["npm", "run", "dev"]
