@@ -181,6 +181,18 @@ describe('citas: propuesta, confirmación y reservas', () => {
     assert.equal(wrongTutor.body.error.code, 'COURSE_UNAVAILABLE');
   });
 
+  it('el estudiante ve solo los cursos publicados del tutor elegido', async () => {
+    const res = await call('get', `/api/appointments/tutors/${tutor.id}/courses`, ana);
+    assert.equal(res.status, 200, JSON.stringify(res.body));
+    assert.deepEqual(res.body.data.map((c) => c.title), ['Cálculo I']);
+    assert.equal(res.body.data[0].instructor, undefined);
+
+    const asTutor = await call('get', `/api/appointments/tutors/${tutor.id}/courses`, tutor);
+    assert.equal(asTutor.status, 403);
+    const invalid = await call('get', '/api/appointments/tutors/no-es-id/courses', ana);
+    assert.equal(invalid.status, 400);
+  });
+
   it('bloquea solapamientos, pero permite citas contiguas', async () => {
     const overlapping = await call('post', '/api/appointments', bruno, {
       tutorId: tutor.id,

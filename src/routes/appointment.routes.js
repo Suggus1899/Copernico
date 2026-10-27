@@ -6,6 +6,7 @@ import {
   confirmAppointment,
   createAppointment,
   getAppointmentById,
+  getTutorCourses,
   getTutorStudents,
   getUpcomingAppointments,
   listAppointments,
@@ -27,12 +28,14 @@ import { validateObjectIdParam } from '../utils/validators.js';
 
 const router = Router();
 const validId = validateObjectIdParam('id');
+const validTutorId = validateObjectIdParam('tutorId');
 
 // Las rutas estáticas van antes de /:id.
 router.use(authenticateToken);
 router.get('/', schemaValidator(listAppointmentsSchema), listAppointments);
 router.get('/upcoming', getUpcomingAppointments);
 router.get('/my-students', requireRole(['tutor']), getTutorStudents);
+router.get('/tutors/:tutorId/courses', requireRole(['student']), validTutorId, getTutorCourses);
 router.post('/', requireRole(['student']), schemaValidator(createAppointmentSchema), createAppointment);
 
 router.get('/:id', validId, getAppointmentById);

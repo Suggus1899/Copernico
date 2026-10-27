@@ -8,6 +8,7 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 
 const DEFAULT_DURATION_MINUTES = 60;
 const UPCOMING_LIMIT = 20;
+const COURSE_LIST_LIMIT = 100;
 const PERSON_FIELDS = 'personalInfo.firstName personalInfo.lastName';
 
 const APPOINTMENT_POPULATE = [
@@ -311,6 +312,16 @@ export const rateAppointment = asyncHandler(async (req, res) => {
     throw new AppError(409, 'ALREADY_RATED', 'Ya calificaste esta cita');
   }
   return sendAppointment(res, 200, appointment._id, req.user);
+});
+
+/** Cursos publicados de un tutor: el estudiante elige uno al proponer la cita. */
+export const getTutorCourses = asyncHandler(async (req, res) => {
+  const courses = await Course.find({ instructor: req.params.tutorId, isPublished: true })
+    .select('title category level')
+    .sort({ title: 1 })
+    .limit(COURSE_LIST_LIMIT)
+    .lean();
+  res.json({ success: true, data: courses });
 });
 
 export const getTutorStudents = asyncHandler(async (req, res) => {
