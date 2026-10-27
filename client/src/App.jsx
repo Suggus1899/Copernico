@@ -4,7 +4,6 @@ import { Navigation } from "./components/Navigation";
 import Homepage from "./components/Homepage";
 import CreateUser from "./components/CreateUser";
 import Login from "./components/Login";
-import ForgotPassword from "./components/ForgotPassword";
 import Dashboard from "./components/Dashboard";
 import MyCourses from "./components/MyCourses";
 import Tutors from "./components/Tutors";
@@ -52,12 +51,6 @@ function App() {
             <>
               <Navigation />
               <Login />
-            </>
-          } />
-          <Route path="/forgot-password" element={
-            <>
-              <Navigation />
-              <ForgotPassword />
             </>
           } />
           <Route path="/signup" element={

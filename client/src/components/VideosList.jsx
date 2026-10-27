@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import apiClient from '../utils/axiosConfig';
 import VideoProgressTracker from './VideoProgressTracker';
+import YouTubePlayer from './YouTubePlayer';
 import './Dashboard.css';
 import './VideoProgress.css';
 import './VideosList.css';
@@ -17,15 +18,11 @@ class VideosList extends Component {
       search: ''
     },
     likedVideos: new Set(),
-    // Nuevos estados para seguimiento de progreso
-    videoProgress: new Map(),
-    currentVideoTime: 0,
-    videoDuration: 0,
-    videoElement: null
+    videoProgress: new Map()
   };
 
-  // Objeto mutable con el tiempo actual del video (actualizado en cada timeupdate) para que el progreso use el valor real
-  videoTimeRef = { current: { currentTime: 0, duration: 0 } };
+  // Reproductor de YouTube del vídeo seleccionado; YouTubePlayer lo entrega cuando está listo
+  youtubePlayer = null;
 
   componentDidMount() {
     this.loadContent();
@@ -34,43 +31,28 @@ class VideosList extends Component {
   loadContent = async () => {
     try {
       this.setState({ loading: true });
-      
-      // Obtener el perfil del usuario para saber su ID
-      const profileResponse = await apiClient.get('/auth/profile');
-      const currentUserId = profileResponse.data.data._id;
-      
-      // Cargar videos
+
+      // El backend ya filtra los vídeos visibles para el usuario actual
       const videosResponse = await apiClient.get('/videos').catch(err => {
         console.warn('Error loading videos:', err);
         return { data: { data: [] } };
       });
-      
-      // Filtrar videos dirigidos al estudiante actual o públicos
-      const filteredVideos = (videosResponse.data.data || []).filter(video => {
-        return !video.targetStudentId || // Videos sin destinatario específico
-               video.targetStudentId === currentUserId || // Videos dirigidos a este estudiante
-               video.visibility === 'public'; // Videos públicos
-      });
-      
+
       this.setState({
-        videos: filteredVideos,
+        videos: videosResponse.data.data || [],
         loading: false
       });
     } catch (error) {
       console.error('Error loading content:', error);
-      this.setState({ 
+      this.setState({
         videos: [],
-        loading: false 
+        loading: false
       });
     }
   };
 
   handleItemSelect = async (item, type) => {
     try {
-      if (this.videoTimeRef.current) {
-        this.videoTimeRef.current.currentTime = 0;
-        this.videoTimeRef.current.duration = 0;
-      }
       // Incrementar vistas cuando se selecciona un video
       const response = await apiClient.get(`/videos/${item._id}`);
       // Actualizar el item con la información de progreso si está disponible
@@ -79,15 +61,15 @@ class VideosList extends Component {
         progressMap.set(item._id, response.data.data.progress);
         this.setState({ videoProgress: progressMap });
       }
-      this.setState({ 
-        selectedItem: item, 
-        selectedType: type 
+      this.setState({
+        selectedItem: item,
+        selectedType: type
       });
     } catch (error) {
       console.error('Error selecting item:', error);
-      this.setState({ 
-        selectedItem: item, 
-        selectedType: type 
+      this.setState({
+        selectedItem: item,
+        selectedType: type
       });
     }
   };
@@ -124,7 +106,7 @@ class VideosList extends Component {
 
   getFilteredContent = () => {
     const { videos, filters } = this.state;
-    
+
     const filteredVideos = videos.filter(video => {
       const matchesSubject = !filters.subject || video.subject.toLowerCase().includes(filters.subject.toLowerCase());
       const matchesSearch = !filters.search ||
@@ -133,7 +115,7 @@ class VideosList extends Component {
         video.topic?.toLowerCase().includes(filters.search.toLowerCase());
       return matchesSubject && matchesSearch;
     }).map(video => ({ ...video, contentType: 'video' }));
-    
+
     // Ordenar por fecha de creación (más recientes primero)
     return filteredVideos.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   };
@@ -155,7 +137,7 @@ class VideosList extends Component {
     return `${mins}m`;
   };
 
-render() {
+  render() {
     const { loading, selectedItem, selectedType, filters, activeTab } = this.state;
     const filteredContent = this.getFilteredContent();
     const uniqueSubjects = this.getUniqueSubjects();
@@ -235,7 +217,7 @@ render() {
                         ) : (
                           <span className="clases-page__card-placeholder">🎥</span>
                         )}
-                        {item.duration && (
+                        {item.duration > 0 && (
                           <span className="clases-page__card-duration">
                             {this.formatDuration(item.duration)}
                           </span>
@@ -292,61 +274,26 @@ render() {
                 <div className="clases-page__player-content">
                   <div className="clases-page__video-wrap">
                     <VideoProgressTracker
+                      key={selectedItem._id}
                       ref={(ref) => { this.videoProgressTracker = ref; }}
                       videoId={selectedItem._id}
-                      currentTime={this.state.currentVideoTime}
-                      totalDuration={this.state.videoDuration}
-                      getVideoTime={() => (this.videoTimeRef.current ? {
-                        currentTime: this.videoTimeRef.current.currentTime,
-                        totalDuration: this.videoTimeRef.current.duration || this.state.videoDuration
-                      } : { currentTime: this.state.currentVideoTime, totalDuration: this.state.videoDuration })}
+                      getVideoTime={this.getVideoTime}
                       onProgressUpdate={this.handleProgressUpdate}
                       onVideoCompleted={this.handleVideoCompleted}
-                      showProgress={true}
-                      showCompletionBadge={true}
                     />
                     <div className="clases-page__video-box">
-                    {selectedItem.videoUrl.includes('/uploads/videos/') ? (
-                      <video
-                        ref={this.handleVideoRef}
-                        controls
-                        src={selectedItem.videoUrl}
-                        poster={selectedItem.thumbnailUrl}
-                        className="video-element"
-                        preload="metadata"
-                      >
-                        Tu navegador no soporta la reproducción de video.
-                      </video>
-                    ) :
-                    selectedItem.videoUrl.includes('youtube.com') ||
-                    selectedItem.videoUrl.includes('youtu.be') ? (
-                      <iframe
-                        src={`https://www.youtube.com/embed/${this.getYouTubeVideoId(selectedItem.videoUrl)}`}
-                        title={selectedItem.title}
-                        frameBorder="0"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                      ></iframe>
-                    ) :
-                    selectedItem.videoUrl.includes('vimeo.com') ? (
-                      <iframe
-                        src={`https://player.vimeo.com/video/${this.getVimeoVideoId(selectedItem.videoUrl)}`}
-                        title={selectedItem.title}
-                        frameBorder="0"
-                        allow="autoplay; fullscreen; picture-in-picture"
-                        allowFullScreen
-                      ></iframe>
-                    ) : (
-                      <video
-                        ref={this.handleVideoRef}
-                        controls
-                        src={selectedItem.videoUrl}
-                        poster={selectedItem.thumbnailUrl}
-                        className="video-element"
-                      >
-                        Tu navegador no soporta la reproducción de video.
-                      </video>
-                    )}
+                      {selectedItem.youtubeId ? (
+                        <YouTubePlayer
+                          videoId={selectedItem.youtubeId}
+                          title={selectedItem.title}
+                          onPlayerChange={this.handlePlayerChange}
+                          onPlay={this.handleVideoPlay}
+                          onPause={this.handleVideoPause}
+                          onEnded={this.handleVideoEnded}
+                        />
+                      ) : (
+                        <p className="clases-page__video-missing">Este video no tiene un enlace de YouTube válido.</p>
+                      )}
                     </div>
                   </div>
 
@@ -356,7 +303,7 @@ render() {
                       {selectedItem.topic && (
                         <span className="clases-page__badge clases-page__badge--secondary">{selectedItem.topic}</span>
                       )}
-                      {selectedItem.duration && (
+                      {selectedItem.duration > 0 && (
                         <span className="clases-page__badge">⏱️ {this.formatDuration(selectedItem.duration)}</span>
                       )}
                       <span className="clases-page__badge clases-page__badge--muted">
@@ -410,110 +357,37 @@ render() {
     );
   }
 
-  getYouTubeVideoId = (url) => {
-    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
-    const match = url.match(regExp);
-    return (match && match[2].length === 11) ? match[2] : null;
+  // Tiempo del reproductor de YouTube para el seguimiento de progreso
+  getVideoTime = () => {
+    const player = this.youtubePlayer;
+    if (!player) return { currentTime: 0, totalDuration: 0 };
+    return {
+      currentTime: player.getCurrentTime(),
+      totalDuration: player.getDuration()
+    };
   };
 
-  getVimeoVideoId = (url) => {
-    const regExp = /vimeo\.com\/(\d+)/;
-    const match = url.match(regExp);
-    return match ? match[1] : null;
+  handlePlayerChange = (player) => {
+    this.youtubePlayer = player;
   };
 
-  // Métodos para seguimiento de progreso de videos
-  handleVideoRef = (videoElement) => {
-    if (videoElement && videoElement !== this.state.videoElement) {
-      // Limpiar listeners anteriores si existen
-      if (this.state.videoElement) {
-        const oldVideo = this.state.videoElement;
-        oldVideo.removeEventListener('loadedmetadata', this.handleVideoMetadata);
-        oldVideo.removeEventListener('timeupdate', this.handleVideoTimeUpdate);
-        oldVideo.removeEventListener('play', this.handleVideoPlay);
-        oldVideo.removeEventListener('pause', this.handleVideoPause);
-        oldVideo.removeEventListener('ended', this.handleVideoEnded);
-      }
+  // Eventos de reproducción del reproductor de YouTube, reenviados al seguimiento de progreso
+  handleVideoPlay = () => this.videoProgressTracker?.handleVideoPlay();
 
-      this.setState({ videoElement });
-      
-      // Agregar event listeners para seguimiento de progreso
-      videoElement.addEventListener('loadedmetadata', this.handleVideoMetadata);
-      videoElement.addEventListener('timeupdate', this.handleVideoTimeUpdate);
-      videoElement.addEventListener('play', this.handleVideoPlay);
-      videoElement.addEventListener('pause', this.handleVideoPause);
-      videoElement.addEventListener('ended', this.handleVideoEnded);
-      
-      console.log('Video element configured for progress tracking');
-    }
+  handleVideoPause = () => this.videoProgressTracker?.handleVideoPause();
+
+  handleVideoEnded = () => this.videoProgressTracker?.handleVideoEnded();
+
+  handleProgressUpdate = (progress, videoId) => {
+    this.setState(prevState => ({
+      videoProgress: new Map(prevState.videoProgress).set(videoId, progress)
+    }));
   };
 
-  handleVideoMetadata = (event) => {
-    const duration = event.target.duration;
-    if (this.videoTimeRef.current) {
-      this.videoTimeRef.current.duration = duration;
-    }
-    this.setState({
-      videoDuration: duration
-    });
+  handleVideoCompleted = (progress, videoId) => {
+    const video = this.state.videos.find(item => item._id === videoId);
+    alert(`¡Felicidades! Has completado el video "${video?.title || ''}"`);
   };
-
-  handleVideoTimeUpdate = (event) => {
-    const currentTime = event.target.currentTime;
-    if (this.videoTimeRef.current) {
-      this.videoTimeRef.current.currentTime = currentTime;
-      this.videoTimeRef.current.duration = event.target.duration;
-    }
-    this.setState({
-      currentVideoTime: currentTime
-    });
-  };
-
-  handleVideoPlay = () => {
-    console.log('Video play event');
-    if (this.videoProgressTracker) {
-      this.videoProgressTracker.handleVideoPlay();
-    }
-  };
-
-  handleVideoPause = () => {
-    console.log('Video pause event');
-    if (this.videoProgressTracker) {
-      this.videoProgressTracker.handleVideoPause();
-    }
-  };
-
-  handleVideoEnded = () => {
-    console.log('Video ended event');
-    if (this.videoProgressTracker) {
-      this.videoProgressTracker.handleVideoEnded();
-    }
-  };
-
-  handleProgressUpdate = (progress) => {
-    console.log('Progress updated:', progress);
-    const progressMap = new Map(this.state.videoProgress);
-    progressMap.set(this.state.selectedItem._id, progress);
-    this.setState({ videoProgress: progressMap });
-  };
-
-  handleVideoCompleted = (progress) => {
-    console.log('Video completed!', progress);
-    // Mostrar notificación de video completado
-    alert(`¡Felicidades! Has completado el video "${this.state.selectedItem.title}"`);
-  };
-
-  componentWillUnmount() {
-    // Limpiar event listeners
-    if (this.state.videoElement) {
-      const video = this.state.videoElement;
-      video.removeEventListener('loadedmetadata', this.handleVideoMetadata);
-      video.removeEventListener('timeupdate', this.handleVideoTimeUpdate);
-      video.removeEventListener('play', this.handleVideoPlay);
-      video.removeEventListener('pause', this.handleVideoPause);
-      video.removeEventListener('ended', this.handleVideoEnded);
-    }
-  }
 }
 
 export default VideosList;

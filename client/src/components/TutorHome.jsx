@@ -40,7 +40,7 @@ class TutorHome extends Component {
       // Calcular estadísticas reales
       const today = new Date().toISOString().split('T')[0];
       const todayAppointments = confirmedAppointments.filter(apt => {
-        const appointmentDate = new Date(apt.scheduledDate).toISOString().split('T')[0];
+        const appointmentDate = new Date(apt.startsAt).toISOString().split('T')[0];
         return appointmentDate === today;
       });
       
@@ -54,11 +54,11 @@ class TutorHome extends Component {
       
       // Preparar próximas citas (próximos 3 días)
       const upcomingAppointments = confirmedAppointments
-        .filter(apt => new Date(apt.scheduledDate) > new Date())
-        .sort((a, b) => new Date(a.scheduledDate) - new Date(b.scheduledDate))
+        .filter(apt => new Date(apt.startsAt) > new Date())
+        .sort((a, b) => new Date(a.startsAt) - new Date(b.startsAt))
         .slice(0, 3)
         .map(apt => {
-          const appointmentDate = new Date(apt.scheduledDate);
+          const appointmentDate = new Date(apt.startsAt);
           const today = new Date();
           const tomorrow = new Date(today);
           tomorrow.setDate(tomorrow.getDate() + 1);
@@ -76,11 +76,11 @@ class TutorHome extends Component {
           
           return {
             id: apt._id,
-            subject: apt.subject,
+            subject: apt.courseId?.title || 'Sin curso',
             student: studentName,
             time: appointmentDate.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
             date: dateLabel,
-            scheduledDate: apt.scheduledDate
+            scheduledDate: apt.startsAt
           };
         });
 
@@ -88,7 +88,7 @@ class TutorHome extends Component {
         user,
         stats: {
           todayClasses: todayAppointments.length,
-          upcomingClasses: confirmedAppointments.filter(apt => new Date(apt.scheduledDate) > new Date()).length,
+          upcomingClasses: confirmedAppointments.filter(apt => new Date(apt.startsAt) > new Date()).length,
           totalStudents: uniqueStudents.size,
           pendingMaterials: 0 // TODO: Implementar cuando tengamos endpoint de materiales pendientes
         },
@@ -99,7 +99,7 @@ class TutorHome extends Component {
       // Actividades recientes basadas en citas completadas recientes
       const recentCompletedAppointments = appointments
         .filter(apt => apt.status === 'completed')
-        .sort((a, b) => new Date(b.scheduledDate) - new Date(a.scheduledDate))
+        .sort((a, b) => new Date(b.startsAt) - new Date(a.startsAt))
         .slice(0, 3);
       
       const recentActivities = recentCompletedAppointments.map(apt => {
@@ -107,12 +107,12 @@ class TutorHome extends Component {
           ? `${apt.studentId.personalInfo.firstName || ''} ${apt.studentId.personalInfo.lastName || ''}`.trim()
           : apt.studentId?.email || 'Estudiante';
         
-        const timeAgo = this.getTimeAgo(apt.scheduledDate);
+        const timeAgo = this.getTimeAgo(apt.startsAt);
         
         return {
           id: apt._id,
           type: 'class',
-          message: `${apt.appointmentType === 'advising' ? 'Asesoría' : 'Tutoría'} de ${apt.subject} completada con ${studentName}`,
+          message: `Tutoría de ${apt.courseId?.title || 'Sin curso'} completada con ${studentName}`,
           time: timeAgo
         };
       });

@@ -1,5 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import apiClient from '../utils/axiosConfig';
+import { getApiErrorMessage } from '../utils/apiError';
+
+// Mismo límite que la API (2 MB).
+const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
 
 const AvatarUploader = ({ onAvatarUpdate, currentAvatar }) => {
   const [avatarUrl, setAvatarUrl] = useState(currentAvatar || '');
@@ -15,6 +19,13 @@ const AvatarUploader = ({ onAvatarUpdate, currentAvatar }) => {
 
   const onFileChange = (e) => {
     const selectedFile = e.target.files?.[0] || null;
+    if (selectedFile && selectedFile.size > MAX_AVATAR_BYTES) {
+      e.target.value = '';
+      setFile(null);
+      setPreview(null);
+      setError('La imagen supera el máximo de 2 MB.');
+      return;
+    }
     setFile(selectedFile);
     setError('');
     setSuccess('');
@@ -45,11 +56,7 @@ const AvatarUploader = ({ onAvatarUpdate, currentAvatar }) => {
       const formData = new FormData();
       formData.append('avatar', file);
       
-      const res = await apiClient.post('/users/profile/avatar', formData, { 
-        headers: { 
-          'Content-Type': 'multipart/form-data' 
-        } 
-      });
+      const res = await apiClient.post('/users/profile/avatar', formData);
       
       const newAvatarUrl = res.data?.data?.avatar;
       if (newAvatarUrl) {
@@ -69,7 +76,7 @@ const AvatarUploader = ({ onAvatarUpdate, currentAvatar }) => {
       }
     } catch (err) {
       console.error('Error uploading avatar:', err);
-      setError(err.response?.data?.error || 'Error al subir la imagen');
+      setError(getApiErrorMessage(err, 'Error al subir la imagen'));
     } finally {
       setLoading(false);
     }
@@ -97,7 +104,7 @@ const AvatarUploader = ({ onAvatarUpdate, currentAvatar }) => {
       }
     } catch (err) {
       console.error('Error removing avatar:', err);
-      setError(err.response?.data?.error || 'Error al eliminar la imagen');
+      setError(getApiErrorMessage(err, 'Error al eliminar la imagen'));
     } finally {
       setLoading(false);
     }
@@ -117,7 +124,7 @@ const AvatarUploader = ({ onAvatarUpdate, currentAvatar }) => {
           <h4>Foto de perfil</h4>
           <p className="help-text">
             Formatos permitidos: JPG, PNG, GIF, WEBP<br/>
-            Tamaño máximo: 5MB<br/>
+            Tamaño máximo: 2 MB<br/>
             Recomendado: 256x256 píxeles
           </p>
         </div>

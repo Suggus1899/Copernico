@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import TutorSidebarMenu from './TutorSidebarMenu';
 import apiClient from '../utils/axiosConfig';
+import { getApiErrorMessage } from '../utils/apiError';
 import './Dashboard.css';
 import './TutorNotifications.css';
 
@@ -133,79 +134,54 @@ class TutorNotifications extends Component {
     }
   };
 
-  confirmAppointment = async (appointmentId, notificationId) => {
+  // Registra la elección en la notificación. La cita ya cambió de estado en /appointments,
+  // así que un fallo aquí no se trata como fallo de la acción.
+  recordNotificationChoice = async (notificationId, choice) => {
     try {
-      console.log('Confirmando cita:', { appointmentId, notificationId });
-      
-      // Actualizar el estado de la cita a 'confirmed'
-      const appointmentResponse = await apiClient.patch(`/appointments/${appointmentId}`, {
-        status: 'confirmed'
-      });
-      console.log('Cita actualizada:', appointmentResponse.data);
-
-      // Responder a la notificación
-      const notificationResponse = await apiClient.post(`/notifications/${notificationId}/respond`, {
-        response: 'confirm'
-      });
-      console.log('Notificación respondida:', notificationResponse.data);
-
-      // Actualizar la notificación localmente
+      await apiClient.post(`/notifications/${notificationId}/respond`, { response: choice });
       this.setState(prevState => ({
         notifications: prevState.notifications.map(notif =>
-          notif._id === notificationId 
-            ? { ...notif, userResponse: 'confirm', respondedAt: new Date() }
+          notif._id === notificationId
+            ? { ...notif, userResponse: choice, respondedAt: new Date() }
             : notif
         )
       }));
-
-      alert('Solicitud de asesoría aceptada exitosamente');
-      this.fetchNotifications();
-      
     } catch (error) {
-      console.error('Error confirming appointment:', error);
-      console.error('Error response:', error.response?.data);
-      
-      let errorMessage = 'Error al confirmar la cita. Inténtalo nuevamente.';
-      if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      }
-      
-      alert(errorMessage);
+      console.error('Error recording notification response:', error);
     }
   };
 
-  declineAppointment = async (appointmentId, notificationId) => {
+  confirmAppointment = async (appointmentId, notificationId) => {
     try {
-      const reason = prompt('¿Por qué rechazas esta solicitud? (opcional)');
-      
-      // Actualizar el estado de la cita a 'cancelled'
-      await apiClient.patch(`/appointments/${appointmentId}`, {
-        status: 'cancelled',
-        cancellationReason: reason || 'Rechazada por el tutor/asesor'
-      });
-
-      // Responder a la notificación con el motivo
-      await apiClient.post(`/notifications/${notificationId}/respond`, {
-        response: 'decline',
-        data: { reason: reason }
-      });
-
-      // Actualizar la notificación localmente
-      this.setState(prevState => ({
-        notifications: prevState.notifications.map(notif =>
-          notif._id === notificationId 
-            ? { ...notif, userResponse: 'decline', respondedAt: new Date() }
-            : notif
-        )
-      }));
-
-      alert('Solicitud rechazada exitosamente');
-      this.fetchNotifications();
-      
+      await apiClient.post(`/appointments/${appointmentId}/confirm`, {});
     } catch (error) {
-      console.error('Error declining appointment:', error);
-      alert('Error al rechazar la cita. Inténtalo nuevamente.');
+      alert(getApiErrorMessage(error, 'Error al confirmar la cita. Inténtalo nuevamente.'));
+      return;
     }
+
+    await this.recordNotificationChoice(notificationId, 'confirm');
+    alert('Solicitud de asesoría aceptada exitosamente');
+    this.fetchNotifications();
+  };
+
+  declineAppointment = async (appointmentId, notificationId) => {
+    const reason = prompt('¿Por qué rechazas esta solicitud? (opcional)');
+    if (reason === null) return;
+
+    const trimmedReason = reason.trim();
+    try {
+      await apiClient.post(
+        `/appointments/${appointmentId}/reject`,
+        trimmedReason ? { reason: trimmedReason } : {}
+      );
+    } catch (error) {
+      alert(getApiErrorMessage(error, 'Error al rechazar la cita. Inténtalo nuevamente.'));
+      return;
+    }
+
+    await this.recordNotificationChoice(notificationId, 'decline');
+    alert('Solicitud rechazada exitosamente');
+    this.fetchNotifications();
   };
 
   formatDate = (dateString) => {

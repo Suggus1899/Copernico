@@ -37,7 +37,7 @@ const TutorAgenda = () => {
 
   const getAppointmentsForDate = (date) => {
     return appointments.filter(apt => {
-      const appointmentDate = new Date(apt.scheduledDate).toISOString().split('T')[0];
+      const appointmentDate = new Date(apt.startsAt).toISOString().split('T')[0];
       return appointmentDate === date;
     });
   };
@@ -151,19 +151,19 @@ const TutorAgenda = () => {
             {todayAppointments.length > 0 ? (
               <ul className="agenda-page__list" role="list">
                 {todayAppointments
-                  .sort((a, b) => new Date(a.scheduledDate) - new Date(b.scheduledDate))
+                  .sort((a, b) => new Date(a.startsAt) - new Date(b.startsAt))
                   .map((appointment) => (
                     <li key={appointment._id} className="agenda-page__item">
                       <div className="agenda-page__item-time">
                         <span className="agenda-page__item-hour">
-                          {formatTime(appointment.scheduledDate)}
+                          {formatTime(appointment.startsAt)}
                         </span>
                         <span className="agenda-page__item-duration">
-                          {appointment.duration || 60} min
+                          {appointment.durationMinutes || 60} min
                         </span>
                       </div>
                       <div className="agenda-page__item-body">
-                        <h4 className="agenda-page__item-subject">{appointment.subject}</h4>
+                        <h4 className="agenda-page__item-subject">{appointment.courseId?.title || 'Sin curso'}</h4>
                         {appointment.topic && (
                           <p className="agenda-page__item-topic">Tema: {appointment.topic}</p>
                         )}

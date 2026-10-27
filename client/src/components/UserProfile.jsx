@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import apiClient from '../utils/axiosConfig';
 import AvatarUploader from './AvatarUploader';
+import DocumentManager from './DocumentManager';
+import DeactivateAccount from './DeactivateAccount';
+import { getApiErrorMessage } from '../utils/apiError';
 import './UserProfile.css';
 
 const UserProfile = () => {
@@ -20,13 +23,6 @@ const UserProfile = () => {
 
   const fetchUserProfile = async () => {
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setError('No hay token de autenticación');
-        setLoading(false);
-        return;
-      }
-
       const response = await apiClient.get('/auth/profile');
       const userData = response.data.data || response.data;
       setUser(userData);
@@ -44,7 +40,7 @@ const UserProfile = () => {
       setLoading(false);
     } catch (error) {
       console.error('Error fetching user profile:', error);
-      setError(error.response?.data?.error || 'Error al cargar el perfil');
+      setError(getApiErrorMessage(error, 'Error al cargar el perfil'));
       setLoading(false);
     }
   };
@@ -63,10 +59,7 @@ const UserProfile = () => {
       alert('Perfil actualizado exitosamente');
     } catch (error) {
       console.error('Error updating profile:', error);
-      const errorMessage = error.response?.data?.error || 
-                          error.response?.data?.message || 
-                          'Error al actualizar el perfil';
-      alert(errorMessage);
+      alert(getApiErrorMessage(error, 'Error al actualizar el perfil'));
     } finally {
       setSaving(false);
     }
@@ -496,6 +489,20 @@ const UserProfile = () => {
             </div>
           </>
         )}
+      </div>
+
+      {/* Documentos y cierre de cuenta */}
+      <div className="profile-content-grid">
+        <div className="profile-card">
+          <div className="profile-card-body">
+            <DocumentManager />
+          </div>
+        </div>
+        <div className="profile-card">
+          <div className="profile-card-body">
+            <DeactivateAccount />
+          </div>
+        </div>
       </div>
 
       {/* Modal para cambiar avatar */}

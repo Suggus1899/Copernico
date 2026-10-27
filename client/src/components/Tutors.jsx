@@ -1,7 +1,24 @@
 import React, { useEffect, useState } from 'react';
 import apiClient from '../utils/axiosConfig';
+import { getApiErrorMessage } from '../utils/apiError';
 import './Dashboard.css';
 import './Tutors.css';
+
+const EMPTY_REQUEST = {
+  tutorId: '',
+  courseId: '',
+  topic: '',
+  date: '',
+  time: '',
+  durationMinutes: 60,
+};
+
+/** Fecha de hoy en la zona local (YYYY-MM-DD) para el selector de fecha. */
+const localToday = () => {
+  const now = new Date();
+  now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+  return now.toISOString().slice(0, 10);
+};
 
 const Tutors = () => {
   const [tutors, setTutors] = useState([]);
@@ -11,16 +28,9 @@ const Tutors = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showRequestModal, setShowRequestModal] = useState(false);
   const [selectedEducator, setSelectedEducator] = useState(null);
-  const [requestForm, setRequestForm] = useState({
-    tutorId: '',
-    subject: '',
-    topic: '',
-    date: '',
-    time: '',
-    duration: 60,
-    message: '',
-    type: 'tutoring'
-  });
+  const [requestForm, setRequestForm] = useState(EMPTY_REQUEST);
+  const [courses, setCourses] = useState([]);
+  const [coursesError, setCoursesError] = useState('');
 
   useEffect(() => {
     const fetchTutors = async () => {
@@ -70,22 +80,34 @@ const Tutors = () => {
     return filteredTutors;
   };
 
+  const loadTutorCourses = async (tutorId) => {
+    setCourses([]);
+    setCoursesError('');
+    try {
+      const res = await apiClient.get(`/appointments/tutors/${tutorId}/courses`);
+      setCourses(res.data.data || []);
+    } catch (err) {
+      setCoursesError(getApiErrorMessage(err, 'No se pudieron cargar los cursos del tutor'));
+    }
+  };
+
   const handleRequestTutoring = (tutor) => {
     setSelectedEducator(tutor);
-    setRequestForm(prev => ({
-      ...prev,
-      tutorId: tutor._id,
-      type: 'tutoring'
-    }));
+    setRequestForm({ ...EMPTY_REQUEST, tutorId: tutor._id });
     setShowRequestModal(true);
+    loadTutorCourses(tutor._id);
   };
 
   const handleRequestSubmit = async (e) => {
     e.preventDefault();
     try {
+      const startsAt = new Date(`${requestForm.date}T${requestForm.time}`);
       const appointmentData = {
-        ...requestForm,
-        status: 'pending'
+        tutorId: requestForm.tutorId,
+        courseId: requestForm.courseId,
+        startsAt: startsAt.toISOString(),
+        durationMinutes: Number(requestForm.durationMinutes),
+        ...(requestForm.topic.trim() && { topic: requestForm.topic.trim() }),
       };
 
       console.log('Enviando datos de tutoría:', appointmentData);
@@ -93,28 +115,14 @@ const Tutors = () => {
       const response = await apiClient.post('/appointments', appointmentData);
       console.log('Respuesta del servidor:', response.data);
       
-      alert('Solicitud de tutoría enviada exitosamente');
+      alert('Solicitud enviada. El tutor deberá confirmarla.');
 
       setShowRequestModal(false);
-      setRequestForm({
-        tutorId: '',
-        subject: '',
-        topic: '',
-        date: '',
-        time: '',
-        duration: 60,
-        message: '',
-        type: 'tutoring'
-      });
+      setRequestForm(EMPTY_REQUEST);
     } catch (error) {
       console.error('Error creating appointment:', error);
       
-      let errorMessage = 'Error al enviar la solicitud. Inténtalo nuevamente.';
-      if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      } else if (error.response?.data?.error) {
-        errorMessage = error.response.data.error;
-      }
+      const errorMessage = getApiErrorMessage(error, 'Error al enviar la solicitud. Inténtalo nuevamente.');
       
       alert(errorMessage);
     }
@@ -567,18 +575,26 @@ const Tutors = () => {
               <form onSubmit={handleRequestSubmit}>
                 <div className="form-row">
                   <div className="form-group">
-                    <label>📚 Materia *</label>
-                    <input
-                      type="text"
-                      name="subject"
-                      value={requestForm.subject}
+                    <label>📚 Curso *</label>
+                    <select
+                      name="courseId"
+                      value={requestForm.courseId}
                       onChange={handleFormChange}
-                      placeholder="Ej: Matemáticas, Física, Química"
+                      disabled={courses.length === 0}
                       required
-                    />
+                    >
+                      <option value="">{courses.length === 0 ? 'Sin cursos disponibles' : 'Selecciona un curso'}</option>
+                      {courses.map((course) => (
+                        <option key={course._id} value={course._id}>{course.title}</option>
+                      ))}
+                    </select>
+                    {coursesError && <p role="alert">{coursesError}</p>}
+                    {!coursesError && requestForm.tutorId && courses.length === 0 && (
+                      <p>Este tutor todavía no tiene cursos publicados.</p>
+                    )}
                   </div>
                   <div className="form-group">
-                    <label>🎯 Tema específico</label>
+                    <label>🎯 Tema (opcional)</label>
                     <input
                       type="text"
                       name="topic"
@@ -597,7 +613,7 @@ const Tutors = () => {
                       name="date"
                       value={requestForm.date}
                       onChange={handleFormChange}
-                      min={new Date().toISOString().split('T')[0]}
+                      min={localToday()}
                       required
                     />
                   </div>
@@ -614,8 +630,8 @@ const Tutors = () => {
                   <div className="form-group">
                     <label>⏱️ Duración</label>
                     <select
-                      name="duration"
-                      value={requestForm.duration}
+                      name="durationMinutes"
+                      value={requestForm.durationMinutes}
                       onChange={handleFormChange}
                     >
                       <option value={30}>30 minutos</option>
@@ -626,22 +642,11 @@ const Tutors = () => {
                   </div>
                 </div>
 
-                <div className="form-group">
-                  <label>💬 Mensaje para el tutor</label>
-                  <textarea
-                    name="message"
-                    value={requestForm.message}
-                    onChange={handleFormChange}
-                    placeholder="Describe qué necesitas reforzar, tus objetivos para la tutoría, o cualquier información relevante..."
-                    rows="4"
-                  />
-                </div>
-
                 <div className="modal-actions">
                   <button type="button" className="btn btn-secondary" onClick={() => setShowRequestModal(false)}>
                     Cancelar
                   </button>
-                  <button type="submit" className="btn btn-primary">
+                  <button type="submit" className="btn btn-primary" disabled={courses.length === 0}>
                     📤 Enviar Solicitud de Tutoría
                   </button>
                 </div>

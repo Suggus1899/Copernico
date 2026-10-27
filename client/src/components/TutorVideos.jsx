@@ -1,32 +1,33 @@
 import React, { Component } from 'react';
 import apiClient from '../utils/axiosConfig';
+import { getApiErrorMessage } from '../utils/apiError';
 import TutorSidebarMenu from './TutorSidebarMenu';
 import './Dashboard.css';
+
+// Los vídeos se reproducen desde YouTube: el tutor solo guarda la URL o el ID del vídeo.
+const EMPTY_FORM = {
+  title: '',
+  description: '',
+  subject: '',
+  topic: '',
+  grade: '',
+  duration: '',
+  visibility: 'students',
+  tags: '',
+  videoUrl: '',
+  targetStudentId: ''
+};
 
 class TutorVideos extends Component {
   state = {
     videos: [],
-    students: [], // Lista de estudiantes del tutor
+    students: [], // Estudiantes con citas confirmadas con el tutor
     loading: false,
     uploading: false,
     showForm: false,
-    formData: {
-      title: '',
-      description: '',
-      subject: '',
-      topic: '',
-      grade: '',
-      duration: '',
-      visibility: 'students',
-      tags: '',
-      videoUrl: '',
-      targetStudentId: '' // Nuevo campo para el estudiante específico
-    },
-    selectedVideoFile: null,
-    selectedThumbnailFile: null,
+    formData: EMPTY_FORM,
     editMode: false,
-    editingId: null,
-    uploadMethod: 'file' // 'file' o 'url'
+    editingId: null
   };
 
   componentDidMount() {
@@ -48,8 +49,6 @@ class TutorVideos extends Component {
   loadVideos = async () => {
     try {
       this.setState({ loading: true });
-
-      // Cargar los videos del tutor/asesor
       const response = await apiClient.get('/videos/my/videos');
       this.setState({
         videos: response.data.data,
@@ -57,7 +56,6 @@ class TutorVideos extends Component {
       });
     } catch (error) {
       console.error('Error loading videos:', error);
-      console.error('Error details:', error.response);
       this.setState({ loading: false });
     }
   };
@@ -72,130 +70,59 @@ class TutorVideos extends Component {
     }));
   };
 
-  handleFileChange = (e) => {
-    const { name, files } = e.target;
-    if (files && files[0]) {
-      if (name === 'videoFile') {
-        this.setState({ selectedVideoFile: files[0] });
-      } else if (name === 'thumbnailFile') {
-        this.setState({ selectedThumbnailFile: files[0] });
-      }
+  // Contrato de la API: JSON con youtubeUrl, tags como array y allowedStudents como lista de IDs.
+  buildPayload = () => {
+    const { formData, editMode } = this.state;
+    const payload = {
+      title: formData.title.trim(),
+      description: formData.description.trim(),
+      subject: formData.subject.trim(),
+      topic: formData.topic.trim(),
+      grade: formData.grade.trim(),
+      visibility: formData.visibility,
+      tags: formData.tags.split(',').map(tag => tag.trim()).filter(Boolean)
+    };
+    if (formData.duration !== '') {
+      payload.duration = Number(formData.duration);
     }
+    if (formData.videoUrl.trim()) {
+      payload.youtubeUrl = formData.videoUrl.trim();
+    }
+    if (formData.targetStudentId) {
+      payload.allowedStudents = [formData.targetStudentId];
+    } else if (!editMode) {
+      payload.allowedStudents = [];
+    }
+    return payload;
   };
 
   handleSubmit = async (e) => {
     e.preventDefault();
+    const { editMode, editingId, formData } = this.state;
 
-    // Validar que se haya proporcionado un video (archivo o URL)
-    if (!this.state.editMode) {
-      if (this.state.uploadMethod === 'file' && !this.state.selectedVideoFile) {
-        alert('Por favor selecciona un archivo de video');
-        return;
-      }
-      if (this.state.uploadMethod === 'url' && !this.state.formData.videoUrl.trim()) {
-        alert('Por favor proporciona una URL de video');
-        return;
-      }
+    if (!editMode && !formData.videoUrl.trim()) {
+      alert('Introduce la URL de YouTube del vídeo.');
+      return;
     }
 
     try {
       this.setState({ uploading: true });
-
-      console.log('Iniciando subida de video...');
-      console.log('Método de subida:', this.state.uploadMethod);
-      console.log('Archivo de video:', this.state.selectedVideoFile);
-      console.log('URL de video:', this.state.formData.videoUrl);
-
-      const formDataToSend = new FormData();
-
-      // Agregar datos del formulario
-      Object.keys(this.state.formData).forEach(key => {
-        if (key === 'tags') {
-          const tags = this.state.formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag);
-          formDataToSend.append(key, JSON.stringify(tags));
-          console.log('Tags procesadas:', tags);
-        } else if (key === 'videoUrl' && this.state.uploadMethod === 'url') {
-          // Solo agregar videoUrl si se está usando el método URL
-          formDataToSend.append(key, this.state.formData[key]);
-        } else if (key !== 'videoUrl') {
-          // Agregar todos los otros campos excepto videoUrl cuando se usa archivo
-          formDataToSend.append(key, this.state.formData[key]);
-        }
-      });
-
-      // Agregar archivos solo si se está usando el método de archivo
-      if (this.state.uploadMethod === 'file' || this.state.editMode) {
-        if (this.state.selectedVideoFile) {
-          formDataToSend.append('videoFile', this.state.selectedVideoFile);
-          console.log('Agregando archivo de video:', this.state.selectedVideoFile.name);
-        }
-      }
-      
-      if (this.state.selectedThumbnailFile) {
-        formDataToSend.append('thumbnailFile', this.state.selectedThumbnailFile);
-        console.log('Agregando archivo de miniatura:', this.state.selectedThumbnailFile.name);
-      }
-
-      console.log('FormData preparado, enviando...');
-
-      const config = {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      };
-
-      let response;
-      if (this.state.editMode) {
-        console.log('Enviando PUT request...');
-        response = await apiClient.put(`/videos/${this.state.editingId}`, formDataToSend, config);
+      if (editMode) {
+        await apiClient.put(`/videos/${editingId}`, this.buildPayload());
       } else {
-        console.log('Enviando POST request...');
-        response = await apiClient.post('/videos', formDataToSend, config);
+        await apiClient.post('/videos', this.buildPayload());
       }
-
-      console.log('Respuesta del servidor:', response);
 
       this.setState({
         showForm: false,
         editMode: false,
         editingId: null,
-        selectedVideoFile: null,
-        selectedThumbnailFile: null,
-        uploadMethod: 'file',
-        formData: {
-          title: '',
-          description: '',
-          subject: '',
-          topic: '',
-          grade: '',
-          duration: '',
-          visibility: 'students',
-          tags: '',
-          videoUrl: '',
-          targetStudentId: ''
-        }
+        formData: EMPTY_FORM
       });
-
-      console.log('Estado reseteado, cargando videos...');
       this.loadVideos();
-      alert('Video subido exitosamente');
+      alert('Video guardado correctamente');
     } catch (error) {
-      console.error('Error completo:', error);
-      console.error('Error response:', error.response);
-      console.error('Error message:', error.message);
-
-      let errorMessage = 'Error al subir el video. ';
-      if (error.response) {
-        console.error('Error status:', error.response.status);
-        console.error('Error data:', error.response.data);
-        errorMessage += error.response.data?.message || error.response.data?.error || 'Error del servidor.';
-      } else if (error.request) {
-        errorMessage += 'No se pudo conectar con el servidor.';
-      } else {
-        errorMessage += error.message || 'Error desconocido.';
-      }
-
-      alert(errorMessage);
+      alert(getApiErrorMessage(error, 'Error al guardar el video.'));
     } finally {
       this.setState({ uploading: false });
     }
@@ -207,6 +134,7 @@ class TutorVideos extends Component {
       editMode: true,
       editingId: video._id,
       formData: {
+        ...EMPTY_FORM,
         title: video.title,
         description: video.description || '',
         subject: video.subject,
@@ -214,8 +142,7 @@ class TutorVideos extends Component {
         grade: video.grade || '',
         duration: video.duration || '',
         visibility: video.visibility,
-        tags: video.tags ? video.tags.join(', ') : '',
-        targetStudentId: video.targetStudentId || ''
+        tags: video.tags ? video.tags.join(', ') : ''
       }
     });
   };
@@ -229,7 +156,7 @@ class TutorVideos extends Component {
       await apiClient.delete(`/videos/${videoId}`);
       this.loadVideos();
     } catch (error) {
-      console.error('Error deleting video:', error);
+      alert(getApiErrorMessage(error, 'No se pudo eliminar el video.'));
     }
   };
 
@@ -261,16 +188,16 @@ class TutorVideos extends Component {
               <button
                 type="button"
                 className="btn-primary"
-                onClick={() => this.setState({ showForm: !showForm, editMode: false, editingId: null })}
+                onClick={() => this.setState({ showForm: !showForm, editMode: false, editingId: null, formData: EMPTY_FORM })}
               >
-                {showForm ? '✕ Cancelar' : '+ Subir Video'}
+                {showForm ? '✕ Cancelar' : '+ Añadir video'}
               </button>
             </header>
 
             {showForm && (
               <div className="video-form-container">
                 <form onSubmit={this.handleSubmit} className="video-form">
-                  <h3>{editMode ? 'Editar Video' : 'Subir Nuevo Video'}</h3>
+                  <h3>{editMode ? 'Editar Video' : 'Añadir nuevo video'}</h3>
 
                   <div className="form-row">
                     <div className="form-group">
@@ -299,19 +226,19 @@ class TutorVideos extends Component {
 
                   <div className="form-row">
                     <div className="form-group">
-                      <label>👨‍🎓 Estudiante Destinatario *</label>
+                      <label>👨‍🎓 Estudiante destinatario{editMode ? '' : ' *'}</label>
                       <select
                         name="targetStudentId"
                         value={formData.targetStudentId}
                         onChange={this.handleInputChange}
-                        required
+                        required={!editMode}
                       >
-                        <option value="">Seleccionar estudiante</option>
+                        <option value="">{editMode ? 'Mantener destinatarios actuales' : 'Seleccionar estudiante'}</option>
                         {this.state.students.map(student => {
                           const studentName = `${student.personalInfo?.firstName || ''} ${student.personalInfo?.lastName || ''}`.trim() || student.email;
                           return (
                             <option key={student._id} value={student._id}>
-                              {studentName} - {student.stats.subjects.join(', ')}
+                              {studentName}
                             </option>
                           );
                         })}
@@ -327,8 +254,7 @@ class TutorVideos extends Component {
                         value={formData.visibility}
                         onChange={this.handleInputChange}
                       >
-                        <option value="private">Privado</option>
-                        <option value="student">Solo el estudiante seleccionado</option>
+                        <option value="private">Solo el estudiante seleccionado</option>
                         <option value="students">Todos mis estudiantes</option>
                         <option value="public">Público</option>
                       </select>
@@ -375,95 +301,26 @@ class TutorVideos extends Component {
                         value={formData.duration}
                         onChange={this.handleInputChange}
                         placeholder="60"
-                        min="1"
+                        min="0"
+                        max="1440"
                       />
                     </div>
                   </div>
 
                   <div className="form-row">
                     <div className="form-group">
-                      <label>Método de subida</label>
-                      <div className="upload-method-selector">
-                        <label className="radio-option">
-                          <input
-                            type="radio"
-                            name="uploadMethod"
-                            value="file"
-                            checked={this.state.uploadMethod === 'file'}
-                            onChange={(e) => this.setState({ uploadMethod: e.target.value })}
-                          />
-                          📁 Subir archivo
-                        </label>
-                        <label className="radio-option">
-                          <input
-                            type="radio"
-                            name="uploadMethod"
-                            value="url"
-                            checked={this.state.uploadMethod === 'url'}
-                            onChange={(e) => this.setState({ uploadMethod: e.target.value })}
-                          />
-                          🔗 URL de video
-                        </label>
-                      </div>
+                      <label>URL del video de YouTube{editMode ? '' : ' *'}</label>
+                      <input
+                        type="text"
+                        name="videoUrl"
+                        value={formData.videoUrl}
+                        onChange={this.handleInputChange}
+                        required={!editMode}
+                        placeholder={editMode ? 'Déjalo vacío para mantener el video actual' : 'https://www.youtube.com/watch?v=...'}
+                      />
+                      <small>El video se reproduce desde YouTube; no se sube ningún archivo.</small>
                     </div>
                   </div>
-
-                  {this.state.uploadMethod === 'file' ? (
-                    <div className="form-row">
-                      <div className="form-group">
-                        <label>Archivo de Video *</label>
-                        <input
-                          type="file"
-                          name="videoFile"
-                          onChange={this.handleFileChange}
-                          accept="video/*"
-                          required={!this.state.editMode}
-                        />
-                        {this.state.selectedVideoFile && (
-                          <small>Seleccionado: {this.state.selectedVideoFile.name}</small>
-                        )}
-                      </div>
-                      <div className="form-group">
-                        <label>Imagen de Portada (opcional)</label>
-                        <input
-                          type="file"
-                          name="thumbnailFile"
-                          onChange={this.handleFileChange}
-                          accept="image/*"
-                        />
-                        {this.state.selectedThumbnailFile && (
-                          <small>Seleccionado: {this.state.selectedThumbnailFile.name}</small>
-                        )}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="form-row">
-                      <div className="form-group">
-                        <label>URL del Video *</label>
-                        <input
-                          type="url"
-                          name="videoUrl"
-                          value={this.state.formData.videoUrl}
-                          onChange={this.handleInputChange}
-                          placeholder="https://www.youtube.com/watch?v=... o https://vimeo.com/..."
-                          required
-                        />
-                        <small>Soporta YouTube, Vimeo y enlaces directos a archivos de video</small>
-                      </div>
-                      <div className="form-group">
-                        <label>Imagen de Portada (opcional)</label>
-                        <input
-                          type="file"
-                          name="thumbnailFile"
-                          onChange={this.handleFileChange}
-                          accept="image/*"
-                        />
-                        {this.state.selectedThumbnailFile && (
-                          <small>Seleccionado: {this.state.selectedThumbnailFile.name}</small>
-                        )}
-                      </div>
-                    </div>
-                  )}
 
                   <div className="form-row">
                     <div className="form-group">
@@ -484,7 +341,7 @@ class TutorVideos extends Component {
                       className="btn-primary"
                       disabled={uploading}
                     >
-                      {uploading ? '⏳ Guardando...' : (editMode ? '💾 Actualizar' : '📤 Subir Video')}
+                      {uploading ? '⏳ Guardando...' : (editMode ? '💾 Actualizar' : '📤 Añadir video')}
                     </button>
                   </div>
                 </form>
@@ -496,8 +353,8 @@ class TutorVideos extends Component {
                 <div className="loading">Cargando videos...</div>
               ) : videos.length === 0 ? (
                 <div className="empty-state">
-                  <p>🎬 No has subido ningún video aún.</p>
-                  <p>Haz clic en "Subir Video" para comenzar.</p>
+                  <p>🎬 No has añadido ningún video aún.</p>
+                  <p>Haz clic en "Añadir video" para comenzar.</p>
                 </div>
               ) : (
                 <div className="videos-grid">

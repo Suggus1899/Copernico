@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import apiClient from '../utils/axiosConfig';
+import usePolling from '../utils/usePolling';
 import logo from '../assets/logo.jpg';
 import './SidebarMenu.css';
 
@@ -19,30 +20,24 @@ const TutorSidebarMenu = ({ userRole = 'tutor' }) => {
   const navigate = useNavigate();
   const [unreadCount, setUnreadCount] = useState(0);
 
-  useEffect(() => {
-    fetchUnreadCount();
-    
-    // Actualizar contador cada 30 segundos
-    const interval = setInterval(fetchUnreadCount, 30000);
-    
-    return () => clearInterval(interval);
-  }, []);
-
   const fetchUnreadCount = async () => {
     try {
-      console.log('📊 Fetching unread count for role:', userRole);
       const response = await apiClient.get('/notifications/unread-count');
-      const count = response.data.data?.unreadCount || 0;
-      console.log('📊 Unread count received:', count);
-      setUnreadCount(count);
-    } catch (error) {
-      console.error('📊 Error fetching unread count:', error);
+      setUnreadCount(response.data.data?.unreadCount || 0);
+    } catch {
+      // El contador es informativo: un fallo puntual no debe interrumpir la navegación.
     }
   };
 
-  const handleLogout = (e) => {
+  usePolling(fetchUnreadCount, 30000);
+
+  const handleLogout = async (e) => {
     e.preventDefault();
-    localStorage.removeItem('token');
+    try {
+      await apiClient.post('/auth/signout');
+    } catch {
+      // Si la sesión ya no es válida en el servidor, igualmente volvemos al login.
+    }
     navigate('/login');
   };
 

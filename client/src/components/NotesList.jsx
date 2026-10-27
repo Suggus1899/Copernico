@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import apiClient from "../utils/axiosConfig";
+import { getApiErrorMessage } from "../utils/apiError";
 import { Link } from "react-router-dom";
 import "./Notes.css";
 
@@ -65,8 +66,7 @@ function NotesList() {
       alert('Apunte creado exitosamente');
     } catch (error) {
       console.error('Error creating note:', error);
-      const errorMessage = error.response?.data?.error || error.response?.data?.message || 'Error al crear el apunte';
-      alert(errorMessage);
+      alert(getApiErrorMessage(error, 'Error al crear el apunte'));
     }
   };
 

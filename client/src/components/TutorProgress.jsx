@@ -63,7 +63,7 @@ const TutorProgress = () => {
         }
         
         const student = studentsMap.get(studentId);
-        const subject = appointment.subject;
+        const subject = appointment.courseId?.title || 'Sin curso';
         
         // Inicializar materia si no existe
         if (!student.subjects.has(subject)) {
@@ -84,12 +84,12 @@ const TutorProgress = () => {
           student.completedAppointments++;
           
           // Actualizar última actividad
-          const sessionDate = new Date(appointment.scheduledDate);
+          const sessionDate = new Date(appointment.startsAt);
           if (!student.lastActivity || sessionDate > new Date(student.lastActivity)) {
-            student.lastActivity = appointment.scheduledDate;
+            student.lastActivity = appointment.startsAt;
           }
           if (!subjectData.lastSession || sessionDate > new Date(subjectData.lastSession)) {
-            subjectData.lastSession = appointment.scheduledDate;
+            subjectData.lastSession = appointment.startsAt;
           }
         }
         

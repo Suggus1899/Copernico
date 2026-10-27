@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import apiClient from '../utils/axiosConfig';
+import { getApiErrorMessage } from '../utils/apiError';
 import './Dashboard.css';
 import './VideoProgress.css';
 
@@ -35,7 +36,7 @@ class VideoProgressDashboard extends Component {
     } catch (error) {
       console.error('Error loading video progress dashboard:', error);
       this.setState({
-        error: 'No se pudo cargar el dashboard de progreso de videos. ' + (error.response?.data?.error?.message || error.message),
+        error: getApiErrorMessage(error, 'No se pudo cargar el dashboard de progreso de videos.'),
         loading: false
       });
     }

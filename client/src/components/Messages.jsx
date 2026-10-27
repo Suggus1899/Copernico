@@ -90,10 +90,14 @@ const Messages = () => {
       return;
     }
 
-    // Si no existe, obtener datos básicos del usuario y abrir chat vacío
+    // Sin conversación previa: abrir un chat vacío con quien comparte una cita contigo.
     try {
-      const res = await apiClient.get(`/users/${otherUserId}`);
-      const user = res.data?.data || res.data;
+      const res = await apiClient.get('/appointments');
+      const appointments = res.data?.data || [];
+      const match = appointments.find(
+        (a) => a.tutorId?._id === otherUserId || a.studentId?._id === otherUserId
+      );
+      const user = match?.tutorId?._id === otherUserId ? match.tutorId : match?.studentId;
       if (user && user._id) {
         const meta = {
           otherUser: user,

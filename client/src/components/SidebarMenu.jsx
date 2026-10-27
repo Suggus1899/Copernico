@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import apiClient from '../utils/axiosConfig';
+import usePolling from '../utils/usePolling';
 import './SidebarMenu.css';
 
 // Importación de activos (Asegúrate de que los nombres de archivo sean correctos)
@@ -19,53 +20,40 @@ const SidebarMenu = () => {
   const navigate = useNavigate();
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
 
-  useEffect(() => {
-    fetchUnreadMessagesCount();
-    
-    // Actualizar cada 15 segundos
-    const interval = setInterval(fetchUnreadMessagesCount, 15000);
-    
-    // Escuchar evento personalizado cuando se leen mensajes
-    const handleMessagesRead = () => {
-      fetchUnreadMessagesCount();
-    };
-    
-    window.addEventListener('messagesRead', handleMessagesRead);
-    
-    return () => {
-      clearInterval(interval);
-      window.removeEventListener('messagesRead', handleMessagesRead);
-    };
+  const fetchUnreadMessagesCount = useCallback(async () => {
+    try {
+      // Solo necesitamos el total: limit 1 evita descargar notificaciones.
+      const response = await apiClient.get('/notifications', {
+        params: { type: 'message_received', read: false, limit: 1 },
+      });
+      setUnreadMessagesCount(response.data?.pagination?.total ?? 0);
+    } catch {
+      // El contador es informativo: un fallo puntual no debe interrumpir la navegación.
+    }
   }, []);
 
-  // Actualizar el contador cuando cambia la ruta (especialmente al salir de Mensajes)
+  usePolling(fetchUnreadMessagesCount, 30000);
+
+  // Mensajes leídos en otra parte de la app: refrescar el contador al instante.
+  useEffect(() => {
+    window.addEventListener('messagesRead', fetchUnreadMessagesCount);
+    return () => window.removeEventListener('messagesRead', fetchUnreadMessagesCount);
+  }, [fetchUnreadMessagesCount]);
+
+  // Al salir de Mensajes el contador puede haber cambiado.
   useEffect(() => {
     if (location.pathname !== '/dashboard/mensajes') {
-      // Si no estamos en Mensajes, actualizar el contador
       fetchUnreadMessagesCount();
     }
-  }, [location.pathname]);
+  }, [location.pathname, fetchUnreadMessagesCount]);
 
-  const fetchUnreadMessagesCount = async () => {
-    try {
-      const response = await apiClient.get('/notifications', {
-        params: {
-          type: 'message_received',
-          read: false,
-          limit: 100
-        }
-      });
-      
-      const count = response.data?.data?.length || 0;
-      setUnreadMessagesCount(count);
-    } catch (error) {
-      console.error('Error fetching unread messages count:', error);
-    }
-  };
-
-  const handleLogout = (e) => {
+  const handleLogout = async (e) => {
     e.preventDefault();
-    localStorage.removeItem('token');
+    try {
+      await apiClient.post('/auth/signout');
+    } catch {
+      // Si la sesión ya no es válida en el servidor, igualmente volvemos al login.
+    }
     navigate('/login');
   };
 

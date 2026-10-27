@@ -1,6 +1,18 @@
 import React, { useState } from 'react';
 import apiClient from '../utils/axiosConfig';
+import { getApiErrorMessage } from '../utils/apiError';
 import './Account.css';
+
+// Misma política que la API (src/utils/passwordPolicy.js): 8-72 bytes con minúscula, mayúscula y número.
+const PASSWORD_POLICY_MESSAGE =
+  'La contraseña debe tener entre 8 y 72 caracteres e incluir una minúscula, una mayúscula y un número.';
+
+const isStrongPassword = (value) =>
+  value.length >= 8 &&
+  new TextEncoder().encode(value).length <= 72 &&
+  /[a-z]/.test(value) &&
+  /[A-Z]/.test(value) &&
+  /\d/.test(value);
 
 const ChangePassword = () => {
   const [currentPassword, setCurrentPassword] = useState('');
@@ -10,15 +22,13 @@ const ChangePassword = () => {
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const passwordPolicyRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
-
   const onSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setSuccess('');
 
-    if (!passwordPolicyRegex.test(newPassword)) {
-      setError('La nueva contraseña debe tener al menos 8 caracteres e incluir mayúscula, minúscula y número.');
+    if (!isStrongPassword(newPassword)) {
+      setError(PASSWORD_POLICY_MESSAGE);
       return;
     }
     if (newPassword !== confirmPassword) {
@@ -28,19 +38,14 @@ const ChangePassword = () => {
 
     setLoading(true);
     try {
-      // Endpoint placeholder, ajústalo si ya existe en el backend
-      const res = await apiClient.post('/auth/change-password', {
-        currentPassword: currentPassword.trim(),
-        newPassword: newPassword.trim(),
-        confirmPassword: confirmPassword.trim()
-      });
-      if (res.data?.success) {
-        setSuccess('Contraseña actualizada correctamente.');
-      } else {
-        setError(res.data?.error || 'No se pudo actualizar la contraseña.');
-      }
+      // Las contraseñas no se recortan: la API las usa tal cual.
+      await apiClient.post('/auth/change-password', { currentPassword, newPassword });
+      setSuccess('Contraseña actualizada correctamente. Las demás sesiones abiertas se han cerrado.');
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
     } catch (err) {
-      setError(err.response?.data?.error || 'Error al cambiar la contraseña.');
+      setError(getApiErrorMessage(err, 'Error al cambiar la contraseña.'));
     } finally {
       setLoading(false);
     }
@@ -49,14 +54,15 @@ const ChangePassword = () => {
   return (
     <div className="change-password-container">
       <h2>Cambiar contraseña</h2>
-      {error && <div className="alert alert-danger">{error}</div>}
-      {success && <div className="alert alert-success">{success}</div>}
+      {error && <div className="alert alert-danger" role="alert">{error}</div>}
+      {success && <div className="alert alert-success" role="status">{success}</div>}
       <form onSubmit={onSubmit}>
         <div className="input-group">
           <label htmlFor="currentPassword">Contraseña actual</label>
           <input
             id="currentPassword"
             type="password"
+            autoComplete="current-password"
             value={currentPassword}
             onChange={(e) => setCurrentPassword(e.target.value)}
             required
@@ -68,6 +74,7 @@ const ChangePassword = () => {
           <input
             id="newPassword"
             type="password"
+            autoComplete="new-password"
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
             required
@@ -80,6 +87,7 @@ const ChangePassword = () => {
           <input
             id="confirmPassword"
             type="password"
+            autoComplete="new-password"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
             required

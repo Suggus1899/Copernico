@@ -1,154 +1,219 @@
 import React, { useEffect, useState } from 'react';
 import apiClient from '../utils/axiosConfig';
+import { getApiErrorMessage } from '../utils/apiError';
+
+const MAX_FILES_PER_UPLOAD = 5;
+const MAX_FILE_BYTES = 10 * 1024 * 1024;
+const ACCEPTED_EXTENSIONS = '.pdf,.txt,.docx,.xlsx,.pptx,.jpg,.jpeg,.png,.webp';
+
+const formatSize = (bytes) => {
+  if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+};
+
+const canPreview = (mimeType) => mimeType === 'application/pdf' || Boolean(mimeType?.startsWith('image/'));
 
 const DocumentManager = () => {
-  const [docs, setDocs] = useState([]); // [{url,name,tags}]
+  const [docs, setDocs] = useState([]);
   const [files, setFiles] = useState([]);
+  const [inputKey, setInputKey] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [viewerUrl, setViewerUrl] = useState('');
-  const [viewerOpen, setViewerOpen] = useState(false);
+  const [preview, setPreview] = useState(null);
 
-  const load = async () => {
-    setError('');
+  const fileUrl = (docId) => `${apiClient.defaults.baseURL}/users/profile/documents/${docId}/download`;
+
+  const loadDocuments = async () => {
     try {
       const res = await apiClient.get('/users/profile/documents');
-      setDocs(res.data?.data?.documents || []);
-    } catch (e) {
-      setError(e.response?.data?.error || 'No se pudieron cargar los documentos');
+      setDocs(res.data.data.documents);
+    } catch (err) {
+      setError(getApiErrorMessage(err, 'No se pudieron cargar los documentos'));
     }
   };
 
   useEffect(() => {
-    load();
+    loadDocuments();
   }, []);
 
+  useEffect(() => {
+    if (!preview) return undefined;
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') setPreview(null);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [preview]);
+
+  const resetFileInput = () => {
+    setFiles([]);
+    setInputKey((key) => key + 1);
+  };
+
   const onFileChange = (e) => {
-    setFiles(Array.from(e.target.files || []));
+    const selected = Array.from(e.target.files || []);
+    const oversized = selected.find((file) => file.size > MAX_FILE_BYTES);
     setError('');
     setSuccess('');
+    if (selected.length > MAX_FILES_PER_UPLOAD) {
+      resetFileInput();
+      setError(`Puedes subir hasta ${MAX_FILES_PER_UPLOAD} archivos a la vez.`);
+    } else if (oversized) {
+      resetFileInput();
+      setError(`"${oversized.name}" supera el máximo de 10 MB.`);
+    } else {
+      setFiles(selected);
+    }
   };
 
   const onUpload = async () => {
-    if (!files.length) return;
     setLoading(true);
     setError('');
     setSuccess('');
     try {
       const form = new FormData();
-      files.forEach(f => form.append('documents', f));
-      await apiClient.post('/users/profile/documents', form, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
+      files.forEach((file) => form.append('documents', file));
+      const res = await apiClient.post('/users/profile/documents', form);
+      setDocs(res.data.data.documents);
+      resetFileInput();
       setSuccess('Documentos subidos correctamente');
-      setFiles([]);
-      await load();
-    } catch (e) {
-      setError(e.response?.data?.error || 'Error subiendo documentos');
+    } catch (err) {
+      setError(getApiErrorMessage(err, 'No se pudieron subir los documentos'));
     } finally {
       setLoading(false);
     }
   };
 
-  const onView = (url) => {
-    setViewerUrl(url);
-    setViewerOpen(true);
-  };
-
-  const onDelete = async (url) => {
-    if (!window.confirm('¿Eliminar este documento?')) return;
+  const onDelete = async (doc) => {
+    if (!window.confirm(`¿Eliminar "${doc.name}"?`)) return;
     setLoading(true);
-    setError(''); setSuccess('');
+    setError('');
+    setSuccess('');
     try {
-      await apiClient.delete('/users/profile/documents', { data: { url } });
+      const res = await apiClient.delete(`/users/profile/documents/${doc._id}`);
+      setDocs(res.data.data.documents);
       setSuccess('Documento eliminado');
-      await load();
-    } catch (e) {
-      setError(e.response?.data?.error || 'No se pudo eliminar');
+    } catch (err) {
+      setError(getApiErrorMessage(err, 'No se pudo eliminar el documento'));
     } finally {
       setLoading(false);
+    }
+  };
+
+  const updateDocument = async (doc, changes, successMessage) => {
+    setError('');
+    setSuccess('');
+    try {
+      const res = await apiClient.patch(`/users/profile/documents/${doc._id}`, changes);
+      setDocs(res.data.data.documents);
+      setSuccess(successMessage);
+    } catch (err) {
+      setError(getApiErrorMessage(err, 'No se pudo actualizar el documento'));
     }
   };
 
   return (
-    <div className="document-manager" style={{ marginTop: 24 }}>
-      <h3>Mis documentos (tutor/asesor)</h3>
-      <p className="help-text">Formatos: PDF, JPG, PNG, WEBP. Máx 20MB por archivo.</p>
-      <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-        <input type="file" multiple onChange={onFileChange} accept="application/pdf,image/*" />
-        <button className="btn btn-primary" onClick={onUpload} disabled={!files.length || loading}>
-          {loading ? 'Subiendo...' : 'Subir'}
+    <section className="document-manager" style={{ marginTop: 24 }} aria-labelledby="document-manager-title">
+      <h3 id="document-manager-title">Mis documentos</h3>
+      <p className="help-text">
+        Formatos: PDF, TXT, DOCX, XLSX, PPTX, JPG, PNG, WEBP. Máximo 10 MB por archivo y 20 documentos en total.
+      </p>
+      <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+        <input
+          key={inputKey}
+          type="file"
+          multiple
+          accept={ACCEPTED_EXTENSIONS}
+          aria-label="Seleccionar documentos"
+          onChange={onFileChange}
+        />
+        <button type="button" className="btn btn-primary" onClick={onUpload} disabled={!files.length || loading}>
+          {loading ? 'Procesando...' : 'Subir'}
         </button>
       </div>
-      {error && <div className="alert alert-danger" style={{ marginTop: 8 }}>{error}</div>}
-      {success && <div className="alert alert-success" style={{ marginTop: 8 }}>{success}</div>}
+      {error && <div role="alert" className="alert alert-danger" style={{ marginTop: 8 }}>{error}</div>}
+      {success && <div role="status" className="alert alert-success" style={{ marginTop: 8 }}>{success}</div>}
 
       <div className="docs-list" style={{ marginTop: 16 }}>
-        {docs.length === 0 && <div>No tienes documentos cargados.</div>}
-        {docs.map((doc, idx) => {
-          const url = doc.url || doc;
-          const name = doc.name || (typeof doc === 'string' ? (doc.split('/').pop()) : '');
-          const tags = Array.isArray(doc.tags) ? doc.tags : [];
-          return (
-            <div key={idx} className="doc-item" style={{ padding: '10px 0', borderBottom: '1px solid #eee' }}>
-              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:12 }}>
-                <div style={{ flex:1, minWidth:0 }}>
-                  <div style={{ fontWeight:600, marginBottom:4, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{name}</div>
-                  <div style={{ color:'#666', fontSize:12, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{url}</div>
-                </div>
-                <div style={{ display:'flex', gap:8 }}>
-                  <button className="btn btn-secondary" onClick={() => onView(url)}>Ver</button>
-                  <a className="btn btn-outline" href={url} download>Descargar</a>
-                  <button className="btn btn-danger" onClick={() => onDelete(url)} disabled={loading}>Eliminar</button>
-                </div>
+        {docs.length === 0 && <p>No tienes documentos cargados.</p>}
+        {docs.map((doc) => (
+          <div key={doc._id} className="doc-item" style={{ padding: '10px 0', borderBottom: '1px solid #eee' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{doc.name}</div>
+                <div style={{ color: '#666', fontSize: 12 }}>{formatSize(doc.size)}</div>
               </div>
-              <div style={{ marginTop:8, display:'flex', gap:12, alignItems:'center', flexWrap:'wrap' }}>
-                <div>
-                  <label style={{ fontSize:12, color:'#444' }}>Nombre</label>
-                  <input defaultValue={name} onBlur={async (e)=>{
-                    const newName = e.target.value.trim();
-                    if (!newName || newName === name) return;
-                    try {
-                      await apiClient.patch('/users/profile/documents/rename', { url, name: newName });
-                      setSuccess('Nombre actualizado');
-                      await load();
-                    } catch (er) { setError(er.response?.data?.error || 'No se pudo renombrar'); }
-                  }} style={{ marginLeft:8 }} />
-                </div>
-                <div>
-                  <label style={{ fontSize:12, color:'#444' }}>Etiquetas</label>
-                  <input defaultValue={tags.join(', ')} onBlur={async (e)=>{
-                    const newTags = e.target.value.split(',').map(s=>s.trim()).filter(Boolean);
-                    try {
-                      await apiClient.patch('/users/profile/documents/tags', { url, tags: newTags });
-                      setSuccess('Etiquetas actualizadas');
-                      await load();
-                    } catch (er) { setError(er.response?.data?.error || 'No se pudieron actualizar etiquetas'); }
-                  }} style={{ marginLeft:8, minWidth:260 }} placeholder="ej: CV, Título" />
-                </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                {canPreview(doc.mimeType) && (
+                  <button type="button" className="btn btn-secondary" onClick={() => setPreview(doc)}>Ver</button>
+                )}
+                <a className="btn btn-outline" href={fileUrl(doc._id)}>Descargar</a>
+                <button type="button" className="btn btn-danger" onClick={() => onDelete(doc)} disabled={loading}>Eliminar</button>
               </div>
             </div>
-          );
-        })}
+            <div style={{ marginTop: 8, display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 12, color: '#444' }}>Nombre</span>
+                <input
+                  defaultValue={doc.name}
+                  maxLength={120}
+                  onBlur={(e) => {
+                    const name = e.target.value.trim();
+                    if (name && name !== doc.name) {
+                      updateDocument(doc, { name }, 'Nombre actualizado');
+                    } else {
+                      e.target.value = doc.name;
+                    }
+                  }}
+                />
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 12, color: '#444' }}>Etiquetas</span>
+                <input
+                  defaultValue={doc.tags.join(', ')}
+                  placeholder="ej: CV, Título"
+                  style={{ minWidth: 260 }}
+                  onBlur={(e) => {
+                    const tags = e.target.value.split(',').map((tag) => tag.trim()).filter(Boolean);
+                    if (JSON.stringify(tags) !== JSON.stringify(doc.tags)) {
+                      updateDocument(doc, { tags }, 'Etiquetas actualizadas');
+                    }
+                  }}
+                />
+              </label>
+            </div>
+          </div>
+        ))}
       </div>
 
-      {viewerOpen && (
-        <div className="modal-overlay" onClick={() => setViewerOpen(false)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000 }}>
-          <div className="modal-content" onClick={e=>e.stopPropagation()} style={{ background:'#fff', padding:16, borderRadius:8, maxWidth:'90vw', maxHeight:'90vh' }}>
-            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:8 }}>
-              <strong>Vista previa</strong>
-              <button onClick={() => setViewerOpen(false)} className="btn btn-outline">Cerrar</button>
+      {preview && (
+        <div
+          className="modal-overlay"
+          onClick={() => setPreview(null)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label={`Vista previa de ${preview.name}`}
+            className="modal-content"
+            onClick={(e) => e.stopPropagation()}
+            style={{ background: '#fff', padding: 16, borderRadius: 8, maxWidth: '90vw', maxHeight: '90vh' }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, gap: 12 }}>
+              <strong>{preview.name}</strong>
+              <button type="button" onClick={() => setPreview(null)} className="btn btn-outline">Cerrar</button>
             </div>
-            {viewerUrl.toLowerCase().endsWith('.pdf') ? (
-              <iframe title="preview" src={viewerUrl} style={{ width:'80vw', height:'75vh', border:'none' }} />
+            {preview.mimeType === 'application/pdf' ? (
+              <iframe title={preview.name} src={fileUrl(preview._id)} style={{ width: '80vw', height: '75vh', border: 'none' }} />
             ) : (
-              <img src={viewerUrl} alt="preview" style={{ maxWidth:'80vw', maxHeight:'75vh', objectFit:'contain' }} />
+              <img src={fileUrl(preview._id)} alt={preview.name} style={{ maxWidth: '80vw', maxHeight: '75vh', objectFit: 'contain' }} />
             )}
           </div>
         </div>
       )}
-    </div>
+    </section>
   );
 };
 

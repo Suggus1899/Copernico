@@ -433,6 +433,26 @@
   display: block;
 }
 
+/* Aviso cuando el vídeo no se puede mostrar (sin enlace válido o API no disponible) */
+.clases-page__video-missing {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin: 0;
+  padding: 16px;
+  color: #fff;
+  text-align: center;
+}
+
+.clases-page__video-missing a {
+  color: #fff;
+  text-decoration: underline;
+}
+
 /* Detalles debajo del video */
 .clases-page__details {
   display: flex;

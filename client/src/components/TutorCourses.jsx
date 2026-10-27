@@ -37,7 +37,7 @@ const TutorCourses = () => {
           ? `${appointment.studentId.personalInfo.firstName || ''} ${appointment.studentId.personalInfo.lastName || ''}`.trim()
           : appointment.studentId?.email || 'Estudiante';
         
-        const subject = appointment.subject;
+        const subject = appointment.courseId?.title || 'Sin curso';
         const courseKey = `${studentId}-${subject}`;
         
         if (!coursesMap.has(courseKey)) {
@@ -77,12 +77,12 @@ const TutorCourses = () => {
           : 0;
         
         const nextAppointment = course.appointments
-          .filter(apt => apt.status === 'confirmed' && new Date(apt.scheduledDate) > new Date())
-          .sort((a, b) => new Date(a.scheduledDate) - new Date(b.scheduledDate))[0];
+          .filter(apt => apt.status === 'confirmed' && new Date(apt.startsAt) > new Date())
+          .sort((a, b) => new Date(a.startsAt) - new Date(b.startsAt))[0];
         
         const lastAppointment = course.appointments
           .filter(apt => apt.status === 'completed')
-          .sort((a, b) => new Date(b.scheduledDate) - new Date(a.scheduledDate))[0];
+          .sort((a, b) => new Date(b.startsAt) - new Date(a.startsAt))[0];
         
         return {
           ...course,
@@ -324,13 +324,13 @@ const TutorCourses = () => {
                       {course.nextAppointment && (
                         <div className="cursos-page__card-detail cursos-page__card-detail--next">
                           <dt>Próxima sesión</dt>
-                          <dd>{formatDate(course.nextAppointment.scheduledDate)}</dd>
+                          <dd>{formatDate(course.nextAppointment.startsAt)}</dd>
                         </div>
                       )}
                       {course.lastAppointment && !course.nextAppointment && (
                         <div className="cursos-page__card-detail">
                           <dt>Última sesión</dt>
-                          <dd>{formatDate(course.lastAppointment.scheduledDate)}</dd>
+                          <dd>{formatDate(course.lastAppointment.startsAt)}</dd>
                         </div>
                       )}
                     </dl>

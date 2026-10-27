@@ -3,6 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import TutorSidebarMenu from './TutorSidebarMenu';
 import apiClient from '../utils/axiosConfig';
 import AvatarUploader from './AvatarUploader';
+import DocumentManager from './DocumentManager';
+import DeactivateAccount from './DeactivateAccount';
+import { getApiErrorMessage } from '../utils/apiError';
 import './UserProfile.css';
 import './Dashboard.css';
 
@@ -24,13 +27,6 @@ const TutorProfile = () => {
 
   const fetchUserProfile = async () => {
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setError('No hay token de autenticación');
-        setLoading(false);
-        return;
-      }
-
       const response = await apiClient.get('/auth/profile');
       const userData = response.data.data || response.data;
       setUser(userData);
@@ -48,7 +44,7 @@ const TutorProfile = () => {
       setLoading(false);
     } catch (error) {
       console.error('Error fetching user profile:', error);
-      setError(error.response?.data?.error || 'Error al cargar el perfil');
+      setError(getApiErrorMessage(error, 'Error al cargar el perfil'));
       setLoading(false);
     }
   };
@@ -64,7 +60,7 @@ const TutorProfile = () => {
       
       const completedAppointments = appointments.filter(apt => apt.status === 'completed');
       const upcomingAppointments = appointments.filter(apt => 
-        apt.status === 'confirmed' && new Date(apt.scheduledDate) > new Date()
+        apt.status === 'confirmed' && new Date(apt.startsAt) > new Date()
       );
       
       const uniqueStudents = new Set();
@@ -76,8 +72,8 @@ const TutorProfile = () => {
       
       const uniqueSubjects = new Set();
       confirmedAppointments.forEach(apt => {
-        if (apt.subject) {
-          uniqueSubjects.add(apt.subject);
+        if (apt.courseId?.title) {
+          uniqueSubjects.add(apt.courseId.title);
         }
       });
       
@@ -107,10 +103,7 @@ const TutorProfile = () => {
       alert('Perfil actualizado exitosamente');
     } catch (error) {
       console.error('Error updating profile:', error);
-      const errorMessage = error.response?.data?.error || 
-                          error.response?.data?.message || 
-                          'Error al actualizar el perfil';
-      alert(errorMessage);
+      alert(getApiErrorMessage(error, 'Error al actualizar el perfil'));
     } finally {
       setSaving(false);
     }
@@ -615,6 +608,20 @@ const TutorProfile = () => {
                 </div>
               </>
             )}
+          </div>
+
+          {/* Documentos y cierre de cuenta */}
+          <div className="profile-content-grid">
+            <div className="profile-card">
+              <div className="profile-card-body">
+                <DocumentManager />
+              </div>
+            </div>
+            <div className="profile-card">
+              <div className="profile-card-body">
+                <DeactivateAccount />
+              </div>
+            </div>
           </div>
 
           {/* Modal para cambiar avatar */}
