@@ -6,7 +6,7 @@ const limiterHandler = (message) => (req, res, next) =>
 
 /**
  * Limitadores en memoria por IP. Son suficientes para una instancia; con
- * varias réplicas deben moverse a un almacén compartido (ver docs/DEPLOY.md).
+ * varias réplicas deben moverse a un almacén compartido (ver DEPLOY.md).
  */
 const createLimiter = ({ windowMs, limit, message, skipSuccessfulRequests = false }) =>
   rateLimit({
