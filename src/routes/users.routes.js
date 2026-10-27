@@ -10,8 +10,7 @@ import {
   uploadAvatar,
   updateUserAvatar,
   deleteUserAvatar,
-  getAvailableEducators,
-  checkEducatorAvailability
+  getAvailableEducators
 } from '../controllers/user.controller.js';
 import { schemaValidator } from '../middlewares/schemaValidator.js';
 import { createUserSchema, updateProfileSchema as updateUserSchema } from '../schemas/user.schema.js';
@@ -35,11 +34,10 @@ router.delete('/profile/avatar', deleteUserAvatar);
 
 // Rutas específicas para estudiantes - obtener educadores disponibles
 router.get('/available-educators', requireRole(['student']), getAvailableEducators);
-router.get('/check-availability/:educatorId', validateObjectIdParam('educatorId'), requireRole(['student']), checkEducatorAvailability);
 
 // Rutas administrativas
-router.get('/', requireRole(['admin', 'tutor', 'advisor', 'student']), getUsers);
-router.get('/:id', validateObjectIdParam('id'), requireRole(['admin', 'tutor', 'advisor']), getUserById);
+router.get('/', requireRole(['admin', 'tutor', 'student']), getUsers);
+router.get('/:id', validateObjectIdParam('id'), requireRole(['admin', 'tutor']), getUserById);
 
 // Solo admin puede crear usuarios
 router.post('/', requireRole(['admin']), schemaValidator(createUserSchema), createUser);

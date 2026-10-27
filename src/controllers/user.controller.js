@@ -1,92 +1,75 @@
+import { AppError } from '../utils/AppError.js';
 import User from "../models/User.js";
-import Appointment from "../models/Appointment.js";
 import { validateObjectId } from "../utils/validators.js";
+import { buildProfileSet } from "../utils/profileUpdate.js";
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 
+// Paginación acotada: evita páginas negativas y listados arbitrariamente grandes.
+const parsePagination = (query, defaultLimit, maxLimit) => {
+  const page = Math.max(1, Number.parseInt(query.page, 10) || 1);
+  const limit = Math.min(maxLimit, Math.max(1, Number.parseInt(query.limit, 10) || defaultLimit));
+  return { page, limit };
+};
+
+// Directorio de tutores que aceptan citas: lo que ven estudiantes y tutores.
+const tutorDirectoryFilter = () => ({
+  role: 'tutor',
+  status: 'active',
+  'tutorProfile.available': { $ne: false },
+});
+
+// Campos del directorio: perfil profesional, sin teléfono, dirección ni otros datos personales.
+const TUTOR_DIRECTORY_SELECT = [
+  'role', 'email', 'createdAt', 'updatedAt',
+  'personalInfo.firstName', 'personalInfo.lastName', 'personalInfo.specialty',
+  'personalInfo.bio', 'personalInfo.degrees', 'personalInfo.experience',
+  'personalInfo.certifications', 'personalInfo.avatar',
+  'academicProfile', 'tutorProfile',
+].join(' ');
+
+const listTutorDirectory = async (query, defaultLimit) => {
+  const { page, limit } = parsePagination(query, defaultLimit, 100);
+  const filter = tutorDirectoryFilter();
+  const [data, total] = await Promise.all([
+    User.find(filter)
+      .select(TUTOR_DIRECTORY_SELECT)
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit),
+    User.countDocuments(filter),
+  ]);
+  return { data, pagination: { page, limit, total, pages: Math.ceil(total / limit) } };
+};
+
 export const getUsers = async (req, res, next) => {
   try {
-    const { role, status, page = 1, limit = 10 } = req.query;
+    // Admin gestiona todos los usuarios; estudiantes y tutores solo consultan el directorio.
+    if (req.user.role !== 'admin') {
+      const result = await listTutorDirectory(req.query, 10);
+      return res.json({ success: true, ...result });
+    }
+
+    const { role, status } = req.query;
+    const { page, limit } = parsePagination(req.query, 10, 100);
     const filter = { status: { $ne: 'deleted' } };
-    
-    // Si es un estudiante, aplicar restricciones de seguridad
-    if (req.user.role === 'student') {
-      // Los estudiantes solo pueden ver tutores activos
-      if (role && role === 'tutor') {
-        filter.role = role;
-      } else if (!role) {
-        // Si no se especifica rol, mostrar solo tutores
-        filter.role = 'tutor';
-      } else {
-        // Si se especifica un rol inválido, no mostrar nada
-        filter.role = { $in: [] };
-      }
-      filter.status = 'active';
-    } else {
-      // Para otros roles (admin, etc.), aplicar filtros normalmente
-      if (role) filter.role = role;
-      if (status) filter.status = status;
-    }
+    if (role) filter.role = role;
+    if (status) filter.status = status;
 
-    const options = {
-      page: parseInt(page),
-      limit: parseInt(limit),
-      sort: { createdAt: -1 }
-    };
-
-    // Seleccionar campos apropiados según el rol del usuario
-    let selectFields = '-password -verificationToken -passwordResetToken';
-    if (req.user.role === 'student') {
-      // Los estudiantes solo ven información básica de tutores
-      selectFields = 'personalInfo role tutorProfile email createdAt updatedAt';
-    }
-
-    // Obtener usuarios iniciales
-    let users = await User.find(filter)
-      .select(selectFields) 
-      .limit(options.limit * 1)
-      .skip((options.page - 1) * options.limit)
-      .sort(options.sort);
-
-    // Si es un estudiante, filtrar tutores/asesores que ya tienen citas confirmadas
-    if (req.user.role === 'student') {
-      console.log('🔍 Filtrando tutores/asesores con citas confirmadas para estudiante:', req.user.id);
-      
-      // Buscar citas confirmadas o completadas del estudiante
-      const existingAppointments = await Appointment.find({
-        studentId: req.user.id,
-        status: { $in: ['confirmed', 'completed', 'scheduled'] }
-      }).select('professionalId');
-
-      // Extraer IDs de tutores/asesores que ya tienen citas con el estudiante
-      const professionalIdsWithAppointments = existingAppointments.map(apt => apt.professionalId.toString());
-      
-      console.log('📅 Tutores/asesores con citas existentes:', professionalIdsWithAppointments.length);
-      
-      // Filtrar usuarios para excluir aquellos con citas confirmadas
-      users = users.filter(user => {
-        const hasExistingAppointment = professionalIdsWithAppointments.includes(user._id.toString());
-        if (hasExistingAppointment) {
-          console.log(`❌ Excluyendo ${user.personalInfo?.firstName} ${user.personalInfo?.lastName} - ya tiene citas confirmadas`);
-        }
-        return !hasExistingAppointment;
-      });
-
-      console.log('✅ Tutores disponibles después del filtro:', users.length);
-    }
-
-    const total = await User.countDocuments(filter);
+    const [users, total] = await Promise.all([
+      User.find(filter)
+        .select('-password')
+        .sort({ createdAt: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit),
+      User.countDocuments(filter),
+    ]);
 
     res.json({
       success: true,
       data: users,
-      pagination: {
-        page: options.page,
-        limit: options.limit,
-        total,
-        pages: Math.ceil(total / options.limit)
-      }
+      pagination: { page, limit, total, pages: Math.ceil(total / limit) }
     });
   } catch (error) {
     next(error);
@@ -95,16 +78,12 @@ export const getUsers = async (req, res, next) => {
 
 export const getUserById = async (req, res, next) => {
   try {
-    // Validar ObjectId
     validateObjectId(req.params.id, 'User ID');
 
-    const user = await User.findById(req.params.id)
-      .select('-password -verificationToken -passwordResetToken');
-    
+    const user = await User.findById(req.params.id).select('-password');
+
     if (!user || user.status === 'deleted') {
-      const error = new Error("User not found");
-      error.status = 404;
-      throw error;
+      throw new AppError(404, 'NOT_FOUND', "User not found");
     }
 
     res.json({
@@ -112,13 +91,6 @@ export const getUserById = async (req, res, next) => {
       data: user
     });
   } catch (error) {
-    // Manejar errores de MongoDB
-    if (error.name === 'CastError') {
-      return res.status(400).json({
-        success: false,
-        error: 'ID inválido'
-      });
-    }
     next(error);
   }
 };
@@ -134,9 +106,7 @@ export const createUser = async (req, res, next) => {
     });
 
     if (userFound) {
-      const error = new Error("The user already exists");
-      error.status = 409;
-      throw error;
+      throw new AppError(409, 'CONFLICT', "The user already exists");
     }
 
     // Agregar información de auditoría
@@ -152,8 +122,6 @@ export const createUser = async (req, res, next) => {
     // Excluir campos sensibles en la respuesta
     const userResponse = userSaved.toObject();
     delete userResponse.password;
-    delete userResponse.verificationToken;
-    delete userResponse.passwordResetToken;
 
     res.status(201).json({
       success: true,
@@ -167,7 +135,7 @@ export const createUser = async (req, res, next) => {
 
 export const updateUser = async (req, res, next) => {
   try {
-    const updateData = { ...req.body };
+    const updateData = buildProfileSet(req.body);
     
     // Agregar información de auditoría
     if (req.user) {
@@ -178,12 +146,10 @@ export const updateUser = async (req, res, next) => {
       req.params.id,
       updateData,
       { new: true, runValidators: true }
-    ).select('-password -verificationToken -passwordResetToken');
+    ).select('-password');
 
     if (!user || user.status === 'deleted') {
-      const error = new Error("User not found");
-      error.status = 404;
-      throw error;
+      throw new AppError(404, 'NOT_FOUND', "User not found");
     }
 
     res.json({
@@ -209,12 +175,10 @@ export const deleteUser = async (req, res, next) => {
         updatedBy: req.user?.id 
       },
       { new: true }
-    ).select('-password -verificationToken -passwordResetToken');
+    ).select('-password');
 
     if (!userDeleted) {
-      const error = new Error("User not found");
-      error.status = 404;
-      throw error;
+      throw new AppError(404, 'NOT_FOUND', "User not found");
     }
 
     res.json({
@@ -230,12 +194,10 @@ export const deleteUser = async (req, res, next) => {
 export const getUserProfile = async (req, res, next) => {
   try {
     const user = await User.findById(req.user.id)
-      .select('-password -verificationToken -passwordResetToken');
+      .select('-password');
     
     if (!user || user.status === 'deleted') {
-      const error = new Error("User not found");
-      error.status = 404;
-      throw error;
+      throw new AppError(404, 'NOT_FOUND', "User not found");
     }
 
     res.json({
@@ -249,27 +211,19 @@ export const getUserProfile = async (req, res, next) => {
 
 export const updateUserProfile = async (req, res, next) => {
   try {
-    // Prevenir que usuarios normales cambien ciertos campos
-    const allowedFields = [
-      'personalInfo', 'academicProfile', 'studentProfile', 
-      'tutorProfile', 'communicationSettings'
-    ];
-    
-    const updateData = {};
-    allowedFields.forEach(field => {
-      if (req.body[field]) {
-        updateData[field] = req.body[field];
-      }
-    });
-
-    // Agregar información de auditoría
+    // Solo secciones editables; $set por rutas puntuales no reemplaza subdocumentos completos.
+    const updateData = buildProfileSet(req.body);
     updateData.updatedBy = req.user.id;
 
     const user = await User.findByIdAndUpdate(
       req.user.id,
       updateData,
       { new: true, runValidators: true }
-    ).select('-password -verificationToken -passwordResetToken');
+    ).select('-password');
+
+    if (!user) {
+      throw new AppError(404, 'NOT_FOUND', "User not found");
+    }
 
     res.json({
       success: true,
@@ -281,41 +235,6 @@ export const updateUserProfile = async (req, res, next) => {
   }
 };
 
-export const changeUserStatus = async (req, res, next) => {
-  try {
-    const { id } = req.params;
-    const { status } = req.body;
-
-    if (!['active', 'inactive', 'suspended'].includes(status)) {
-      const error = new Error("Invalid status");
-      error.status = 400;
-      throw error;
-    }
-
-    const user = await User.findByIdAndUpdate(
-      id,
-      { 
-        status,
-        updatedBy: req.user?.id 
-      },
-      { new: true }
-    ).select('-password -verificationToken -passwordResetToken');
-
-    if (!user) {
-      const error = new Error("User not found");
-      error.status = 404;
-      throw error;
-    }
-
-    res.json({
-      success: true,
-      message: `User ${status} successfully`,
-      data: user
-    });
-  } catch (error) {
-    next(error);
-  }
-};
 
 // Configuración de multer para subida de avatares
 const avatarStorage = multer.diskStorage({
@@ -339,7 +258,7 @@ const avatarFileFilter = (req, file, cb) => {
   if (file.mimetype.startsWith('image/')) {
     cb(null, true);
   } else {
-    cb(new Error('Solo se permiten archivos de imagen (JPG, PNG, GIF, WEBP)'), false);
+    cb(new AppError(400, 'UNSUPPORTED_FILE_TYPE', 'Solo se permiten archivos de imagen (JPG, PNG, GIF, WEBP)'), false);
   }
 };
 
@@ -354,9 +273,7 @@ export const uploadAvatar = multer({
 export const updateUserAvatar = async (req, res, next) => {
   try {
     if (!req.file) {
-      const error = new Error("No se proporcionó ningún archivo de imagen");
-      error.status = 400;
-      throw error;
+      throw new AppError(400, 'BAD_REQUEST', "No se proporcionó ningún archivo de imagen");
     }
 
     // Obtener el usuario actual para eliminar el avatar anterior si existe
@@ -393,7 +310,7 @@ export const updateUserAvatar = async (req, res, next) => {
       req.user.id,
       updateData,
       { new: true, runValidators: true }
-    ).select('-password -verificationToken -passwordResetToken');
+    ).select('-password');
 
     res.json({
       success: true,
@@ -421,9 +338,7 @@ export const deleteUserAvatar = async (req, res, next) => {
     const user = await User.findById(req.user.id);
     
     if (!user.personalInfo?.avatar) {
-      const error = new Error("El usuario no tiene avatar para eliminar");
-      error.status = 404;
-      throw error;
+      throw new AppError(404, 'NOT_FOUND', "El usuario no tiene avatar para eliminar");
     }
 
     // Eliminar archivo del sistema de archivos
@@ -449,7 +364,7 @@ export const deleteUserAvatar = async (req, res, next) => {
         updatedBy: req.user.id
       },
       { new: true, runValidators: true }
-    ).select('-password -verificationToken -passwordResetToken');
+    ).select('-password');
 
     res.json({
       success: true,
@@ -460,125 +375,12 @@ export const deleteUserAvatar = async (req, res, next) => {
     next(error);
   }
 };
-// Endpoint específico para obtener tutores y asesores disponibles (sin citas confirmadas con el estudiante)
+
+// Directorio de tutores que aceptan citas, para estudiantes (la ruta exige rol student).
 export const getAvailableEducators = async (req, res, next) => {
   try {
-    const { role, page = 1, limit = 50 } = req.query;
-    
-    // Solo estudiantes pueden usar este endpoint
-    if (req.user.role !== 'student') {
-      const error = new Error("Solo los estudiantes pueden acceder a este endpoint");
-      error.status = 403;
-      throw error;
-    }
-
-    console.log('🔍 Obteniendo tutores disponibles para estudiante:', req.user.id);
-    console.log('📋 Filtros - Rol:', role, 'Página:', page, 'Límite:', limit);
-
-    // Filtro base para tutores activos
-    const filter = { 
-      status: 'active',
-      role: 'tutor'
-    };
-
-    // Buscar citas confirmadas, completadas o programadas del estudiante
-    const existingAppointments = await Appointment.find({
-      studentId: req.user.id,
-      status: { $in: ['confirmed', 'completed', 'scheduled'] }
-    }).select('professionalId');
-
-    // Extraer IDs de tutores que ya tienen citas con el estudiante
-    const professionalIdsWithAppointments = existingAppointments.map(apt => apt.professionalId.toString());
-    
-    console.log('📅 Tutores con citas existentes:', professionalIdsWithAppointments.length);
-    
-    // Excluir tutores que ya tienen citas con el estudiante
-    if (professionalIdsWithAppointments.length > 0) {
-      filter._id = { $nin: professionalIdsWithAppointments };
-    }
-
-    const options = {
-      page: parseInt(page),
-      limit: parseInt(limit),
-      sort: { createdAt: -1 }
-    };
-
-    // Obtener tutores disponibles
-    const educators = await User.find(filter)
-      .select('personalInfo role tutorProfile academicProfile email createdAt updatedAt')
-      .limit(options.limit * 1)
-      .skip((options.page - 1) * options.limit)
-      .sort(options.sort);
-
-    const total = await User.countDocuments(filter);
-
-    console.log('✅ Tutores disponibles encontrados:', educators.length);
-    console.log('📊 Total en base de datos (después del filtro):', total);
-
-    res.json({
-      success: true,
-      data: educators,
-      pagination: {
-        page: options.page,
-        limit: options.limit,
-        total,
-        pages: Math.ceil(total / options.limit)
-      },
-      meta: {
-        excludedEducators: professionalIdsWithAppointments.length,
-        availableEducators: educators.length,
-        requestedRole: 'tutor'
-      }
-    });
-  } catch (error) {
-    console.error('❌ Error obteniendo educadores disponibles:', error);
-    next(error);
-  }
-};
-
-// Endpoint para verificar si un estudiante tiene citas activas con un educador específico
-export const checkEducatorAvailability = async (req, res, next) => {
-  try {
-    const { educatorId } = req.params;
-    
-    // Solo estudiantes pueden usar este endpoint
-    if (req.user.role !== 'student') {
-      const error = new Error("Solo los estudiantes pueden verificar disponibilidad");
-      error.status = 403;
-      throw error;
-    }
-
-    // Validar ObjectId
-    validateObjectId(educatorId, 'Educator ID');
-
-    // Verificar si el educador existe y es tutor
-    const educator = await User.findById(educatorId).select('role personalInfo');
-    if (!educator || educator.role !== 'tutor') {
-      const error = new Error("Tutor no encontrado o rol inválido");
-      error.status = 404;
-      throw error;
-    }
-
-    // Buscar citas activas entre el estudiante y el educador
-    const activeAppointments = await Appointment.find({
-      studentId: req.user.id,
-      professionalId: educatorId,
-      status: { $in: ['confirmed', 'completed', 'scheduled'] }
-    }).select('status scheduledDate subject');
-
-    const isAvailable = activeAppointments.length === 0;
-
-    res.json({
-      success: true,
-      data: {
-        educatorId,
-        educatorName: `${educator.personalInfo?.firstName} ${educator.personalInfo?.lastName}`,
-        educatorRole: educator.role,
-        isAvailable,
-        activeAppointments: activeAppointments.length,
-        appointments: activeAppointments
-      }
-    });
+    const result = await listTutorDirectory(req.query, 50);
+    res.json({ success: true, ...result });
   } catch (error) {
     next(error);
   }

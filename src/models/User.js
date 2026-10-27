@@ -39,7 +39,7 @@ const UserSchema = new mongoose.Schema({
     certifications: String
   },
   academicProfile: { institution: String, department: String, title: String, experienceYears: Number, skills: [String] },
-  tutorProfile: { specialties: [String], teachingMethods: [String], maxStudents: Number, available: Boolean, hourlyRate: Number, rating: Number, totalSessions: Number, appointmentDuration: Number, specializationAreas: [String] },
+  tutorProfile: { specialties: [String], teachingMethods: [String], maxStudents: Number, available: Boolean, hourlyRate: Number, rating: Number, totalSessions: Number, appointmentDuration: Number, specializationAreas: [String], scheduleVersion: { type: Number, default: 0 } },
   studentProfile: { studentId: String, career: String, semester: Number, averageGrade: Number, enrolledCourses: [String] },
   communicationSettings: { allowNotifications: { type: Boolean, default: true }, emailNotifications: { type: Boolean, default: true }, notificationPreferences: [String] },
   emailVerified: { type: Boolean, default: false },

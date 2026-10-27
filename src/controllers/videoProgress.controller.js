@@ -1,3 +1,4 @@
+import { AppError } from '../utils/AppError.js';
 import VideoProgress from "../models/VideoProgress.js";
 import ClassVideo from "../models/ClassVideo.js";
 import ProgressTracking from "../models/ProgressTracking.js";
@@ -19,15 +20,11 @@ export const updateVideoProgress = async (req, res, next) => {
     // Verificar que el video existe y el usuario puede accederlo
     const video = await ClassVideo.findById(videoId);
     if (!video) {
-      const error = new Error("Video not found");
-      error.status = 404;
-      throw error;
+      throw new AppError(404, 'NOT_FOUND', "Video not found");
     }
 
     if (!video.canAccess(req.user)) {
-      const error = new Error("Access denied to this video");
-      error.status = 403;
-      throw error;
+      throw new AppError(403, 'FORBIDDEN', "Access denied to this video");
     }
 
     // Buscar o crear registro de progreso
@@ -151,16 +148,12 @@ export const getStudentVideoStats = async (req, res, next) => {
     const studentId = req.user.role === 'student' ? req.user.id : req.query.studentId;
     
     if (!studentId) {
-      const error = new Error("Student ID is required");
-      error.status = 400;
-      throw error;
+      throw new AppError(400, 'BAD_REQUEST', "Student ID is required");
     }
 
     // Verificar permisos
     if (req.user.role === 'student' && req.user.id !== studentId) {
-      const error = new Error("Access denied");
-      error.status = 403;
-      throw error;
+      throw new AppError(403, 'FORBIDDEN', "Access denied");
     }
 
     const stats = await VideoProgress.getStudentVideoStats(studentId);
@@ -194,16 +187,12 @@ export const getStudentProgressBySubject = async (req, res, next) => {
     const studentId = req.user.role === 'student' ? req.user.id : req.query.studentId;
     
     if (!studentId) {
-      const error = new Error("Student ID is required");
-      error.status = 400;
-      throw error;
+      throw new AppError(400, 'BAD_REQUEST', "Student ID is required");
     }
 
     // Verificar permisos
     if (req.user.role === 'student' && req.user.id !== studentId) {
-      const error = new Error("Access denied");
-      error.status = 403;
-      throw error;
+      throw new AppError(403, 'FORBIDDEN', "Access denied");
     }
 
     const progress = await VideoProgress.getStudentProgressBySubject(studentId, subject);
@@ -223,16 +212,12 @@ export const getMostWatchedVideos = async (req, res, next) => {
     const studentId = req.user.role === 'student' ? req.user.id : req.query.studentId;
     
     if (!studentId) {
-      const error = new Error("Student ID is required");
-      error.status = 400;
-      throw error;
+      throw new AppError(400, 'BAD_REQUEST', "Student ID is required");
     }
 
     // Verificar permisos
     if (req.user.role === 'student' && req.user.id !== studentId) {
-      const error = new Error("Access denied");
-      error.status = 403;
-      throw error;
+      throw new AppError(403, 'FORBIDDEN', "Access denied");
     }
 
     const mostWatched = await VideoProgress.getMostWatchedVideos(studentId, parseInt(limit));
@@ -256,15 +241,11 @@ export const startVideoSession = async (req, res, next) => {
     // Verificar que el video existe y el usuario puede accederlo
     const video = await ClassVideo.findById(videoId);
     if (!video) {
-      const error = new Error("Video not found");
-      error.status = 404;
-      throw error;
+      throw new AppError(404, 'NOT_FOUND', "Video not found");
     }
 
     if (!video.canAccess(req.user)) {
-      const error = new Error("Access denied to this video");
-      error.status = 403;
-      throw error;
+      throw new AppError(403, 'FORBIDDEN', "Access denied to this video");
     }
 
     // Buscar o crear registro de progreso
@@ -338,16 +319,12 @@ export const getVideoProgressDashboard = async (req, res, next) => {
     const studentId = req.user.role === 'student' ? req.user.id : req.query.studentId;
     
     if (!studentId) {
-      const error = new Error("Student ID is required");
-      error.status = 400;
-      throw error;
+      throw new AppError(400, 'BAD_REQUEST', "Student ID is required");
     }
 
     // Verificar permisos
     if (req.user.role === 'student' && req.user.id !== studentId) {
-      const error = new Error("Access denied");
-      error.status = 403;
-      throw error;
+      throw new AppError(403, 'FORBIDDEN', "Access denied");
     }
 
     // Obtener estadísticas por materia

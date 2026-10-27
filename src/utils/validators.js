@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { AppError } from './AppError.js';
 
 /**
  * Valida si un string es un ObjectId válido de MongoDB
@@ -14,13 +15,11 @@ export const isValidObjectId = (id) => {
  * Valida un ObjectId y lanza error si es inválido
  * @param {string} id - ID a validar
  * @param {string} fieldName - Nombre del campo para el mensaje de error
- * @throws {Error} - Si el ID no es válido
+ * @throws {AppError} - Si el ID no es válido (400 INVALID_ID)
  */
 export const validateObjectId = (id, fieldName = 'ID') => {
   if (!isValidObjectId(id)) {
-    const error = new Error(`${fieldName} inválido`);
-    error.status = 400;
-    throw error;
+    throw new AppError(400, 'INVALID_ID', `${fieldName} inválido`);
   }
   return true;
 };
@@ -32,14 +31,10 @@ export const validateObjectId = (id, fieldName = 'ID') => {
  */
 export const validateObjectIdParam = (paramName = 'id') => {
   return (req, res, next) => {
-    const id = req.params[paramName];
-    if (!isValidObjectId(id)) {
-      return res.status(400).json({
-        success: false,
-        error: `${paramName} inválido`
-      });
+    if (!isValidObjectId(req.params[paramName])) {
+      return next(new AppError(400, 'INVALID_ID', `${paramName} inválido`));
     }
-    next();
+    return next();
   };
 };
 

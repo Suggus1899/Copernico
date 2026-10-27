@@ -1,3 +1,4 @@
+import { AppError } from '../utils/AppError.js';
 import ProgressTracking from "../models/ProgressTracking.js";
 import User from "../models/User.js";
 import Appointment from "../models/Appointment.js";
@@ -26,7 +27,7 @@ export const getProgressTrackings = async (req, res, next) => {
     
     // Filtros adicionales
     if (studentId && req.user.role !== 'student') filter.studentId = studentId;
-    if (trackedBy && !['tutor', 'advisor'].includes(req.user.role)) filter.trackedBy = trackedBy;
+    if (trackedBy && req.user.role !== 'tutor') filter.trackedBy = trackedBy;
     if (subject) filter.subject = new RegExp(subject, 'i');
     if (competencyLevel) filter.competencyLevel = competencyLevel;
     
@@ -45,8 +46,8 @@ export const getProgressTrackings = async (req, res, next) => {
 
     const progressTrackings = await ProgressTracking.find(filter)
       .populate('studentId', 'personalInfo email studentProfile')
-      .populate('trackedBy', 'personalInfo email tutorProfile advisorProfile')
-      .populate('appointmentId', 'subject scheduledDate')
+      .populate('trackedBy', 'personalInfo email tutorProfile')
+      .populate('appointmentId', 'topic startsAt')
       .populate('progressHistory.recordedBy', 'personalInfo')
       .populate('createdBy', 'personalInfo')
       .populate('updatedBy', 'personalInfo')
@@ -75,16 +76,14 @@ export const getProgressTrackingById = async (req, res, next) => {
   try {
     const progressTracking = await ProgressTracking.findById(req.params.id)
       .populate('studentId', 'personalInfo email studentProfile')
-      .populate('trackedBy', 'personalInfo email tutorProfile advisorProfile')
-      .populate('appointmentId', 'subject scheduledDate')
+      .populate('trackedBy', 'personalInfo email tutorProfile')
+      .populate('appointmentId', 'topic startsAt')
       .populate('progressHistory.recordedBy', 'personalInfo')
       .populate('createdBy', 'personalInfo')
       .populate('updatedBy', 'personalInfo');
 
     if (!progressTracking) {
-      const error = new Error("Progress tracking record not found");
-      error.status = 404;
-      throw error;
+      throw new AppError(404, 'NOT_FOUND', "Progress tracking record not found");
     }
 
     // Verificar permisos
@@ -94,9 +93,7 @@ export const getProgressTrackingById = async (req, res, next) => {
       progressTracking.trackedBy._id.toString() === req.user.id;
 
     if (!canView) {
-      const error = new Error("Access denied to this progress tracking record");
-      error.status = 403;
-      throw error;
+      throw new AppError(403, 'FORBIDDEN', "Access denied to this progress tracking record");
     }
 
     res.json({
@@ -115,33 +112,25 @@ export const createProgressTracking = async (req, res, next) => {
     // Verificar que el estudiante existe
     const student = await User.findById(progressData.studentId);
     if (!student || student.role !== 'student') {
-      const error = new Error("Student not found or invalid role");
-      error.status = 404;
-      throw error;
+      throw new AppError(404, 'NOT_FOUND', "Student not found or invalid role");
     }
 
     // Verificar que el tracker existe y tiene permisos
     const tracker = await User.findById(progressData.trackedBy);
     if (!tracker || !['tutor', 'admin'].includes(tracker.role)) {
-      const error = new Error("Tracker must be a tutor or admin");
-      error.status = 400;
-      throw error;
+      throw new AppError(400, 'BAD_REQUEST', "Tracker must be a tutor or admin");
     }
 
     // Verificar permisos para crear seguimiento
     if (!['tutor', 'admin'].includes(req.user.role)) {
-      const error = new Error("Only tutors and admins can create progress tracking");
-      error.status = 403;
-      throw error;
+      throw new AppError(403, 'FORBIDDEN', "Only tutors and admins can create progress tracking");
     }
 
     // Verificar cita si se proporciona
     if (progressData.appointmentId) {
       const appointment = await Appointment.findById(progressData.appointmentId);
       if (!appointment) {
-        const error = new Error("Appointment not found");
-        error.status = 404;
-        throw error;
+        throw new AppError(404, 'NOT_FOUND', "Appointment not found");
       }
     }
 
@@ -155,8 +144,8 @@ export const createProgressTracking = async (req, res, next) => {
     // Populate para la respuesta
     const populatedProgress = await ProgressTracking.findById(progressSaved._id)
       .populate('studentId', 'personalInfo email studentProfile')
-      .populate('trackedBy', 'personalInfo email tutorProfile advisorProfile')
-      .populate('appointmentId', 'subject scheduledDate');
+      .populate('trackedBy', 'personalInfo email tutorProfile')
+      .populate('appointmentId', 'topic startsAt');
 
     res.status(201).json({
       success: true,
@@ -173,16 +162,12 @@ export const updateProgressTracking = async (req, res, next) => {
     const progressTracking = await ProgressTracking.findById(req.params.id);
     
     if (!progressTracking) {
-      const error = new Error("Progress tracking record not found");
-      error.status = 404;
-      throw error;
+      throw new AppError(404, 'NOT_FOUND', "Progress tracking record not found");
     }
 
     // Verificar permisos - solo tracker o admin puede editar
     if (progressTracking.trackedBy.toString() !== req.user.id && req.user.role !== 'admin') {
-      const error = new Error("Not authorized to update this progress tracking");
-      error.status = 403;
-      throw error;
+      throw new AppError(403, 'FORBIDDEN', "Not authorized to update this progress tracking");
     }
 
     const updateData = { 
@@ -196,8 +181,8 @@ export const updateProgressTracking = async (req, res, next) => {
       { new: true, runValidators: true }
     )
     .populate('studentId', 'personalInfo email studentProfile')
-    .populate('trackedBy', 'personalInfo email tutorProfile advisorProfile')
-    .populate('appointmentId', 'subject scheduledDate')
+    .populate('trackedBy', 'personalInfo email tutorProfile')
+    .populate('appointmentId', 'topic startsAt')
     .populate('updatedBy', 'personalInfo');
 
     res.json({
@@ -216,16 +201,12 @@ export const addProgressHistory = async (req, res, next) => {
     const progressTracking = await ProgressTracking.findById(req.params.id);
 
     if (!progressTracking) {
-      const error = new Error("Progress tracking record not found");
-      error.status = 404;
-      throw error;
+      throw new AppError(404, 'NOT_FOUND', "Progress tracking record not found");
     }
 
     // Verificar permisos - solo tracker o admin puede agregar historial
     if (progressTracking.trackedBy.toString() !== req.user.id && req.user.role !== 'admin') {
-      const error = new Error("Not authorized to add progress history");
-      error.status = 403;
-      throw error;
+      throw new AppError(403, 'FORBIDDEN', "Not authorized to add progress history");
     }
 
     await progressTracking.addProgressHistory(metricsSnapshot, notes, req.user.id);
@@ -249,9 +230,7 @@ export const updateGoalStatus = async (req, res, next) => {
     const progressTracking = await ProgressTracking.findById(req.params.id);
 
     if (!progressTracking) {
-      const error = new Error("Progress tracking record not found");
-      error.status = 404;
-      throw error;
+      throw new AppError(404, 'NOT_FOUND', "Progress tracking record not found");
     }
 
     // Verificar permisos - estudiante, tracker o admin puede actualizar metas
@@ -261,9 +240,7 @@ export const updateGoalStatus = async (req, res, next) => {
       req.user.role === 'admin';
 
     if (!canUpdate) {
-      const error = new Error("Not authorized to update goals");
-      error.status = 403;
-      throw error;
+      throw new AppError(403, 'FORBIDDEN', "Not authorized to update goals");
     }
 
     if (goalType === 'shortTerm' && progressTracking.goals.shortTerm) {
@@ -282,9 +259,7 @@ export const updateGoalStatus = async (req, res, next) => {
         progressTracking.goals.customGoals[customGoalIndex].progress = progress;
       }
     } else {
-      const error = new Error("Invalid goal type or index");
-      error.status = 400;
-      throw error;
+      throw new AppError(400, 'BAD_REQUEST', "Invalid goal type or index");
     }
 
     progressTracking.updatedBy = req.user.id;
@@ -312,9 +287,7 @@ export const getStudentProgress = async (req, res, next) => {
     if (req.user.role === 'student') {
       targetStudentId = req.user.id;
     } else if (!studentId && !['tutor', 'admin'].includes(req.user.role)) {
-      const error = new Error("Student ID is required");
-      error.status = 400;
-      throw error;
+      throw new AppError(400, 'BAD_REQUEST', "Student ID is required");
     }
 
     const progress = await ProgressTracking.getStudentProgress(targetStudentId, subject);
@@ -344,8 +317,8 @@ export const getMyProgress = async (req, res, next) => {
     if (subject) filter.subject = new RegExp(subject, 'i');
 
     const progressTrackings = await ProgressTracking.find(filter)
-      .populate('trackedBy', 'personalInfo email tutorProfile advisorProfile')
-      .populate('appointmentId', 'subject scheduledDate')
+      .populate('trackedBy', 'personalInfo email tutorProfile')
+      .populate('appointmentId', 'topic startsAt')
       .sort({ createdAt: -1 });
 
     res.json({
@@ -444,9 +417,7 @@ export const createBaselineAssessment = async (req, res, next) => {
 
     // Verificar permisos
     if (!['tutor', 'admin'].includes(req.user.role)) {
-      const error = new Error("Only tutors and admins can create baseline assessments");
-      error.status = 403;
-      throw error;
+      throw new AppError(403, 'FORBIDDEN', "Only tutors and admins can create baseline assessments");
     }
 
     // Verificar que no exista ya una evaluación base
@@ -457,9 +428,7 @@ export const createBaselineAssessment = async (req, res, next) => {
     });
 
     if (existingBaseline) {
-      const error = new Error("Baseline assessment already exists for this student and subject");
-      error.status = 409;
-      throw error;
+      throw new AppError(409, 'CONFLICT', "Baseline assessment already exists for this student and subject");
     }
 
     const baselineData = {

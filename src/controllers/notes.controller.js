@@ -1,3 +1,4 @@
+import { AppError } from '../utils/AppError.js';
 import Note from "../models/Note.js";
 import User from "../models/User.js";
 
@@ -32,9 +33,7 @@ export const createNote = async (req, res, next) => {
 
     // Validar campos requeridos
     if (!title || !content) {
-      const error = new Error("Title and content are required");
-      error.status = 400;
-      throw error;
+      throw new AppError(400, 'BAD_REQUEST', "Title and content are required");
     }
 
     const noteData = {
@@ -72,9 +71,7 @@ export const getNote = async (req, res, next) => {
       .populate('sharedWith.user', 'personalInfo email');
 
     if (!note) {
-      const error = new Error("Note not found");
-      error.status = 404;
-      throw error;
+      throw new AppError(404, 'NOT_FOUND', "Note not found");
     }
 
     // Verificar acceso (propietario, admin o compartido)
@@ -83,9 +80,7 @@ export const getNote = async (req, res, next) => {
     const isShared = note.sharedWith.some(share => share.user._id.toString() === req.user.id);
 
     if (!isOwner && !isAdmin && !isShared) {
-      const error = new Error("Not authorized");
-      error.status = 403;
-      throw error;
+      throw new AppError(403, 'FORBIDDEN', "Not authorized");
     }
 
     res.json({
@@ -105,16 +100,12 @@ export const deleteNote = async (req, res, next) => {
     const note = await Note.findById(req.params.id);
 
     if (!note) {
-      const error = new Error("Note not found");
-      error.status = 404;
-      throw error;
+      throw new AppError(404, 'NOT_FOUND', "Note not found");
     }
 
     // Solo permitir eliminar notas propias (excepto admin)
     if (note.userId.toString() !== req.user.id && req.user.role !== 'admin') {
-      const error = new Error("Not authorized to delete this note");
-      error.status = 403;
-      throw error;
+      throw new AppError(403, 'FORBIDDEN', "Not authorized to delete this note");
     }
 
     await Note.findByIdAndDelete(req.params.id);
@@ -135,9 +126,7 @@ export const updateNote = async (req, res, next) => {
     const note = await Note.findById(req.params.id);
 
     if (!note) {
-      const error = new Error("Note not found");
-      error.status = 404;
-      throw error;
+      throw new AppError(404, 'NOT_FOUND', "Note not found");
     }
 
     // Verificar permisos
@@ -147,9 +136,7 @@ export const updateNote = async (req, res, next) => {
     const canWrite = sharedPermission && sharedPermission.permission === 'write';
 
     if (!isOwner && !isAdmin && !canWrite) {
-      const error = new Error("Not authorized to update this note");
-      error.status = 403;
-      throw error;
+      throw new AppError(403, 'FORBIDDEN', "Not authorized to update this note");
     }
 
     // Si es compartido (no dueño/admin), solo puede editar título y contenido
@@ -187,37 +174,27 @@ export const shareNote = async (req, res, next) => {
     const noteId = req.params.id;
 
     if (!['read', 'write'].includes(permission)) {
-      const error = new Error("Invalid permission. Must be 'read' or 'write'");
-      error.status = 400;
-      throw error;
+      throw new AppError(400, 'BAD_REQUEST', "Invalid permission. Must be 'read' or 'write'");
     }
 
     const note = await Note.findById(noteId);
     if (!note) {
-      const error = new Error("Note not found");
-      error.status = 404;
-      throw error;
+      throw new AppError(404, 'NOT_FOUND', "Note not found");
     }
 
     // Solo el dueño puede compartir (o admin)
     if (note.userId.toString() !== req.user.id && req.user.role !== 'admin') {
-      const error = new Error("Not authorized to share this note");
-      error.status = 403;
-      throw error;
+      throw new AppError(403, 'FORBIDDEN', "Not authorized to share this note");
     }
 
     // Buscar usuario a compartir
     const userToShare = await User.findOne({ email });
     if (!userToShare) {
-      const error = new Error("User not found");
-      error.status = 404;
-      throw error;
+      throw new AppError(404, 'NOT_FOUND', "User not found");
     }
 
     if (userToShare._id.toString() === req.user.id) {
-      const error = new Error("Cannot share with yourself");
-      error.status = 400;
-      throw error;
+      throw new AppError(400, 'BAD_REQUEST', "Cannot share with yourself");
     }
 
     // Verificar si ya está compartido
@@ -260,17 +237,13 @@ export const unshareNote = async (req, res, next) => {
 
     const note = await Note.findById(noteId);
     if (!note) {
-      const error = new Error("Note not found");
-      error.status = 404;
-      throw error;
+      throw new AppError(404, 'NOT_FOUND', "Note not found");
     }
 
     // Solo el dueño puede dejar de compartir (o admin)
     // Opcional: el usuario con quien se compartió podría "salirse" (future improvement)
     if (note.userId.toString() !== req.user.id && req.user.role !== 'admin') {
-      const error = new Error("Not authorized to unshare this note");
-      error.status = 403;
-      throw error;
+      throw new AppError(403, 'FORBIDDEN', "Not authorized to unshare this note");
     }
 
     note.sharedWith = note.sharedWith.filter(

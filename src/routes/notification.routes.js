@@ -39,8 +39,8 @@ router.patch('/:id/click', recordClick);
 router.post('/:id/respond', schemaValidator(responseToNotificationSchema), respondToNotification);
 router.delete('/:id', deleteNotification);
 
-// Rutas para administración (tutores/asesores/admin)
-router.post('/', requireRole(['tutor', 'advisor', 'admin']), schemaValidator(createNotificationSchema), createNotification);
-router.post('/bulk', requireRole(['tutor', 'advisor', 'admin']), schemaValidator(createBulkNotificationsSchema), createBulkNotifications);
+// Rutas de administración: las notificaciones del flujo de citas se generan en el servidor
+router.post('/', requireRole(['admin']), schemaValidator(createNotificationSchema), createNotification);
+router.post('/bulk', requireRole(['admin']), schemaValidator(createBulkNotificationsSchema), createBulkNotifications);
 
 export default router;

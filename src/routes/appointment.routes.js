@@ -1,90 +1,46 @@
 import { Router } from 'express';
-import { 
-  getAppointments,
-  getAppointmentById,
-  createAppointment,
-  updateAppointment,
-  cancelAppointment,
+import {
   addInternalNote,
-  rateAppointment,
+  cancelAppointment,
+  completeAppointment,
+  confirmAppointment,
+  createAppointment,
+  getAppointmentById,
+  getTutorStudents,
   getUpcomingAppointments,
-  getTutorStudents
+  listAppointments,
+  rateAppointment,
+  rejectAppointment,
 } from '../controllers/appointment.controller.js';
-import { schemaValidator } from '../middlewares/schemaValidator.js';
-import { 
-  createAppointmentSchema, 
-  updateAppointmentSchema, 
-  addInternalNoteSchema, 
-  rateAppointmentSchema 
-} from '../schemas/appointment.schema.js';
-import { requireRole, requireOwnership } from '../middlewares/role.middleware.js';
 import { authenticateToken } from '../middlewares/auth.middleware.js';
+import { requireRole } from '../middlewares/role.middleware.js';
+import { schemaValidator } from '../middlewares/schemaValidator.js';
+import {
+  addInternalNoteSchema,
+  closeAppointmentSchema,
+  confirmAppointmentSchema,
+  createAppointmentSchema,
+  listAppointmentsSchema,
+  rateAppointmentSchema,
+} from '../schemas/appointment.schema.js';
 import { validateObjectIdParam } from '../utils/validators.js';
-import Appointment from '../models/Appointment.js';
 
 const router = Router();
+const validId = validateObjectIdParam('id');
 
-// Aplicar autenticación a todas las rutas
+// Las rutas estáticas van antes de /:id.
 router.use(authenticateToken);
-
-// Obtener citas próximas del usuario
+router.get('/', schemaValidator(listAppointmentsSchema), listAppointments);
 router.get('/upcoming', getUpcomingAppointments);
+router.get('/my-students', requireRole(['tutor']), getTutorStudents);
+router.post('/', requireRole(['student']), schemaValidator(createAppointmentSchema), createAppointment);
 
-// Obtener estudiantes del tutor/asesor (solo citas confirmadas)
-router.get('/my-students', 
-  requireRole(['tutor', 'advisor']),
-  getTutorStudents
-);
-
-// Obtener todas las citas (filtradas por usuario según rol)
-router.get('/', getAppointments);
-
-// Obtener cita específica
-router.get('/:id', validateObjectIdParam('id'), getAppointmentById);
-
-// Crear cita - estudiantes pueden crear sus propias citas
-router.post('/', 
-  requireRole(['student', 'admin']),
-  // schemaValidator(createAppointmentSchema), // Temporalmente deshabilitado para debug
-  createAppointment
-);
-
-// Actualizar cita - solo admin, el profesional asignado, o el estudiante dueño
-router.put('/:id', 
-  validateObjectIdParam('id'),
-  requireRole(['student', 'tutor', 'advisor', 'admin']),
-  schemaValidator(updateAppointmentSchema),
-  updateAppointment
-);
-
-// Actualizar parcialmente una cita (PATCH) - para cambios de estado rápidos
-router.patch('/:id', 
-  validateObjectIdParam('id'),
-  requireRole(['student', 'tutor', 'advisor', 'admin']),
-  updateAppointment
-);
-
-// Cancelar cita
-router.patch('/:id/cancel', 
-  validateObjectIdParam('id'),
-  requireRole(['student', 'tutor', 'advisor', 'admin']),
-  cancelAppointment
-);
-
-// Agregar nota interna - solo profesionales y admin
-router.post('/:id/notes', 
-  validateObjectIdParam('id'),
-  requireRole(['tutor', 'advisor', 'admin']),
-  schemaValidator(addInternalNoteSchema),
-  addInternalNote
-);
-
-// Calificar cita - estudiante califica al profesional, profesional califica al estudiante
-router.post('/:id/rate', 
-  validateObjectIdParam('id'),
-  requireRole(['student', 'tutor', 'advisor']),
-  schemaValidator(rateAppointmentSchema),
-  rateAppointment
-);
+router.get('/:id', validId, getAppointmentById);
+router.post('/:id/confirm', requireRole(['tutor']), validId, schemaValidator(confirmAppointmentSchema), confirmAppointment);
+router.post('/:id/reject', requireRole(['tutor']), validId, schemaValidator(closeAppointmentSchema), rejectAppointment);
+router.post('/:id/cancel', requireRole(['student', 'tutor']), validId, schemaValidator(closeAppointmentSchema), cancelAppointment);
+router.post('/:id/complete', requireRole(['tutor']), validId, completeAppointment);
+router.post('/:id/notes', requireRole(['tutor', 'admin']), validId, schemaValidator(addInternalNoteSchema), addInternalNote);
+router.post('/:id/rate', requireRole(['student', 'tutor']), validId, schemaValidator(rateAppointmentSchema), rateAppointment);
 
 export default router;
