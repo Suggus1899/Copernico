@@ -1,121 +1,64 @@
 import { z } from 'zod';
+import { createUserBody } from './auth.schema.js';
 
-export const registerSchema = z.object({
-  body: z.object({
-    // Datos básicos (obligatorios para todos)
-    email: z.string().email('Email inválido'),
-    password: z.string().min(8, 'La contraseña debe tener al menos 8 caracteres'),
-    confirmPassword: z.string(),
-    role: z.enum(['student', 'tutor', 'advisor', 'admin']),
-    
-    // Información personal (obligatoria para todos)
-    personalInfo: z.object({
-      firstName: z.string().min(2, 'El nombre es requerido'),
-      lastName: z.string().min(2, 'El apellido es requerido'),
-      username: z.string().optional(),
-      email: z.string().email().optional(),
-      address: z.string().optional(),
-      city: z.string().optional(),
-      country: z.string().optional(),
-      province: z.string().optional(),
-      postalCode: z.string().optional(),
-      phone: z.string().optional(),
-      avatar: z.string().optional()
-    }),
-    
-    // Campos condicionales por rol
-    academicProfile: z.object({
-      institution: z.string().optional(),
-      department: z.string().optional(),
-      title: z.string().optional(),
-      experienceYears: z.number().min(0).optional(),
-      skills: z.array(z.string()).optional()
-    }).optional(),
-    
-    // Solo para estudiantes
-    studentProfile: z.object({
-      studentId: z.string().min(1, 'ID Estudiantil es requerido')
-    }).optional(),
-    
-    // Solo para tutores
-    tutorProfile: z.object({
-      specialties: z.array(z.string().min(1)).min(1, 'Al menos una especialidad es requerida'),
-      experienceYears: z.number().min(0, 'Años de experiencia debe ser 0 o mayor').optional()
-    }).optional(),
-    
-    // Solo para asesores
-    advisorProfile: z.object({
-      specializationAreas: z.array(z.string().min(1)).min(1, 'Al menos un área de especialización es requerida'),
-      certification: z.array(z.string()).optional(),
-      bio: z.string().max(500, 'El enfoque de asesoramiento no debe exceder 500 caracteres').optional()
-    }).optional()
-    
-  }).refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords don't match",
-    path: ["confirmPassword"],
-  })
-});
+const text = (max) => z.string().trim().max(max);
+const optionalText = (max) => text(max).optional();
+const textList = (maxItems, maxLength) => z.array(z.string().trim().min(1).max(maxLength)).max(maxItems);
 
-export const updateProfileSchema = z.object({
-  body: z.object({
-    // Información personal (opcional para actualizar)
-    personalInfo: z.object({
-      firstName: z.string().min(1, 'El nombre es requerido').optional(),
-      lastName: z.string().min(1, 'El apellido es requerido').optional(),
-      username: z.string().optional(),
-      phone: z.string().optional(),
-      address: z.string().optional(),
-      city: z.string().optional(),
-      country: z.string().optional(),
-      province: z.string().optional(),
-      postalCode: z.string().optional(),
-      avatar: z.string().optional(),
-      specialty: z.string().optional(),
-      degrees: z.string().optional(),
-      experience: z.string().optional(),
-      certifications: z.string().optional(),
-      bio: z.string().optional()
-    }).optional(),
-    
-    // Campos condicionales por rol (opcionales)
-    academicProfile: z.object({
-      institution: z.string().optional(),
-      department: z.string().optional(),
-      title: z.string().optional(),
-      experienceYears: z.number().min(0).optional(),
-      skills: z.array(z.string()).optional()
-    }).optional(),
-    
-    // Solo para estudiantes
-    studentProfile: z.object({
-      studentId: z.string().optional(),
-      career: z.string().optional(),
-      semester: z.number().optional(),
-      averageGrade: z.number().optional(),
-      enrolledCourses: z.array(z.string()).optional()
-    }).optional(),
-    
-    // Solo para tutores
-    tutorProfile: z.object({
-      specialties: z.array(z.string()).optional(),
-      teachingMethods: z.array(z.string()).optional(),
-      maxStudents: z.number().optional(),
+// Solo se aceptan los campos editables por el propio usuario. Zod descarta el resto, de modo que
+// rol, estado, correo, contraseña, avatar, documentos y relaciones nunca llegan a la base de datos.
+const profileUpdateBody = z.object({
+  personalInfo: z
+    .object({
+      firstName: text(60).min(2, 'El nombre debe tener al menos 2 caracteres').optional(),
+      lastName: text(60).min(2, 'El apellido debe tener al menos 2 caracteres').optional(),
+      username: optionalText(60),
+      phone: optionalText(30),
+      address: optionalText(200),
+      city: optionalText(100),
+      country: optionalText(100),
+      province: optionalText(100),
+      postalCode: optionalText(20),
+      specialty: optionalText(200),
+      degrees: optionalText(500),
+      experience: optionalText(500),
+      certifications: optionalText(500),
+      bio: optionalText(1000),
+    })
+    .optional(),
+  academicProfile: z
+    .object({
+      institution: optionalText(200),
+      department: optionalText(200),
+      title: optionalText(200),
+      experienceYears: z.number().min(0).max(80).optional(),
+      skills: textList(50, 60).optional(),
+    })
+    .optional(),
+  studentProfile: z
+    .object({
+      career: optionalText(200),
+      semester: z.number().int().min(0).max(30).optional(),
+    })
+    .optional(),
+  tutorProfile: z
+    .object({
+      specialties: textList(20, 80).optional(),
+      teachingMethods: textList(20, 80).optional(),
+      maxStudents: z.number().int().min(0).max(500).optional(),
       available: z.boolean().optional(),
-      hourlyRate: z.number().optional()
-    }).optional(),
-    
-    // Solo para asesores
-    advisorProfile: z.object({
-      specializationAreas: z.array(z.string()).optional(),
-      appointmentDuration: z.number().optional(),
-      available: z.boolean().optional()
-    }).optional(),
-    
-    // Configuraciones de comunicación
-    communicationSettings: z.object({
+      appointmentDuration: z.number().int().min(15).max(240).optional(),
+    })
+    .optional(),
+  communicationSettings: z
+    .object({
       allowNotifications: z.boolean().optional(),
       emailNotifications: z.boolean().optional(),
-      notificationPreferences: z.array(z.string()).optional()
-    }).optional()
-  })
+      notificationPreferences: textList(20, 60).optional(),
+    })
+    .optional(),
 });
+
+export const updateProfileSchema = z.object({ body: profileUpdateBody });
+
+export const createUserSchema = z.object({ body: createUserBody });

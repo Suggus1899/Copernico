@@ -14,8 +14,7 @@ import {
   checkEducatorAvailability
 } from '../controllers/user.controller.js';
 import { schemaValidator } from '../middlewares/schemaValidator.js';
-// IMPORTAR LOS NOMBRES CORRECTOS que sí existen:
-import { registerSchema as createUserSchema, updateProfileSchema as updateUserSchema } from '../schemas/user.schema.js';
+import { createUserSchema, updateProfileSchema as updateUserSchema } from '../schemas/user.schema.js';
 import { requireRole, requireOwnership } from '../middlewares/role.middleware.js';
 import { authenticateToken } from '../middlewares/auth.middleware.js';
 import { validateObjectIdParam } from '../utils/validators.js';

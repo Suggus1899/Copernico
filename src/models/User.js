@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
+import { isStrongPassword, PASSWORD_POLICY_MESSAGE } from '../utils/passwordPolicy.js';
 
 const SALT_ROUNDS = 10;
 
@@ -11,10 +12,10 @@ const UserSchema = new mongoose.Schema({
     select: false,
     validate: {
       validator: function(v) {
-        // Mínimo 8 caracteres, al menos una mayúscula, una minúscula y un dígito
-        return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d@$!%*?&]{8,}$/.test(v);
+        // Solo se valida el texto plano asignado; el hash generado en pre-save no pasa por aquí.
+        return !this.isModified('password') || isStrongPassword(v);
       },
-      message: 'Password must be at least 8 chars with upper, lower and number.'
+      message: PASSWORD_POLICY_MESSAGE
     }
   },
   role: { type: String, enum: ['student','tutor','admin'], default: 'student', index: true },
@@ -42,31 +43,37 @@ const UserSchema = new mongoose.Schema({
   studentProfile: { studentId: String, career: String, semester: Number, averageGrade: Number, enrolledCourses: [String] },
   communicationSettings: { allowNotifications: { type: Boolean, default: true }, emailNotifications: { type: Boolean, default: true }, notificationPreferences: [String] },
   emailVerified: { type: Boolean, default: false },
-  verificationToken: String,
-  verificationExpires: Date,
-  passwordResetToken: String,
-  passwordResetExpires: Date,
   lastLogin: Date,
   loginAttempts: { type: Number, default: 0 },
   lockedUntil: Date,
+  // Se incrementa al cambiar contraseña o email y al desactivar: invalida sesiones anteriores.
+  sessionVersion: { type: Number, default: 0 },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   deletedAt: Date
 }, { timestamps: true });
 
-// Normalize email and hash password
-UserSchema.pre('save', async function(next) {
+// Normaliza el email y hashea la contraseña cuando cambia.
+UserSchema.pre('save', async function () {
   if (this.isModified('email') && this.email) {
     this.email = this.email.trim().toLowerCase();
   }
-  if (!this.isModified('password')) return next();
-  const salt = await bcrypt.genSalt(SALT_ROUNDS);
-  this.password = await bcrypt.hash(this.password, salt);
-  next();
+  if (this.isModified('password')) {
+    this.password = await bcrypt.hash(this.password, SALT_ROUNDS);
+  }
 });
 
-UserSchema.methods.comparePassword = function(candidate) {
+UserSchema.methods.comparePassword = function (candidate) {
   return bcrypt.compare(candidate, this.password);
 };
+
+// Campos internos: nunca se devuelven al cliente.
+const INTERNAL_FIELDS = ['password', 'loginAttempts', 'lockedUntil', 'sessionVersion', '__v'];
+UserSchema.set('toJSON', {
+  transform: (_doc, ret) => {
+    for (const field of INTERNAL_FIELDS) delete ret[field];
+    return ret;
+  },
+});
 
 export default mongoose.model('User', UserSchema);

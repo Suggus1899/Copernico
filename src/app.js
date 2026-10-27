@@ -1,245 +1,95 @@
-import express from "express";
-import cors from "cors";
-import morgan from "morgan";
-import helmet from "helmet";
-import rateLimit from "express-rate-limit";
-import mongoSanitize from "express-mongo-sanitize";
-import hpp from "hpp";
+import express from 'express';
+import cookieParser from 'cookie-parser';
+import cors from 'cors';
+import helmet from 'helmet';
+import morgan from 'morgan';
+import hpp from 'hpp';
+import mongoSanitize from 'express-mongo-sanitize';
+import { config } from './config.js';
+import { databaseReadiness, pingDatabase } from './database.js';
+import { globalLimiter } from './middlewares/rateLimiters.js';
+import { originCheck } from './middlewares/originCheck.js';
+import { notFoundHandler, errorHandler } from './middlewares/errorHandler.js';
+import authRoutes from './routes/auth.routes.js';
+import usersRoutes from './routes/users.routes.js';
+import notesRoutes from './routes/notes.routes.js';
+import availabilityRoutes from './routes/availability.routes.js';
+import appointmentRoutes from './routes/appointment.routes.js';
+import educationalMaterialRoutes from './routes/educationalMaterial.routes.js';
+import classVideoRoutes from './routes/classVideo.routes.js';
+import progressTrackingRoutes from './routes/progressTracking.routes.js';
+import videoProgressRoutes from './routes/videoProgress.routes.js';
+import notificationRoutes from './routes/notification.routes.js';
+import messageRoutes from './routes/message.routes.js';
+
+// Las rutas de assignments y reports quedan fuera de la API publicada (funcionalidad experimental).
 
 const app = express();
 
-// Importar rutas existentes
-import notesRoutes from "./routes/notes.routes.js";
-import usersRoutes from "./routes/users.routes.js";
-import authRoutes from "./routes/auth.routes.js";
+// Detrás de Render/Vercel la IP real llega en X-Forwarded-For; TRUST_PROXY indica cuántos saltos confiar.
+app.set('trust proxy', config.TRUST_PROXY);
 
-// Importar TODAS las rutas de las colecciones del sistema académico
-import availabilityRoutes from "./routes/availability.routes.js";
-import appointmentRoutes from "./routes/appointment.routes.js";
-import educationalMaterialRoutes from "./routes/educationalMaterial.routes.js";
-import classVideoRoutes from "./routes/classVideo.routes.js";
-import assignmentRoutes from "./routes/assignment.routes.js";
-import progressTrackingRoutes from "./routes/progressTracking.routes.js";
-import reportRoutes from "./routes/report.routes.js";
-import notificationRoutes from "./routes/notification.routes.js";
-import videoProgressRoutes from "./routes/videoProgress.routes.js";
-import messageRoutes from "./routes/message.routes.js";
-
-// settings
-app.set("port", process.env.PORT || 4002);
-
-// Seguridad básica y middlewares
+app.use(helmet());
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  origin: (origin, callback) => callback(null, !origin || config.FRONTEND_ORIGINS.includes(origin)),
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'auth-token']
+  allowedHeaders: ['Content-Type'],
+  maxAge: 600,
 }));
-// Helmet para headers de seguridad (ajustar según necesidades)
-app.use(helmet({
-  crossOriginResourcePolicy: { policy: 'cross-origin' }
-}));
-// Rate limiting global (1000 peticiones / 15 minutos por IP para desarrollo)
-app.use(rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 1000,
-  standardHeaders: true,
-  legacyHeaders: false
-}));
-// Sanitizar payloads contra operadores de MongoDB
+app.use(globalLimiter);
+app.use(express.json({ limit: '200kb' }));
+app.use(express.urlencoded({ extended: true, limit: '200kb' }));
+app.use(cookieParser());
+if (config.NODE_ENV !== 'test') app.use(morgan('dev'));
 app.use(mongoSanitize());
-// Prevenir HTTP Parameter Pollution
 app.use(hpp());
-// Logging y body parsers
-app.use(morgan("dev"));
-app.use(express.json({ limit: '1mb' }));
-app.use(express.urlencoded({ extended: true, limit: '1mb' })); // Para form data
 
-// Servir archivos estáticos (videos y thumbnails subidos)
-app.use('/uploads', express.static('uploads'));
+// Las respuestas dependen de la sesión: nunca deben cachearse.
+app.use('/api', (req, res, next) => {
+  res.set('Cache-Control', 'no-store');
+  next();
+});
+app.use('/api', originCheck);
 
-// routes
-// Montar notas bajo /api/notes para no interceptar rutas públicas como /api/health
-app.use("/api/notes", notesRoutes);
-app.use("/api/users", usersRoutes);
-app.use("/api/auth", authRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/users', usersRoutes);
+app.use('/api/notes', notesRoutes);
+app.use('/api/availability', availabilityRoutes);
+app.use('/api/appointments', appointmentRoutes);
+app.use('/api/materials', educationalMaterialRoutes);
+app.use('/api/videos', classVideoRoutes);
+app.use('/api/progress', progressTrackingRoutes);
+app.use('/api/video-progress', videoProgressRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/messages', messageRoutes);
 
-// SISTEMA ACADÉMICO COMPLETO - 9 Colecciones
-console.log('Montando rutas del sistema académico...');
-app.use("/api/availability", availabilityRoutes);
-app.use("/api/appointments", appointmentRoutes);
-app.use("/api/materials", educationalMaterialRoutes);
-console.log('Montando ruta /api/videos con classVideoRoutes...');
-app.use("/api/videos", classVideoRoutes);
-app.use("/api/assignments", assignmentRoutes);
-app.use("/api/progress", progressTrackingRoutes);
-app.use("/api/video-progress", videoProgressRoutes);
-app.use("/api/reports", reportRoutes);
-app.use("/api/notifications", notificationRoutes);
-app.use("/api/messages", messageRoutes);
-console.log('Rutas montadas exitosamente');
-
-// Ruta de salud/status
-app.get("/api/health", (req, res) => {
-  res.json({
-    success: true,
-    message: "S.I-COPERNICO-ACADEMY API is running",
-    timestamp: new Date().toISOString(),
-    version: "1.0.0",
-    collections: [
-      "users",
-      "availability_slots",
-      "appointments",
-      "educational_materials",
-      "class_videos",
-      "assignments",
-      "progress_tracking",
-      "reports",
-      "notifications",
-      "messages"
-    ]
-  });
+// Liveness: el proceso responde.
+app.get('/api/health', (req, res) => {
+  res.json({ success: true, status: 'ok' });
 });
 
-// Ruta principal con documentación completa
-app.get("/", (req, res) => {
-  res.json({
-    success: true,
-    message: "Welcome to S.I-COPERNICO-ACADEMY API",
-    description: "Complete Academic Support System API",
-    version: "1.0.0",
-    favicon: "GET /favicon.ico",
-    endpoints: {
-      // Sistema de autenticación y usuarios
-      auth: {
-        login: "POST /api/auth/login",
-        register: "POST /api/auth/register",
-        profile: "GET /api/auth/profile"
-      },
-      users: {
-        base: "GET/POST /api/users",
-        profile: "GET/PUT /api/users/profile",
-        specific: "GET/PUT/DELETE /api/users/:id"
-      },
-      
-      // Sistema académico principal
-      availability: {
-        base: "GET/POST /api/availability",
-        available: "GET /api/availability/available",
-        my_slots: "GET /api/availability/my-slots",
-        specific: "GET/PUT/DELETE /api/availability/:id"
-      },
-      appointments: {
-        base: "GET/POST /api/appointments",
-        upcoming: "GET /api/appointments/upcoming",
-        specific: "GET/PUT /api/appointments/:id",
-        cancel: "PATCH /api/appointments/:id/cancel",
-        notes: "POST /api/appointments/:id/notes",
-        rate: "POST /api/appointments/:id/rate"
-      },
-      materials: {
-        base: "GET/POST /api/materials",
-        popular: "GET /api/materials/popular",
-        my_materials: "GET /api/materials/my/materials",
-        specific: "GET/PUT/DELETE /api/materials/:id",
-        rate: "POST /api/materials/:id/rate",
-        download: "PATCH /api/materials/:id/download"
-      },
-      videos: {
-        base: "GET/POST /api/videos",
-        popular: "GET /api/videos/popular",
-        my_videos: "GET /api/videos/my/videos",
-        specific: "GET/PUT/DELETE /api/videos/:id",
-        like: "POST /api/videos/:id/like"
-      },
-      assignments: {
-        base: "GET/POST /api/assignments",
-        my_assignments: "GET /api/assignments/my-assignments",
-        pending: "GET /api/assignments/pending",
-        specific: "GET/PUT /api/assignments/:id",
-        submit: "POST /api/assignments/:id/submit",
-        grade: "POST /api/assignments/:id/grade"
-      },
-      progress: {
-        base: "GET/POST /api/progress",
-        my_progress: "GET /api/progress/my-progress",
-        student_progress: "GET /api/progress/student-progress",
-        statistics: "GET /api/progress/statistics",
-        specific: "GET/PUT /api/progress/:id"
-      },
-      reports: {
-        base: "GET/POST /api/reports",
-        templates: "GET /api/reports/templates",
-        specific: "GET /api/reports/:id",
-        generate: "POST /api/reports/:id/generate",
-        deliver: "POST /api/reports/:id/deliver"
-      },
-      notifications: {
-        base: "GET /api/notifications",
-        unread_count: "GET /api/notifications/unread-count",
-        stats: "GET /api/notifications/stats",
-        specific: "GET /api/notifications/:id",
-        mark_read: "PATCH /api/notifications/:id/read",
-        mark_all_read: "PATCH /api/notifications/read-all",
-        respond: "POST /api/notifications/:id/respond"
-      },
-      messages: {
-        conversations: "GET /api/messages/conversations",
-        with_user: "GET /api/messages/:otherUserId",
-        send: "POST /api/messages",
-        mark_read: "PATCH /api/messages/:otherUserId/read"
-      },
-      
-      // Utilidades
-      health: "GET /api/health"
-    },
-    user_roles: {
-      student: "Acceso a sus propios datos, tareas, progreso",
-      tutor: "Gestión de horarios, estudiantes, materiales, calificaciones",
-      advisor: "Orientación, seguimiento de progreso, reportes",
-      admin: "Acceso completo al sistema"
+// Readiness: solo listo para tráfico si MongoDB responde.
+app.get('/api/health/ready', async (req, res) => {
+  let ready = databaseReadiness();
+  if (ready) {
+    try {
+      await pingDatabase();
+    } catch {
+      ready = false;
     }
-  });
+  }
+  res.status(ready ? 200 : 503).json({ success: ready, status: ready ? 'ready' : 'unavailable' });
 });
 
-// Evitar 404 de favicon en navegadores
-app.get("/favicon.ico", (req, res) => res.sendStatus(204));
-
-// Manejo de errores 404
-app.use((req, res, next) => {
-  const error = new Error(`Endpoint Not Found: ${req.method} ${req.originalUrl}`);
-  error.status = 404;
-  next(error);
+app.get('/', (req, res) => {
+  res.json({ name: 'copernico-api', health: '/api/health' });
 });
 
-// Manejo global de errores
-app.use((err, req, res, next) => {
-  // Log del error
-  console.error('Error:', {
-    message: err.message,
-    status: err.status || 500,
-    path: req.originalUrl,
-    method: req.method,
-    ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
-  });
-  
-  // Determinar status code
-  const statusCode = err.status || err.statusCode || 500;
-  
-  // Respuesta de error
-  res.status(statusCode);
-  res.json({
-    success: false,
-    error: {
-      status: statusCode,
-      message: err.message || "Internal Server Error",
-      ...(process.env.NODE_ENV === 'development' && { 
-        stack: err.stack,
-        path: req.originalUrl,
-        method: req.method
-      })
-    }
-  });
-});
+// Evita el 404 del favicon en navegadores.
+app.get('/favicon.ico', (req, res) => res.sendStatus(204));
+
+app.use(notFoundHandler);
+app.use(errorHandler);
 
 export default app;

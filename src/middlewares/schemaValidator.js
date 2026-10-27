@@ -1,16 +1,21 @@
+/**
+ * Valida `body`, `query` y `params` con un esquema zod de la forma
+ * `z.object({ body?, query?, params? })`. Los valores parseados (con
+ * transformaciones y sin claves desconocidas) reemplazan a los originales.
+ * Los errores se delegan al errorHandler (422 VALIDATION_ERROR).
+ */
 export const schemaValidator = (schema) => async (req, res, next) => {
   try {
-    await schema.parseAsync(req);
-    next();
-  } catch (error) {
-    // Log error en desarrollo
-    if (process.env.NODE_ENV === 'development') {
-      console.error('Validation error:', error.errors);
-    }
-    
-    return res.status(400).json({ 
-      success: false,
-      errors: error.errors?.map(err => err.message) || [error.message || 'Error de validación']
+    const parsed = await schema.parseAsync({
+      body: req.body,
+      query: req.query,
+      params: req.params,
     });
+    if (parsed.body !== undefined) req.body = parsed.body;
+    if (parsed.query !== undefined) req.query = parsed.query;
+    if (parsed.params !== undefined) req.params = parsed.params;
+    return next();
+  } catch (error) {
+    return next(error);
   }
 };

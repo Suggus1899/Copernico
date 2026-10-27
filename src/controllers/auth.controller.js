@@ -1,318 +1,173 @@
-import User from "../models/User.js";
-import { JWT_SECRET, JWT_EXPIRES_IN } from "../config.js";
-import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
+import bcrypt from 'bcryptjs';
+import User from '../models/User.js';
+import { AppError } from '../utils/AppError.js';
+import { asyncHandler } from '../utils/asyncHandler.js';
+import { buildProfileSet } from '../utils/profileUpdate.js';
+import { issueSession, clearSession } from '../utils/session.js';
 
-export const signup = async (req, res, next) => {
-  try {
-    const { 
-      email, 
-      password, 
-      role,
-      personalInfo,
-      studentProfile,
-      tutorProfile,
-      advisorProfile,
-      academicProfile,
-      // Compatibilidad con formato antiguo
-      fullname,
-      userType
-    } = req.body;
+const MAX_LOGIN_ATTEMPTS = 5;
+const LOCK_DURATION_MS = 30 * 60 * 1000;
+const BCRYPT_ROUNDS = 10;
 
-    // Normalizar email para evitar duplicados por case
-    const normalizedEmail = (email || '').trim().toLowerCase();
+const invalidCredentials = () =>
+  new AppError(401, 'INVALID_CREDENTIALS', 'Correo o contraseña incorrectos.');
+const invalidCurrentPassword = () =>
+  new AppError(400, 'INVALID_CURRENT_PASSWORD', 'La contraseña actual no es correcta.');
+const emailAlreadyRegistered = () =>
+  new AppError(409, 'EMAIL_ALREADY_REGISTERED', 'Ya existe una cuenta con ese correo.');
+const accountNotFound = () => new AppError(404, 'NOT_FOUND', 'Usuario no encontrado.');
 
-    // Check if user already exists
-    const userExists = await User.findOne({ email: normalizedEmail });
+const isDuplicateKey = (error) => error?.code === 11000;
+const isLocked = (user) => Boolean(user.lockedUntil && user.lockedUntil > new Date());
 
-    if (userExists) {
-      return res.status(400).json({ 
-        success: false,
-        error: "User already exists" 
-      });
-    }
+// Hash de referencia: iguala el coste de bcrypt cuando el correo no existe o la cuenta está bloqueada.
+let referenceHash;
+const getReferenceHash = () => {
+  referenceHash ??= bcrypt.hashSync('copernico-reference-password', BCRYPT_ROUNDS);
+  return referenceHash;
+};
 
-    // Mapear formato antiguo a nuevo formato si es necesario
-    let finalRole = role;
-    let finalPersonalInfo = personalInfo;
+const loadUserWithPassword = async (userId) => {
+  const user = await User.findById(userId).select('+password');
+  if (!user) throw accountNotFound();
+  return user;
+};
 
-    if (fullname && !personalInfo) {
-      // Compatibilidad: convertir fullname a firstName y lastName
-      const nameParts = fullname.trim().split(/\s+/);
-      finalPersonalInfo = {
-        firstName: nameParts[0] || '',
-        lastName: nameParts.slice(1).join(' ') || nameParts[0] || ''
-      };
-    }
-
-    if (userType && !role) {
-      // Mapear formato antiguo a nuevo
-      const roleMap = {
-        'Estudiante': 'student',
-        'Tutor': 'tutor',
-        'Asesor': 'advisor'
-      };
-      finalRole = roleMap[userType] || 'student';
-    }
-
-    if (!finalRole) {
-      finalRole = 'student'; // Default
-    }
-
-    if (!finalPersonalInfo || !finalPersonalInfo.firstName) {
-      return res.status(400).json({
-        success: false,
-        error: "First name and last name are required"
-      });
-    }
-
-    // Mapear experienceYears de tutorProfile a academicProfile si existe
-    let finalAcademicProfile = academicProfile || {};
-    let finalTutorProfile = tutorProfile;
-    
-    if (finalRole === 'tutor' && tutorProfile?.experienceYears !== undefined) {
-      // Mover experienceYears de tutorProfile a academicProfile
-      finalAcademicProfile = {
-        ...finalAcademicProfile,
-        experienceYears: tutorProfile.experienceYears
-      };
-      // Remover experienceYears de tutorProfile (no pertenece ahí según el modelo)
-      const { experienceYears, ...tutorProfileWithoutExp } = tutorProfile;
-      finalTutorProfile = tutorProfileWithoutExp;
-    }
-
-    // Validar fortaleza de password (refuerzo adicional al schema por mensajes claros)
-    const passwordPolicy = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d@$!%*?&]{8,}$/;
-    if (!passwordPolicy.test(password || '')) {
-      return res.status(400).json({
-        success: false,
-        error: 'Password must be at least 8 chars, include upper, lower and number.'
-      });
-    }
-
-    // El password se hashea automáticamente en el pre-save hook del modelo
-    const user = new User({
-      email: normalizedEmail,
-      password, // Se hasheará automáticamente
-      role: finalRole,
-      personalInfo: finalPersonalInfo,
-      studentProfile: studentProfile || (finalRole === 'student' ? {} : undefined),
-      tutorProfile: finalTutorProfile || (finalRole === 'tutor' ? {} : undefined),
-      advisorProfile: advisorProfile || (finalRole === 'advisor' ? {} : undefined),
-      academicProfile: finalAcademicProfile
-    });
-
-    const savedUser = await user.save();
-
-    // Generar token con expiración configurable
-    const token = jwt.sign(
-      { _id: savedUser._id }, 
-      JWT_SECRET,
-      { expiresIn: JWT_EXPIRES_IN }
-    );
-    res.header("auth-token", token);
-    return res.status(201).json({
-      success: true,
-      token,
-      expiresIn: JWT_EXPIRES_IN,
-      user: {
-        id: savedUser._id,
-        email: savedUser.email,
-        role: savedUser.role,
-        personalInfo: savedUser.personalInfo
-      }
-    });
-  } catch (error) {
-    console.error('Signup error:', error.message);
-    if (error.code === 11000) {
-      return res.status(400).json({ 
-        success: false,
-        error: "Email already registered" 
-      });
-    }
-    next(error);
+const assertCurrentPassword = async (user, currentPassword) => {
+  if (!(await user.comparePassword(currentPassword))) {
+    throw invalidCurrentPassword();
   }
 };
 
-export const signin = async (req, res, next) => {
+export const signup = asyncHandler(async (req, res) => {
+  const { email, password, role, personalInfo, studentProfile, tutorProfile } = req.body;
+  const user = new User({
+    email,
+    password,
+    role,
+    personalInfo,
+    studentProfile: role === 'student' ? studentProfile : undefined,
+    tutorProfile: role === 'tutor' ? tutorProfile : undefined,
+  });
+
   try {
-    const { email, password } = req.body;
-
-    // Check if user exists - necesitamos el password para comparar
-    const user = await User.findOne({ email }).select('+password');
-
-    if (!user) {
-      return res.status(400).json({ 
-        success: false,
-        error: "Invalid credentials" 
-      });
-    }
-
-    // Verificar si la cuenta está bloqueada
-    if (user.lockedUntil && user.lockedUntil > Date.now()) {
-      const minutesLeft = Math.ceil((user.lockedUntil - Date.now()) / 60000);
-      return res.status(403).json({
-        success: false,
-        error: `Cuenta bloqueada temporalmente. Intenta nuevamente en ${minutesLeft} minuto(s).`
-      });
-    }
-
-    // Verificar estado del usuario
-    if (user.status !== 'active') {
-      return res.status(403).json({
-        success: false,
-        error: `Tu cuenta está ${user.status}. Contacta al administrador.`
-      });
-    }
-
-    // Check if password is correct
-    const validPassword = await user.comparePassword(password);
-    if (!validPassword) {
-      // Incrementar intentos fallidos
-      user.loginAttempts = (user.loginAttempts || 0) + 1;
-      
-      // Bloquear después de 5 intentos fallidos
-      if (user.loginAttempts >= 5) {
-        user.lockedUntil = new Date(Date.now() + 30 * 60 * 1000); // 30 minutos
-      }
-      
-      await user.save();
-      
-      return res.status(400).json({ 
-        success: false,
-        error: "Invalid credentials" 
-      });
-    }
-
-    // Reset login attempts on successful login sin revalidar password hash
-    user.loginAttempts = 0;
-    user.lockedUntil = undefined;
-    user.lastLogin = new Date();
-    // Evitar revalidación completa que incluye el campo password (hash)
-    await user.save({ validateBeforeSave: false });
-
-    // Create and assign a token con expiración configurable
-    const token = jwt.sign(
-      { _id: user._id }, 
-      JWT_SECRET,
-      { expiresIn: JWT_EXPIRES_IN }
-    );
-    res.header("auth-token", token);
-    
-    return res.status(200).json({
-      success: true,
-      token,
-      expiresIn: JWT_EXPIRES_IN,
-      user: {
-        id: user._id,
-        email: user.email,
-        role: user.role,
-        personalInfo: user.personalInfo
-      }
-    });
+    await user.save();
   } catch (error) {
-    console.error('Signin error:', error.message);
-    next(error);
+    if (isDuplicateKey(error)) throw emailAlreadyRegistered();
+    throw error;
   }
+
+  issueSession(res, user);
+  res.status(201).json({ success: true, data: user });
+});
+
+export const signin = asyncHandler(async (req, res) => {
+  const { email, password } = req.body;
+  const user = await User.findOne({ email }).select('+password');
+
+  // Correo inexistente, cuenta bloqueada y contraseña incorrecta responden igual y con el mismo coste.
+  if (!user || isLocked(user)) {
+    await bcrypt.compare(password, getReferenceHash());
+    throw invalidCredentials();
+  }
+
+  if (!(await user.comparePassword(password))) {
+    const counter = await User.findByIdAndUpdate(
+      user._id,
+      { $inc: { loginAttempts: 1 } },
+      { new: true }
+    ).select('loginAttempts').lean();
+
+    if (counter?.loginAttempts >= MAX_LOGIN_ATTEMPTS) {
+      await User.updateOne(
+        { _id: user._id },
+        { $set: { loginAttempts: 0, lockedUntil: new Date(Date.now() + LOCK_DURATION_MS) } }
+      );
+    }
+    throw invalidCredentials();
+  }
+
+  if (user.status !== 'active') {
+    throw new AppError(403, 'ACCOUNT_UNAVAILABLE', 'La cuenta no está disponible.');
+  }
+
+  await User.updateOne(
+    { _id: user._id },
+    { $set: { loginAttempts: 0, lastLogin: new Date() }, $unset: { lockedUntil: 1 } }
+  );
+  issueSession(res, user);
+  res.json({ success: true, data: user });
+});
+
+export const signout = (req, res) => {
+  clearSession(res);
+  res.json({ success: true });
 };
 
-export const forgotPassword = async (req, res, next) => {
-  try {
-    const { email } = req.body;
+export const profile = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user._id);
+  if (!user) throw accountNotFound();
+  res.json({ success: true, data: user });
+});
 
-    if (!email) {
-      return res.status(400).json({
-        success: false,
-        error: "Email is required"
-      });
-    }
+export const updateProfile = asyncHandler(async (req, res) => {
+  const user = await User.findByIdAndUpdate(
+    req.user._id,
+    { $set: { ...buildProfileSet(req.body), updatedBy: req.user._id } },
+    { new: true, runValidators: true }
+  );
+  if (!user) throw accountNotFound();
+  res.json({ success: true, data: user });
+});
 
-    // Normalizar email
-    const normalizedEmail = email.trim().toLowerCase();
+export const changePassword = asyncHandler(async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+  const user = await loadUserWithPassword(req.user._id);
+  await assertCurrentPassword(user, currentPassword);
 
-    // Check if user exists
-    const user = await User.findOne({ email: normalizedEmail });
-
-    if (!user) {
-      // Por seguridad, no revelamos si el email existe o no
-      return res.status(200).json({
-        success: true,
-        message: "Si el correo electrónico está registrado, recibirás un enlace para restablecer tu contraseña."
-      });
-    }
-
-    // TODO: En una implementación completa, aquí se generaría un token de reset
-    // y se enviaría un email con el enlace de recuperación
-
-    // Por ahora, solo retornamos éxito
-    return res.status(200).json({
-      success: true,
-      message: "Si el correo electrónico está registrado, recibirás un enlace para restablecer tu contraseña."
-    });
-  } catch (error) {
-    console.error('Forgot password error:', error.message);
-    next(error);
+  if (newPassword === currentPassword) {
+    throw new AppError(400, 'PASSWORD_UNCHANGED', 'La nueva contraseña debe ser distinta a la actual.');
   }
-};
 
-export const profile = async (req, res, next) => {
-  try {
-    const userFound = await User.findById(req.user._id)
-      .select("-password -verificationToken -passwordResetToken");
+  user.password = newPassword;
+  user.sessionVersion += 1; // invalida las demás sesiones abiertas
+  await user.save({ validateModifiedOnly: true });
+  issueSession(res, user);
+  res.json({ success: true, data: user });
+});
 
-    if (!userFound) {
-      return res.status(404).json({
-        success: false,
-        error: "User not found"
-      });
-    }
+export const changeEmail = asyncHandler(async (req, res) => {
+  const { currentPassword, newEmail } = req.body;
+  const user = await loadUserWithPassword(req.user._id);
+  await assertCurrentPassword(user, currentPassword);
 
-    return res.json({
-      success: true,
-      data: userFound
-    });
-  } catch (error) {
-    next(error);
+  if (newEmail === user.email) {
+    throw new AppError(400, 'EMAIL_UNCHANGED', 'El nuevo correo es igual al actual.');
   }
-};
-export const updateProfile = async (req, res, next) => {
-  try {
-    // Campos permitidos para actualizar
-    const allowedFields = [
-      'personalInfo', 'academicProfile', 'studentProfile', 
-      'tutorProfile', 'advisorProfile', 'communicationSettings'
-    ];
-    
-    const updateData = {};
-    allowedFields.forEach(field => {
-      if (req.body[field]) {
-        updateData[field] = req.body[field];
-      }
-    });
-
-    // Agregar información de auditoría
-    updateData.updatedBy = req.user._id;
-
-    const user = await User.findByIdAndUpdate(
-      req.user._id,
-      updateData,
-      { new: true, runValidators: true }
-    ).select('-password -verificationToken -passwordResetToken');
-
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        error: "User not found"
-      });
-    }
-
-    res.json({
-      success: true,
-      message: "Profile updated successfully",
-      data: user
-    });
-  } catch (error) {
-    console.error('Update profile error:', error);
-    next(error);
+  if (await User.exists({ email: newEmail, _id: { $ne: user._id } })) {
+    throw emailAlreadyRegistered();
   }
-};
+
+  user.email = newEmail;
+  user.sessionVersion += 1;
+  try {
+    await user.save({ validateModifiedOnly: true });
+  } catch (error) {
+    if (isDuplicateKey(error)) throw emailAlreadyRegistered();
+    throw error;
+  }
+  issueSession(res, user);
+  res.json({ success: true, data: user });
+});
+
+export const deactivateAccount = asyncHandler(async (req, res) => {
+  const { currentPassword } = req.body;
+  const user = await loadUserWithPassword(req.user._id);
+  await assertCurrentPassword(user, currentPassword);
+
+  user.status = 'inactive';
+  user.sessionVersion += 1;
+  await user.save({ validateModifiedOnly: true });
+  clearSession(res);
+  res.json({ success: true });
+});

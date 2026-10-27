@@ -1,48 +1,60 @@
-import app from "./app.js";
-import { PORT } from "./config.js";
-import "./database.js";
+import app from './app.js';
+import { config, configWarnings } from './config.js';
+import { connectDatabase, disconnectDatabase } from './database.js';
 
-async function main() {
-  try {
-    const server = app.listen(PORT, () => {
-      console.log(` Server running on port ${PORT}`);
-      console.log(` Environment: ${process.env.NODE_ENV || 'development'}`);
-    });
+// Tiempo máximo para cerrar conexiones antes de forzar la salida.
+const SHUTDOWN_TIMEOUT_MS = 10_000;
 
-    // Graceful shutdown
-    const gracefulShutdown = (signal) => {
-      console.log(`\n${signal} received. Shutting down gracefully...`);
-      server.close(() => {
-        console.log('HTTP server closed.');
-        process.exit(0);
-      });
+let server;
+let shuttingDown = false;
 
-      // Force close after 10 seconds
-      setTimeout(() => {
-        console.error('Could not close connections in time, forcefully shutting down');
-        process.exit(1);
-      }, 10000);
-    };
+async function shutdown(reason, exitCode = 0) {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  console.log(`[server] Cerrando (${reason})...`);
 
-    process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
-    process.on('SIGINT', () => gracefulShutdown('SIGINT'));
-
-    // Handle uncaught exceptions
-    process.on('uncaughtException', (error) => {
-      console.error('Uncaught Exception:', error);
-      gracefulShutdown('uncaughtException');
-    });
-
-    // Handle unhandled promise rejections
-    process.on('unhandledRejection', (reason, promise) => {
-      console.error('Unhandled Rejection at:', promise, 'reason:', reason);
-      gracefulShutdown('unhandledRejection');
-    });
-
-  } catch (error) {
-    console.error('Failed to start server:', error);
+  const forceExit = setTimeout(() => {
+    console.error('[server] Tiempo de cierre agotado; saliendo.');
     process.exit(1);
-  }
+  }, SHUTDOWN_TIMEOUT_MS);
+  forceExit.unref();
+
+  const finish = async () => {
+    await disconnectDatabase().catch((error) => {
+      console.error('[server] Error al desconectar MongoDB:', error.message);
+    });
+    process.exit(exitCode);
+  };
+
+  if (!server) return finish();
+  server.close(finish);
+  server.closeIdleConnections();
 }
 
-main();
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));
+process.on('unhandledRejection', (reason) => {
+  console.error('[server] Promesa no gestionada:', reason);
+  shutdown('unhandledRejection', 1);
+});
+process.on('uncaughtException', (error) => {
+  console.error('[server] Excepción no capturada:', error);
+  shutdown('uncaughtException', 1);
+});
+
+async function main() {
+  for (const warning of configWarnings) console.warn(`[config] ${warning}`);
+  await connectDatabase(config.MONGODB_URI);
+
+  server = app.listen(config.PORT, () => {
+    console.log(`[server] API en el puerto ${config.PORT} (${config.NODE_ENV})`);
+  });
+  // Balanceadores como Render cierran conexiones inactivas; mantenerlas más tiempo evita resets.
+  server.keepAliveTimeout = 65_000;
+  server.headersTimeout = 66_000;
+}
+
+main().catch((error) => {
+  console.error('[server] No se pudo iniciar:', error.message);
+  process.exit(1);
+});
