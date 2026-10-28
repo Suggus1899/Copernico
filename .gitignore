@@ -1,3 +1,18 @@
+# Dependencias y builds
+node_modules
+dist
+dist-ssr
+coverage
+*.tsbuildinfo
+
+# Entornos y secretos: solo se versionan las plantillas *.example
+.env
+.env.*
+!.env.example
+*.local
+*.pem
+*.key
+
 # Logs
 logs
 *.log
@@ -5,14 +20,17 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
-lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
+# Archivos subidos en desarrollo (almacenamiento local)
+uploads/
 
-# Editor directories and files
+# Artefactos antiguos (SQLite, pnpm, timestamps de Vite)
+*.sqlite3
+*.sqlite
+pnpm-lock.yaml
+*.timestamp-*.mjs
+
+# Editores
 .vscode/*
 !.vscode/extensions.json
 .idea

@@ -1,0 +1,349 @@
+/* ===== Mis Estudiantes (Tutor) - Estilos profesionales ===== */
+
+.estudiantes-page {
+  display: flex;
+  flex-direction: column;
+  padding: 24px 32px;
+  max-width: 1200px;
+  margin: 0 auto;
+  gap: 24px;
+}
+
+/* Loading */
+.estudiantes-page--loading {
+  align-items: center;
+  justify-content: center;
+  min-height: 280px;
+  color: #6b7280;
+  text-align: center;
+}
+
+.estudiantes-page--loading p {
+  margin: 12px 0 0 0;
+  font-size: 0.9375rem;
+}
+
+.estudiantes-page__spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #e5e7eb;
+  border-top-color: #2563eb;
+  border-radius: 50%;
+  animation: estudiantes-spin 0.8s linear infinite;
+}
+
+@keyframes estudiantes-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Header */
+.estudiantes-page__header {
+  flex-shrink: 0;
+}
+
+.estudiantes-page__title {
+  margin: 0 0 4px 0;
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #1a1d21;
+  letter-spacing: -0.02em;
+}
+
+.estudiantes-page__subtitle {
+  margin: 0;
+  font-size: 1rem;
+  color: #6b7280;
+}
+
+/* Alert */
+.estudiantes-page__alert {
+  padding: 12px 16px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  color: #b91c1c;
+  font-size: 0.9375rem;
+}
+
+/* Stats bar */
+.estudiantes-page__stats {
+  width: 950px;
+  display: flex;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 20px;
+}
+
+.estudiantes-page__stat-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px 16px;
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.estudiantes-page__stat-num {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #1a1d21;
+  line-height: 1.2;
+}
+
+.estudiantes-page__stat-num--active {
+  color: #059669;
+}
+
+.estudiantes-page__stat-num--citas {
+  color: #2563eb;
+}
+
+.estudiantes-page__stat-label {
+  font-size: 0.8125rem;
+  color: #6b7280;
+  margin-top: 4px;
+  text-align: center;
+}
+
+/* Grid de tarjetas */
+.estudiantes-page__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 20px;
+}
+
+/* Tarjeta de estudiante */
+.estudiantes-page__card {
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  transition: box-shadow 0.2s, border-color 0.2s;
+}
+
+.estudiantes-page__card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border-color: #d1d5db;
+}
+
+.estudiantes-page__card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.estudiantes-page__card-info {
+  min-width: 0;
+}
+
+.estudiantes-page__card-name {
+  margin: 0 0 4px 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1a1d21;
+  line-height: 1.3;
+}
+
+.estudiantes-page__card-email {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: #6b7280;
+  word-break: break-all;
+}
+
+.estudiantes-page__card-status {
+  flex-shrink: 0;
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 20px;
+}
+
+.estudiantes-page__card-status--active {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.estudiantes-page__card-status--inactive {
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.estudiantes-page__card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.estudiantes-page__card-subjects h4 {
+  margin: 0 0 8px 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.estudiantes-page__card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.estudiantes-page__card-tag {
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  background: #dbeafe;
+  color: #1d4ed8;
+  border-radius: 6px;
+}
+
+.estudiantes-page__card-metrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.estudiantes-page__card-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.estudiantes-page__card-metric-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #2563eb;
+}
+
+.estudiantes-page__card-metric-value--text {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #1a1d21;
+}
+
+.estudiantes-page__card-metric-label {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.estudiantes-page__card-metric-detail {
+  font-size: 0.7rem;
+  color: #9ca3af;
+}
+
+.estudiantes-page__card-contact {
+  padding: 10px 12px;
+  font-size: 0.8125rem;
+  color: #6b7280;
+  background: #f9fafb;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.estudiantes-page__card-actions {
+  margin-top: 8px;
+  padding-top: 14px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.estudiantes-page__btn-outline {
+  width: 100%;
+  padding: 10px 16px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #fff;
+  color: #374151;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.estudiantes-page__btn-outline:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+
+/* Empty state */
+.estudiantes-page__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  text-align: center;
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  color: #6b7280;
+}
+
+.estudiantes-page__empty-icon {
+  font-size: 3rem;
+  margin-bottom: 16px;
+  display: block;
+  opacity: 0.8;
+}
+
+.estudiantes-page__empty h3 {
+  margin: 0 0 8px 0;
+  font-size: 1.25rem;
+  color: #374151;
+}
+
+.estudiantes-page__empty p {
+  margin: 0 0 24px 0;
+  font-size: 0.9375rem;
+}
+
+.estudiantes-page__help {
+  margin-top: 8px;
+  padding: 20px;
+  background: #f9fafb;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  text-align: left;
+  max-width: 420px;
+}
+
+.estudiantes-page__help h4 {
+  margin: 0 0 12px 0;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.estudiantes-page__help ul {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 0.875rem;
+  color: #6b7280;
+  line-height: 1.6;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .estudiantes-page {
+    padding: 16px;
+  }
+
+  .estudiantes-page__stats {
+    grid-template-columns: 1fr;
+  }
+
+  .estudiantes-page__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .estudiantes-page__card-metrics {
+    grid-template-columns: 1fr;
+  }
+}

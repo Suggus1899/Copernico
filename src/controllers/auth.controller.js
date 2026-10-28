@@ -1,115 +1,173 @@
-import User from "../models/user.model.js";
-import jwt from "jsonwebtoken";
-import bcrypt from "bcryptjs";
-import { TOKEN_SECRET } from "../config.js";
-import { createAccessToken } from "../libs/jwt.js";
+import bcrypt from 'bcryptjs';
+import User from '../models/User.js';
+import { AppError } from '../utils/AppError.js';
+import { asyncHandler } from '../utils/asyncHandler.js';
+import { buildProfileSet } from '../utils/profileUpdate.js';
+import { issueSession, clearSession } from '../utils/session.js';
 
-export const register = async (req, res) => {
-  try {
-    const { username, email, password } = req.body;
+const MAX_LOGIN_ATTEMPTS = 5;
+const LOCK_DURATION_MS = 30 * 60 * 1000;
+const BCRYPT_ROUNDS = 10;
 
-    const userFound = await User.findOne({ email });
+const invalidCredentials = () =>
+  new AppError(401, 'INVALID_CREDENTIALS', 'Correo o contraseña incorrectos.');
+const invalidCurrentPassword = () =>
+  new AppError(400, 'INVALID_CURRENT_PASSWORD', 'La contraseña actual no es correcta.');
+const emailAlreadyRegistered = () =>
+  new AppError(409, 'EMAIL_ALREADY_REGISTERED', 'Ya existe una cuenta con ese correo.');
+const accountNotFound = () => new AppError(404, 'NOT_FOUND', 'Usuario no encontrado.');
 
-    if (userFound)
-      return res.status(400).json({
-        message: ["The email is already in use"],
-      });
+const isDuplicateKey = (error) => error?.code === 11000;
+const isLocked = (user) => Boolean(user.lockedUntil && user.lockedUntil > new Date());
 
-    // hashing the password
-    const passwordHash = await bcrypt.hash(password, 10);
+// Hash de referencia: iguala el coste de bcrypt cuando el correo no existe o la cuenta está bloqueada.
+let referenceHash;
+const getReferenceHash = () => {
+  referenceHash ??= bcrypt.hashSync('copernico-reference-password', BCRYPT_ROUNDS);
+  return referenceHash;
+};
 
-    // creating the user
-    const newUser = new User({
-      username,
-      email,
-      password: passwordHash,
-    });
+const loadUserWithPassword = async (userId) => {
+  const user = await User.findById(userId).select('+password');
+  if (!user) throw accountNotFound();
+  return user;
+};
 
-    // saving the user in the database
-    const userSaved = await newUser.save();
-
-    // create access token
-    const token = await createAccessToken({
-      id: userSaved._id,
-    });
-
-    res.cookie("token", token, {
-      httpOnly: process.env.NODE_ENV !== "development",
-      secure: true,
-      sameSite: "none",
-    });
-
-    res.json({
-      id: userSaved._id,
-      username: userSaved.username,
-      email: userSaved.email,
-    });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
+const assertCurrentPassword = async (user, currentPassword) => {
+  if (!(await user.comparePassword(currentPassword))) {
+    throw invalidCurrentPassword();
   }
 };
 
-export const login = async (req, res) => {
+export const signup = asyncHandler(async (req, res) => {
+  const { email, password, role, personalInfo, studentProfile, tutorProfile } = req.body;
+  const user = new User({
+    email,
+    password,
+    role,
+    personalInfo,
+    studentProfile: role === 'student' ? studentProfile : undefined,
+    tutorProfile: role === 'tutor' ? tutorProfile : undefined,
+  });
+
   try {
-    const { email, password } = req.body;
-    const userFound = await User.findOne({ email });
+    await user.save();
+  } catch (error) {
+    if (isDuplicateKey(error)) throw emailAlreadyRegistered();
+    throw error;
+  }
 
-    if (!userFound)
-      return res.status(400).json({
-        message: ["The email does not exist"],
-      });
+  issueSession(res, user);
+  res.status(201).json({ success: true, data: user });
+});
 
-    const isMatch = await bcrypt.compare(password, userFound.password);
-    if (!isMatch) {
-      return res.status(400).json({
-        message: ["The password is incorrect"],
-      });
+export const signin = asyncHandler(async (req, res) => {
+  const { email, password } = req.body;
+  const user = await User.findOne({ email }).select('+password');
+
+  // Correo inexistente, cuenta bloqueada y contraseña incorrecta responden igual y con el mismo coste.
+  if (!user || isLocked(user)) {
+    await bcrypt.compare(password, getReferenceHash());
+    throw invalidCredentials();
+  }
+
+  if (!(await user.comparePassword(password))) {
+    const counter = await User.findByIdAndUpdate(
+      user._id,
+      { $inc: { loginAttempts: 1 } },
+      { new: true }
+    ).select('loginAttempts').lean();
+
+    if (counter?.loginAttempts >= MAX_LOGIN_ATTEMPTS) {
+      await User.updateOne(
+        { _id: user._id },
+        { $set: { loginAttempts: 0, lockedUntil: new Date(Date.now() + LOCK_DURATION_MS) } }
+      );
     }
-
-    const token = await createAccessToken({
-      id: userFound._id,
-      username: userFound.username,
-    });
-
-    res.cookie("token", token, {
-      httpOnly: process.env.NODE_ENV !== "development",
-      secure: true,
-      sameSite: "none",
-    });
-
-    res.json({
-      id: userFound._id,
-      username: userFound.username,
-      email: userFound.email,
-    });
-  } catch (error) {
-    return res.status(500).json({ message: error.message });
+    throw invalidCredentials();
   }
+
+  if (user.status !== 'active') {
+    throw new AppError(403, 'ACCOUNT_UNAVAILABLE', 'La cuenta no está disponible.');
+  }
+
+  await User.updateOne(
+    { _id: user._id },
+    { $set: { loginAttempts: 0, lastLogin: new Date() }, $unset: { lockedUntil: 1 } }
+  );
+  issueSession(res, user);
+  res.json({ success: true, data: user });
+});
+
+export const signout = (req, res) => {
+  clearSession(res);
+  res.json({ success: true });
 };
 
-export const verifyToken = async (req, res) => {
-  const { token } = req.cookies;
-  if (!token) return res.send(false);
+export const profile = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user._id);
+  if (!user) throw accountNotFound();
+  res.json({ success: true, data: user });
+});
 
-  jwt.verify(token, TOKEN_SECRET, async (error, user) => {
-    if (error) return res.sendStatus(401);
+export const updateProfile = asyncHandler(async (req, res) => {
+  const user = await User.findByIdAndUpdate(
+    req.user._id,
+    { $set: { ...buildProfileSet(req.body), updatedBy: req.user._id } },
+    { new: true, runValidators: true }
+  );
+  if (!user) throw accountNotFound();
+  res.json({ success: true, data: user });
+});
 
-    const userFound = await User.findById(user.id);
-    if (!userFound) return res.sendStatus(401);
+export const changePassword = asyncHandler(async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+  const user = await loadUserWithPassword(req.user._id);
+  await assertCurrentPassword(user, currentPassword);
 
-    return res.json({
-      id: userFound._id,
-      username: userFound.username,
-      email: userFound.email,
-    });
-  });
-};
+  if (newPassword === currentPassword) {
+    throw new AppError(400, 'PASSWORD_UNCHANGED', 'La nueva contraseña debe ser distinta a la actual.');
+  }
 
-export const logout = async (req, res) => {
-  res.cookie("token", "", {
-    httpOnly: true,
-    secure: true,
-    expires: new Date(0),
-  });
-  return res.sendStatus(200);
-};
+  user.password = newPassword;
+  user.sessionVersion += 1; // invalida las demás sesiones abiertas
+  await user.save({ validateModifiedOnly: true });
+  issueSession(res, user);
+  res.json({ success: true, data: user });
+});
+
+export const changeEmail = asyncHandler(async (req, res) => {
+  const { currentPassword, newEmail } = req.body;
+  const user = await loadUserWithPassword(req.user._id);
+  await assertCurrentPassword(user, currentPassword);
+
+  if (newEmail === user.email) {
+    throw new AppError(400, 'EMAIL_UNCHANGED', 'El nuevo correo es igual al actual.');
+  }
+  if (await User.exists({ email: newEmail, _id: { $ne: user._id } })) {
+    throw emailAlreadyRegistered();
+  }
+
+  user.email = newEmail;
+  user.sessionVersion += 1;
+  try {
+    await user.save({ validateModifiedOnly: true });
+  } catch (error) {
+    if (isDuplicateKey(error)) throw emailAlreadyRegistered();
+    throw error;
+  }
+  issueSession(res, user);
+  res.json({ success: true, data: user });
+});
+
+export const deactivateAccount = asyncHandler(async (req, res) => {
+  const { currentPassword } = req.body;
+  const user = await loadUserWithPassword(req.user._id);
+  await assertCurrentPassword(user, currentPassword);
+
+  user.status = 'inactive';
+  user.sessionVersion += 1;
+  await user.save({ validateModifiedOnly: true });
+  clearSession(res);
+  res.json({ success: true });
+});

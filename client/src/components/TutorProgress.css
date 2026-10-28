@@ -1,0 +1,439 @@
+/* ===== Progreso (Tutor) - Estilos profesionales ===== */
+
+.progreso-page {
+  display: flex;
+  flex-direction: column;
+  padding: 24px 32px;
+  max-width: 1200px;
+  margin: 0 auto;
+  gap: 24px;
+}
+
+/* Loading */
+.progreso-page--loading {
+  align-items: center;
+  justify-content: center;
+  min-height: 280px;
+  color: #6b7280;
+  text-align: center;
+}
+
+.progreso-page--loading p {
+  margin: 12px 0 0 0;
+  font-size: 0.9375rem;
+}
+
+.progreso-page__spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #e5e7eb;
+  border-top-color: #2563eb;
+  border-radius: 50%;
+  animation: progreso-spin 0.8s linear infinite;
+}
+
+@keyframes progreso-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Header */
+.progreso-page__header {
+  flex-shrink: 0;
+}
+
+.progreso-page__title {
+  margin: 0 0 4px 0;
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #1a1d21;
+  letter-spacing: -0.02em;
+}
+
+.progreso-page__subtitle {
+  margin: 0;
+  font-size: 1rem;
+  color: #6b7280;
+}
+
+/* Alert */
+.progreso-page__alert {
+  padding: 12px 16px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  color: #b91c1c;
+  font-size: 0.9375rem;
+}
+
+/* Toolbar */
+.progreso-page__toolbar {
+  padding: 16px 20px;
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.progreso-page__filter-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.progreso-page__filter-label {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+.progreso-page__select {
+  padding: 10px 14px;
+  font-size: 0.9375rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #f9fafb;
+  color: #1a1d21;
+  min-width: 280px;
+  max-width: 100%;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.progreso-page__select:hover {
+  background: #fff;
+}
+
+.progreso-page__select:focus {
+  outline: none;
+  border-color: #2563eb;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+/* Grid de tarjetas */
+.progreso-page__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 20px;
+}
+
+/* Tarjeta de estudiante */
+.progreso-page__card {
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  transition: box-shadow 0.2s, border-color 0.2s;
+}
+
+.progreso-page__card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border-color: #d1d5db;
+}
+
+.progreso-page__card-header {
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.progreso-page__card-name {
+  margin: 0 0 10px 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1a1d21;
+  line-height: 1.3;
+}
+
+.progreso-page__card-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.progreso-page__card-badge {
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  background: #dbeafe;
+  color: #1d4ed8;
+  border-radius: 6px;
+}
+
+/* Métricas (progreso general + asistencia) */
+.progreso-page__card-metrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.progreso-page__card-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.progreso-page__card-metric-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.progreso-page__card-metric-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1a1d21;
+}
+
+.progreso-page__card-metric-value--circle {
+  color: #2563eb;
+}
+
+.progreso-page__card-metric-detail {
+  font-size: 0.8125rem;
+  color: #6b7280;
+}
+
+.progreso-page__card-progress-bar {
+  height: 8px;
+  background: #e5e7eb;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progreso-page__card-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #2563eb, #3b82f6);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+/* Progreso por materia */
+.progreso-page__card-subjects {
+  margin-bottom: 16px;
+}
+
+.progreso-page__card-subjects h4 {
+  margin: 0 0 12px 0;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.progreso-page__subject {
+  padding: 12px 0;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.progreso-page__subject:last-child {
+  border-bottom: none;
+}
+
+.progreso-page__subject-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.progreso-page__subject-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #1a1d21;
+}
+
+.progreso-page__subject-pct {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #2563eb;
+}
+
+.progreso-page__subject-bar {
+  height: 6px;
+  background: #e5e7eb;
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+
+.progreso-page__subject-bar--thin {
+  height: 4px;
+  margin-top: 4px;
+}
+
+.progreso-page__subject-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #2563eb, #3b82f6);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.progreso-page__subject-fill--alt {
+  background: linear-gradient(90deg, #059669, #10b981);
+}
+
+.progreso-page__subject-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.progreso-page__subject-videos {
+  margin-top: 8px;
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.progreso-page__subject-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.progreso-page__subject-tag {
+  padding: 2px 8px;
+  font-size: 0.7rem;
+  background: #f3f4f6;
+  color: #4b5563;
+  border-radius: 4px;
+}
+
+.progreso-page__subject-tag--more {
+  background: #e5e7eb;
+  color: #6b7280;
+}
+
+/* Footer: última actividad + acciones */
+.progreso-page__card-footer {
+  margin-top: auto;
+  padding-top: 16px;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.progreso-page__card-activity {
+  font-size: 0.8125rem;
+  color: #6b7280;
+}
+
+.progreso-page__card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.progreso-page__btn {
+  padding: 8px 14px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  border: 1px solid #2563eb;
+  border-radius: 8px;
+  background: #2563eb;
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.progreso-page__btn:hover {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+}
+
+.progreso-page__btn--outline {
+  background: #fff;
+  color: #374151;
+  border-color: #d1d5db;
+}
+
+.progreso-page__btn--outline:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+
+/* Empty state */
+.progreso-page__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  text-align: center;
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  color: #6b7280;
+}
+
+.progreso-page__empty-icon {
+  font-size: 3rem;
+  margin-bottom: 16px;
+  display: block;
+  opacity: 0.8;
+}
+
+.progreso-page__empty h3 {
+  margin: 0 0 8px 0;
+  font-size: 1.25rem;
+  color: #374151;
+}
+
+.progreso-page__empty p {
+  margin: 0 0 24px 0;
+  font-size: 0.9375rem;
+}
+
+.progreso-page__help {
+  margin-top: 8px;
+  padding: 20px;
+  background: #f9fafb;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  text-align: left;
+  max-width: 420px;
+}
+
+.progreso-page__help h4 {
+  margin: 0 0 12px 0;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.progreso-page__help ul {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 0.875rem;
+  color: #6b7280;
+  line-height: 1.6;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .progreso-page {
+    padding: 16px;
+  }
+
+  .progreso-page__select {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .progreso-page__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .progreso-page__card-metrics {
+    grid-template-columns: 1fr;
+  }
+}

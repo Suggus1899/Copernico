@@ -1,37 +1,92 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { Navbar } from "./components/Navbar";
-import { AuthProvider } from "./context/authContext";
-import { ProtectedRoute } from "./routes";
 
-import HomePage from "./pages/HomePage";
-import RegisterPage from "./pages/RegisterPage";
-import { TaskFormPage } from "./pages/TaskFormPage";
-import { LoginPage } from "./pages/LoginPage";
-import { TasksPage } from "./pages/TasksPage";
-import { TaskProvider } from "./context/tasksContext";
+import { Navigation } from "./components/Navigation";
+import Homepage from "./components/Homepage";
+import CreateUser from "./components/CreateUser";
+import Login from "./components/Login";
+import Dashboard from "./components/Dashboard";
+import MyCourses from "./components/MyCourses";
+import Tutors from "./components/Tutors";
+import NotesList from "./components/NotesList";
+import UserProfile from "./components/UserProfile";
+import ProtectedRoute from "./components/ProtectedRoute";
+import ChangeEmail from "./components/ChangeEmail";
+import ChangePassword from "./components/ChangePassword";
+// Componentes de Videos
+import VideosList from "./components/VideosList";
+import TutorVideos from "./components/TutorVideos";
+// Componentes de Home
+import StudentHome from "./components/StudentHome";
+import TutorHome from "./components/TutorHome";
+// Componentes de Tutor
+import TutorCourses from "./components/TutorCourses";
+import TutorStudents from "./components/TutorStudents";
+import TutorAgenda from "./components/TutorAgenda";
+import TutorProgress from "./components/TutorProgress";
+import TutorNotifications from "./components/TutorNotifications";
+import TutorProfile from "./components/TutorProfile";
+import VideoProgressDashboard from "./components/VideoProgressDashboard";
+import Messages from "./components/Messages";
+
+import "./App.css";
 
 function App() {
   return (
-    <AuthProvider>
-      <TaskProvider>
-        <BrowserRouter>
-          <main className="container content-container mx-auto px-10 md:px-0">
-            <Navbar />
-            <Routes>
-              <Route path="/" element={<HomePage />} />
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/register" element={<RegisterPage />} />
-              <Route element={<ProtectedRoute />}>
-                <Route path="/tasks" element={<TasksPage />} />
-                <Route path="/add-task" element={<TaskFormPage />} />
-                <Route path="/tasks/:id" element={<TaskFormPage />} />
-                <Route path="/profile" element={<h1>Profile</h1>} />
-              </Route>
-            </Routes>
-          </main>
-        </BrowserRouter>
-      </TaskProvider>
-    </AuthProvider>
+    <div>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={
+            <>
+              <Navigation />
+              <Homepage />
+            </>
+          } />
+          <Route path="/home" element={
+            <>
+              <Navigation />
+              <Homepage />
+            </>
+          } />
+          <Route path="/login" element={
+            <>
+              <Navigation />
+              <Login />
+            </>
+          } />
+          <Route path="/signup" element={
+            <>
+              <Navigation />
+              <CreateUser />
+            </>
+          } />
+          <Route element={<ProtectedRoute />}>
+            <Route path="/dashboard" element={<Dashboard />}>
+              {/* Ruta index que se mostrará por defecto */}
+              <Route index element={<StudentHome />} />
+              {/* Rutas para estudiantes */}
+              <Route path="cursos" element={<MyCourses />} />
+              <Route path="videos" element={<VideosList />} />
+              <Route path="progreso-videos" element={<VideoProgressDashboard />} />
+              <Route path="tutores" element={<Tutors />} />
+              <Route path="notas" element={<NotesList />} />
+              <Route path="mensajes" element={<Messages />} />
+              <Route path="perfil" element={<UserProfile />} />
+              {/* Rutas específicas para tutores */}
+              <Route path="cursos-tutor" element={<TutorCourses />} />
+              <Route path="estudiantes" element={<TutorStudents />} />
+              <Route path="agenda" element={<TutorAgenda />} />
+              <Route path="videos-tutor" element={<TutorVideos />} />
+              <Route path="progreso" element={<TutorProgress />} />
+              <Route path="mensajes-tutor" element={<Messages />} />
+              <Route path="notificaciones" element={<TutorNotifications />} />
+              <Route path="perfil-tutor" element={<TutorProfile />} />
+            </Route>
+            <Route path="/account/change-email" element={<ChangeEmail />} />
+            <Route path="/account/change-password" element={<ChangePassword />} />
+          </Route>
+        </Routes>
+      </BrowserRouter>
+    </div>
   );
 }
 

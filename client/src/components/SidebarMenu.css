@@ -1,0 +1,172 @@
+.sidebar-menu {
+  width: 100%;
+  height: 60px; 
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1); 
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1000;
+}
+
+.sidebar-logo-container {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  height: 100%;
+}
+
+.sidebar-logo {
+  height: 35px;
+  width: 35px;
+  object-fit: contain;
+}
+
+.logo-separator {
+  width: 1px;
+  height: 30px;
+  background-color: #e0e0e0;
+  margin-left: 20px;
+  margin-right: 10px;
+}
+
+.menu-list {
+  display: flex;
+  flex: 1;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  align-items: center;
+}
+
+.menu-link {
+  display: flex;
+  align-items: center;
+  padding: 0 15px;
+  height: 60px; 
+  color: #444;
+  text-decoration: none;
+  gap: 8px;
+  font-size: 0.9rem;
+  transition: background 0.2s;
+  border-bottom: 3px solid transparent;
+}
+
+.menu-icon-img {
+  width: 20px;
+  height: 20px;
+  opacity: 0.7; 
+}
+
+.menu-link:hover {
+  background: #f5f5f5;
+}
+
+.menu-link.active {
+  border-bottom: 3px solid #2c3e50;
+  background: #f9f9f9;
+}
+
+.menu-link.active .menu-icon-img {
+  opacity: 1;
+}
+
+.menu-list li:last-child {
+  margin-left: auto; 
+}
+
+.menu-link.logout {
+  color: #d32f2f;
+}
+
+.menu-link.logout:hover {
+  background: #fff5f5;
+}
+
+
+@media (max-width: 850px) {
+  .menu-label {
+    display: none;
+  }
+  .menu-link {
+    padding: 0 12px;
+  }
+}
+/* Notification Badge Styles */
+.notification-badge {
+  position: relative;
+  background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+  color: white;
+  border-radius: 12px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  font-size: 11px;
+  font-weight: bold;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  margin-left: 6px;
+  animation: pulse 2s infinite;
+  box-shadow: 0 2px 6px rgba(220, 53, 69, 0.4);
+  border: 2px solid white;
+}
+
+.menu-link {
+  position: relative;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(220, 53, 69, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(220, 53, 69, 0);
+  }
+}
+
+/* Notification badge hover effect */
+.menu-link:hover .notification-badge {
+  background: linear-gradient(135deg, #c82333 0%, #bd2130 100%);
+  transform: scale(1.1);
+  transition: all 0.2s ease;
+}
+
+/* Badge when menu item is active */
+.menu-link.active .notification-badge {
+  background: linear-gradient(135deg, #28a745 0%, #218838 100%);
+  animation: none;
+  box-shadow: 0 2px 6px rgba(40, 167, 69, 0.4);
+}
+
+/* Responsive notification badge */
+@media (max-width: 850px) {
+  .notification-badge {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    min-width: 16px;
+    height: 16px;
+    font-size: 9px;
+    padding: 0 4px;
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .notification-badge {
+    top: 6px;
+    right: 6px;
+    min-width: 14px;
+    height: 14px;
+    font-size: 8px;
+  }
+}

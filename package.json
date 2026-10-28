@@ -1,32 +1,39 @@
 {
-  "name": "mern-tasks",
+  "name": "copernico-api",
   "version": "1.0.0",
-  "description": "A MERN CRUD with Authentication",
-  "main": "index.js",
+  "private": true,
+  "description": "API de Copérnico Academy (Express + MongoDB)",
   "type": "module",
-  "scripts": {
-    "dev": "cross-env NODE_ENV=development nodemon src/index.js --ignore client",
-    "start": "cross-env NODE_ENV=production node src/index.js",
-    "docker:build": "docker compose build",
-    "docker:up": "docker compose up -d --build",
-    "docker:down": "docker compose down"
+  "main": "src/index.js",
+  "engines": {
+    "node": ">=24"
   },
-  "keywords": [],
-  "author": "",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "test": "node --test --test-reporter=spec \"test/**/*.test.js\"",
+    "migrate:advisors": "node scripts/migrate_advisors_to_tutors.js",
+    "migrate:courses": "node scripts/create_courses_from_appointments.js"
+  },
   "license": "ISC",
   "dependencies": {
     "bcryptjs": "^2.4.3",
-    "cookie-parser": "^1.4.6",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
-    "express": "^4.18.2",
-    "jsonwebtoken": "^9.0.0",
-    "mongoose": "^7.2.2",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2",
+    "express-mongo-sanitize": "^2.2.0",
+    "express-rate-limit": "^7.5.0",
+    "helmet": "^7.2.0",
+    "hpp": "^0.2.3",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.9.5",
     "morgan": "^1.10.0",
-    "zod": "^3.21.4"
+    "multer": "^2.0.2",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
-    "cross-env": "^7.0.3",
-    "dotenv": "^16.1.3",
-    "nodemon": "^2.0.22"
+    "mongodb-memory-server": "^10.1.4",
+    "supertest": "^7.0.0"
   }
 }

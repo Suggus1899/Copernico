@@ -1,0 +1,37 @@
+# Blueprint de Render para la API (ver DEPLOY.md).
+# Las variables marcadas con sync: false se piden al crear el servicio desde el panel.
+# Render inyecta PORT: no definirlo aquí. El plan free duerme el servicio tras inactividad.
+
+services:
+  - type: web
+    runtime: node
+    name: copernico-api
+    region: oregon
+    plan: free
+    buildCommand: npm ci --omit=dev
+    startCommand: npm start
+    healthCheckPath: /api/health/ready
+    envVars:
+      - key: NODE_VERSION
+        value: "24"
+      - key: NODE_ENV
+        value: production
+      # Vercel reescribe /api hacia Render (dos saltos de proxy): ver TRUST_PROXY en .env.example.
+      - key: TRUST_PROXY
+        value: "2"
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 12h
+      # Orígenes del cliente en Vercel, p. ej. https://copernico.vercel.app (sin barra final).
+      - key: FRONTEND_URL
+        sync: false
+      # Cadena de conexión de MongoDB Atlas (usuario dedicado, base copernico).
+      - key: MONGODB_URI
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_STORAGE_BUCKET
+        value: copernico-private

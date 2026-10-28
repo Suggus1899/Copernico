@@ -1,30 +1,87 @@
+# Entorno de desarrollo completo: MongoDB (replica set), API y cliente.
+# Uso: docker compose up --build
+#   Cliente: http://localhost:5173 (Vite reenvía /api a la API)
+#   API:     http://localhost:4002/api/health
+# Fuera de Docker, la API necesita su propio replica set local (ver README).
+
+x-api-build: &api-build
+  build:
+    context: .
+    dockerfile: Dockerfile.dev
+  networks:
+    - copernico-network
 
 services:
-  tasksdb:
-    image: mongo:6
-    container_name: tasksdb
-    restart: always
+  db:
+    image: mongo:8
+    container_name: copernico-db
+    command: ["--replSet", "rs0", "--bind_ip_all"]
     ports:
       - "27017:27017"
     volumes:
-      - tasksdbdata:/data/db
+      - mongodb_data:/data/db
+    networks:
+      - copernico-network
+    restart: unless-stopped
+
+  # Inicializa el replica set una sola vez; la API espera a que termine.
+  db-init:
+    <<: *api-build
+    container_name: copernico-db-init
+    command: ["node", "scripts/init-replica-set.js"]
+    environment:
+      - MONGODB_URI=mongodb://db:27017/?directConnection=true
+      - RS_MEMBER_HOST=db:27017
+    depends_on:
+      - db
+    restart: "no"
 
   api:
-    build: .
-    container_name: tasks_api
-    restart: on-failure
+    <<: *api-build
+    container_name: copernico-api
     ports:
-      - "4000:4000"
+      - "4002:4002"
+    volumes:
+      - .:/app
+      - /app/node_modules
     environment:
-      - NODE_ENV=production
-      - PORT=4000
-      - MONGODB_URI=mongodb://tasksdb:27017/mern-tasks
+      - NODE_ENV=development
+      - PORT=4002
+      - MONGODB_URI=mongodb://db:27017/copernico?replicaSet=rs0
+      - JWT_SECRET=${JWT_SECRET:-dev-only-insecure-secret-change-me-0123456789}
+      - FRONTEND_URL=http://localhost:5173
+      - SUPABASE_URL=${SUPABASE_URL:-}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY:-}
+      - SUPABASE_STORAGE_BUCKET=${SUPABASE_STORAGE_BUCKET:-copernico-private}
+      - CHOKIDAR_USEPOLLING=true
     depends_on:
-      - tasksdb
+      db-init:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile.dev
+    container_name: copernico-client
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./client:/app
+      - /app/node_modules
+    environment:
+      - API_PROXY_TARGET=http://api:4002
+      - CHOKIDAR_USEPOLLING=true
+    depends_on:
+      - api
+    networks:
+      - copernico-network
+    restart: unless-stopped
 
 volumes:
-  tasksdbdata:
-    
-  
+  mongodb_data:
+    driver: local
 
-
+networks:
+  copernico-network:
+    driver: bridge

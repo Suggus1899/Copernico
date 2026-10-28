@@ -1,108 +1,317 @@
-# Copernico Academy (prototipo)
+<div align="center">
 
-Copernico Academy es el nombre del proyecto en evolución. Actualmente este repositorio contiene un prototipo basado en un CRUD desarrollado con el stack MERN (MongoDB, Express, React, Node). La intención es iterar sobre esta base hasta convertirla en un sistema de tutorías y asesoramiento académico completo.
+# 🎓 Copérnico Academy
 
-**Estado actual (resumen)**
-- CRUD mínimo implementado para ejemplos de tareas/recursos.
-- Frontend: React + Vite (carpeta `client/`).
-- Backend: Node + Express (carpeta `src/`).
-- Autenticación: JWT (según implementación presente en `src/libs` y `src/middlewares`).
+### Plataforma de tutorías y asesoramiento académico
 
-**Requisitos**
-- Node.js v16+ (recomendado v18+)
-- npm o pnpm
-- Docker Desktop (opcional, recomendado para pruebas integradas)
+Reserva citas con tutores, sigue cursos con vídeos de YouTube y gestiona documentos, notas, mensajes y notificaciones desde un único lugar.
 
-**Arranque rápido (Windows - PowerShell)**
+</div>
 
-Opción A — Docker Compose (recomendado para pruebas integradas)
+---
 
-```powershell
-# Desde la raíz del repositorio
-docker compose up -d --build
+## 🛠️ Tech Stack
 
-# Ver estado y logs (opcional)
-docker compose ps
-docker compose logs --tail 200 api
-docker compose logs --tail 200 tasksdb
+<table align="center">
+  <tr>
+    <td align="center" width="120">
+      <img src="https://cdn.simpleicons.org/nodedotjs/339933" width="48" height="48" alt="Node.js" /><br/>
+      <sub><b>Node.js 24</b></sub><br/>
+      <sub>Runtime</sub>
+    </td>
+    <td align="center" width="120">
+      <img src="https://cdn.simpleicons.org/express/555555" width="48" height="48" alt="Express" /><br/>
+      <sub><b>Express 4</b></sub><br/>
+      <sub>API REST</sub>
+    </td>
+    <td align="center" width="120">
+      <img src="https://cdn.simpleicons.org/mongodb/47A248" width="48" height="48" alt="MongoDB" /><br/>
+      <sub><b>MongoDB</b></sub><br/>
+      <sub>Replica set</sub>
+    </td>
+    <td align="center" width="120">
+      <img src="https://cdn.simpleicons.org/mongoose/880000" width="48" height="48" alt="Mongoose" /><br/>
+      <sub><b>Mongoose 8</b></sub><br/>
+      <sub>ODM</sub>
+    </td>
+    <td align="center" width="120">
+      <img src="https://cdn.simpleicons.org/zod/3E67B1" width="48" height="48" alt="Zod" /><br/>
+      <sub><b>Zod</b></sub><br/>
+      <sub>Validación</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="120">
+      <img src="https://cdn.simpleicons.org/react/61DAFB" width="48" height="48" alt="React" /><br/>
+      <sub><b>React 18</b></sub><br/>
+      <sub>Interfaz</sub>
+    </td>
+    <td align="center" width="120">
+      <img src="https://cdn.simpleicons.org/vite/646CFF" width="48" height="48" alt="Vite" /><br/>
+      <sub><b>Vite 6</b></sub><br/>
+      <sub>Build y dev server</sub>
+    </td>
+    <td align="center" width="120">
+      <img src="https://cdn.simpleicons.org/reactrouter/CA4245" width="48" height="48" alt="React Router" /><br/>
+      <sub><b>React Router</b></sub><br/>
+      <sub>Rutas</sub>
+    </td>
+    <td align="center" width="120">
+      <img src="https://cdn.simpleicons.org/axios/5A29E4" width="48" height="48" alt="Axios" /><br/>
+      <sub><b>Axios</b></sub><br/>
+      <sub>Cliente HTTP</sub>
+    </td>
+    <td align="center" width="120">
+      <img src="https://cdn.simpleicons.org/bootstrap/7952B3" width="48" height="48" alt="Bootstrap" /><br/>
+      <sub><b>Bootstrap</b></sub><br/>
+      <sub>Tema Lux</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="120">
+      <img src="https://cdn.simpleicons.org/jsonwebtokens/555555" width="48" height="48" alt="JWT" /><br/>
+      <sub><b>JWT</b></sub><br/>
+      <sub>Sesión en cookie</sub>
+    </td>
+    <td align="center" width="120">
+      <img src="https://cdn.simpleicons.org/supabase/3ECF8E" width="48" height="48" alt="Supabase" /><br/>
+      <sub><b>Supabase</b></sub><br/>
+      <sub>Archivos privados</sub>
+    </td>
+    <td align="center" width="120">
+      <img src="https://cdn.simpleicons.org/render/46E3B7" width="48" height="48" alt="Render" /><br/>
+      <sub><b>Render</b></sub><br/>
+      <sub>API en producción</sub>
+    </td>
+    <td align="center" width="120">
+      <img src="https://cdn.simpleicons.org/vercel/555555" width="48" height="48" alt="Vercel" /><br/>
+      <sub><b>Vercel</b></sub><br/>
+      <sub>Cliente en producción</sub>
+    </td>
+    <td align="center" width="120">
+      <img src="https://cdn.simpleicons.org/docker/2496ED" width="48" height="48" alt="Docker" /><br/>
+      <sub><b>Docker</b></sub><br/>
+      <sub>Entorno local</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="120">
+      <img src="https://cdn.simpleicons.org/githubactions/2088FF" width="48" height="48" alt="GitHub Actions" /><br/>
+      <sub><b>GitHub Actions</b></sub><br/>
+      <sub>CI</sub>
+    </td>
+    <td align="center" width="120">
+      <img src="https://cdn.simpleicons.org/youtube/FF0000" width="48" height="48" alt="YouTube" /><br/>
+      <sub><b>YouTube</b></sub><br/>
+      <sub>Vídeos de lecciones</sub>
+    </td>
+  </tr>
+</table>
 
-# Parar y eliminar contenedores
-docker compose down
+## 📐 Arquitectura
+
+```
++-------------------------------+
+| Navegador (React + Vite)      |
++-------------------------------+
+                |  HTTPS
+                v
++-------------------------------+
+| Vercel: cliente estatico      |
+| reescribe /api/* hacia Render |
++-------------------------------+
+                |  /api/* con cookie HttpOnly
+                v
++-------------------------------+
+| Render: API Express 4         |
+| JWT, Zod, rate limits         |
++-------------------------------+
+                |
+        +-------+-------+
+        |               |
+        v               v
++--------------+  +-----------------+
+| MongoDB      |  | Supabase        |
+| replica set  |  | bucket privado  |
++--------------+  +-----------------+
 ```
 
-Abre: `http://localhost:4000` (en producción el backend sirve el frontend construido).
+## 📱 Aplicaciones
 
-Opción B — Desarrollo local (hot-reload)
+| Aplicación | Carpeta | Local | Producción |
+|---|---|---|---|
+| 🖥️ **API** | `src/` | `http://localhost:4002` | Render (`render.yaml`) |
+| 🌐 **Cliente** | `client/` | `http://localhost:5173` | Vercel (`client/vercel.json`) |
+| 🗄️ **Base de datos** | Docker o instalación local | `mongodb://127.0.0.1:27017` | MongoDB Atlas |
 
-Backend (terminal PowerShell):
-
-```powershell
-cd "c:\Users\Gus\Documents\Proyectos uni\S.I-Copernico-Academy"
-npm install
-$env:PORT=4000; npm run dev
-```
-
-Frontend (otra terminal PowerShell):
-
-```powershell
-cd "c:\Users\Gus\Documents\Proyectos uni\S.I-Copernico-Academy\client"
-npm install
-npm run dev
-```
-
-Frontend: `http://localhost:5173`. Backend API: `http://localhost:4000`.
-
-Si quieres backend local y Mongo en Docker:
-
-```powershell
-docker run -d --name tasksdb -p 27017:27017 -v tasksdbdata:/data/db mongo:6
-# luego en la raíz del proyecto
-npm install
-$env:MONGODB_URI='mongodb://localhost:27017/mern-tasks'; $env:PORT=4000; npm run dev
-```
-
-**Variables de entorno importantes**
-
-Coloca un archivo `.env` en la raíz con al menos estas variables (no subir a git):
+## 📦 Estructura del Proyecto
 
 ```
-MONGODB_URI=mongodb://localhost:27017/mern-tasks
-PORT=4000
-TOKEN_SECRET=un_secreto_largo
+Copernico/
+├── src/                        API: configuración, rutas, controladores, modelos, servicios
+├── test/                       Tests de integración (node:test + MongoDB en memoria)
+├── scripts/                    Migraciones de la versión anterior (ver DEPLOY.md)
+├── client/                     Cliente React + Vite (vercel.json: build y reescritura /api)
+├── .github/workflows/ci.yml    Tests de la API y build del cliente
+├── docker-compose.yml          Desarrollo local: MongoDB replica set, API y cliente
+├── Dockerfile.dev              Imagen de desarrollo de la API
+├── render.yaml                 Blueprint de Render para la API
+├── .env.example                Plantilla de variables de entorno
+├── DEPLOY.md                   Guía de despliegue en producción
+└── LICENSE                     Apache License 2.0
+```
+
+## 🚀 Quick Start
+
+### Requisitos
+
+| Herramienta | Versión | Uso |
+|---|---|---|
+| Node.js | 24 (ver `.nvmrc`) | API y cliente |
+| MongoDB | Replica set (local o Atlas) | Las citas usan transacciones |
+| Docker | Opcional | `docker compose` |
+
+### Opción A: Docker
+
+```bash
+docker compose up --build
+```
+
+- Cliente: http://localhost:5173
+- API: http://localhost:4002/api/health
+
+Para probar subidas de archivos, define `SUPABASE_URL` y `SUPABASE_SERVICE_ROLE_KEY` en un `.env` en la raíz (Compose lo lee). Sin ellas, las subidas responden `503 STORAGE_NOT_CONFIGURED`.
+
+### Opción B: sin Docker
+
+```bash
+cp .env.example .env          # en Windows: copy .env.example .env
+npm ci
+npm run dev                   # API en http://localhost:4002
+
+cd client
+npm ci
+npm run dev                   # cliente en http://localhost:5173
+```
+
+Necesitas MongoDB con replica set: un `mongod --replSet rs0` local (con `rs.initiate()` una vez) o un cluster de Atlas. El cliente llama a `/api` y Vite lo reenvía a `API_PROXY_TARGET` (por defecto `http://localhost:4002`).
+
+## ✨ Funcionalidades
+
+| Área | Qué incluye |
+|---|---|
+| 👤 **Cuentas** | Registro de estudiantes y tutores con sesión por cookie HttpOnly. Cambiar contraseña o email y desactivar la cuenta invalidan las sesiones abiertas. |
+| 📅 **Citas** | Reserva con un tutor para un curso publicado. El tutor confirma, rechaza o cancela, y se comprueban solapamientos. |
+| 🎓 **Cursos** | La inscripción se crea al confirmar una cita. Las lecciones usan vídeos de YouTube y registran el progreso. |
+| 💬 **Mensajes y notificaciones** | Mensajes entre estudiante y tutor (`/api/messages`) y notificaciones en la app (`/api/notifications`). |
+| 📝 **Notas** | Notas de usuario (`/api/notes`). |
+| 📁 **Archivos** | Documentos, avatares y materiales en Supabase Storage con bucket privado; descargas mediante enlaces firmados. |
+| 🛡️ **Administración** | El rol `admin` puede enviar notificaciones manuales desde la API. Todavía no hay panel de administración en el cliente. |
+
+## 📊 Reglas de Negocio
+
+### Cuentas y sesión
+
+| Regla | Valor |
+|---|---|
+| Roles | `student`, `tutor`, `admin` |
+| Estados de usuario | `active`, `inactive`, `suspended`, `deleted` |
+| Bloqueo por contraseña incorrecta | 5 intentos fallidos bloquean la cuenta durante 30 minutos |
+| Inicios de sesión fallidos | 20 por IP cada 15 minutos (los aciertos no cuentan) |
+| Registros | 10 por IP cada hora |
+| Acciones sensibles | 10 por IP cada 15 minutos |
+| Duración de la sesión | 12 horas por defecto (`JWT_EXPIRES_IN`) |
+| Contraseña | Máximo 72 bytes |
+
+### Citas
+
+| Regla | Valor |
+|---|---|
+| Estados | `pending`, `confirmed`, `rejected`, `cancelled`, `completed` |
+| Estados que bloquean un horario | `pending` y `confirmed` (no se permiten solapamientos con el tutor) |
+| Duración | Entre 15 y 240 minutos; 60 por defecto, o la duración configurada por el tutor |
+| Mensajes | Solo con una cita `confirmed` o `completed`, o con inscripción en el curso |
+
+### Cursos y vídeos
+
+| Regla | Valor |
+|---|---|
+| Inscripción | Se crea al confirmar una cita |
+| Lección completada | Al alcanzar el 90 % del vídeo |
+| Fuente de vídeo | YouTube |
+
+### Archivos
+
+| Regla | Valor |
+|---|---|
+| Documentos | Máximo 10 MB |
+| Avatares | Máximo 2 MB |
+| Materiales | Máximo 50 MB |
+| Documentos por petición | 5 |
+| Documentos por usuario | 20 |
+
+## 🔧 Variables de Entorno
+
+La plantilla completa está en [`.env.example`](.env.example). Nunca subas `.env` a git.
+
+| Variable | Producción | Descripción |
+|---|---|---|
+| `NODE_ENV` | Sí (`production`) | Activa las validaciones estrictas y las cookies `Secure`. |
+| `PORT` | No | Puerto de la API. Por defecto `4002`; Render lo inyecta. |
+| `MONGODB_URI` | Sí | Cadena de conexión. Las citas usan transacciones, así que requiere replica set. |
+| `JWT_SECRET` | Sí, ≥ 32 caracteres | Firma la sesión (cookie HttpOnly). En desarrollo, si falta, se usa uno aleatorio. |
+| `JWT_EXPIRES_IN` | No | Duración de la sesión (`30m`, `12h`, `7d`…). Por defecto `12h`. |
+| `FRONTEND_URL` | Sí | Orígenes del cliente permitidos, separados por comas. |
+| `TRUST_PROXY` | Sí | Proxies delante de la API: `2` con Vercel + Render; `0` en local. |
+| `SUPABASE_URL` | Para archivos | URL del proyecto de Supabase. |
+| `SUPABASE_SERVICE_ROLE_KEY` | Para archivos | Clave de backend. Nunca va en el cliente. |
+| `SUPABASE_STORAGE_BUCKET` | No | Bucket privado. Por defecto `copernico-private`. |
+
+Ejemplo de `.env` para desarrollo local (sin valores reales):
+
+```env
+NODE_ENV=development
+PORT=4002
+MONGODB_URI=mongodb://127.0.0.1:27017/copernico?replicaSet=rs0
+JWT_SECRET=
+JWT_EXPIRES_IN=12h
 FRONTEND_URL=http://localhost:5173
+TRUST_PROXY=0
+SUPABASE_URL=
+SUPABASE_SERVICE_ROLE_KEY=
+SUPABASE_STORAGE_BUCKET=copernico-private
 ```
 
-En Docker Compose el `api` usa `MONGODB_URI=mongodb://tasksdb:27017/mern-tasks`.
+## 🧪 Testing & CI
 
-**Resolución de problemas comunes**
-
-- 404 en `/` o `/favicon.ico`:
-  - El servidor devuelve 404 si no existe una ruta para `/`. Añade o prueba `GET /ping` para comprobar que el backend responde.
-- "Cannot use import statement outside a module":
-  - Asegúrate de que `package.json` contiene `"type": "module"` si usas `import`/`export` (ESM), o convierte los archivos a CommonJS con `require`/`module.exports`.
-- MongooseServerSelectionError (ECONNREFUSED):
-  - Significa que la app no puede conectar a MongoDB. Si usas Docker Compose, verifica que `tasksdb` esté `Up`. Si ejecutas localmente, confirma que Mongo se esté ejecutando en `localhost:27017`.
-- Puerto 4000 en uso:
-  - Encuentra y mata el proceso (PowerShell):
-
-```powershell
-netstat -ano | findstr :4000
-Stop-Process -Id <PID> -Force
+```bash
+npm test                      # API: tests de integración (la primera vez descarga MongoDB en memoria)
+cd client && npm run build    # cliente: build de producción
 ```
 
-**Roadmap (alto nivel)**
+| Job de CI | Qué hace |
+|---|---|
+| `API (tests)` | `npm ci` y `npm test` con la versión de Node de `.nvmrc` |
+| `Cliente (build)` | `npm ci` y `npm run build` en `client/` |
 
-1. Autenticación y roles (estudiante, tutor, admin).
-2. Perfiles de tutor con materias y valoraciones.
-3. Sistema de reservas/agenda y mensajería interna.
-4. Panel administrativo y métricas.
-5. Seguridad, tests y despliegue (Docker/CI).
+CI se ejecuta en cada `push` y `pull_request` (`.github/workflows/ci.yml`).
 
-**Contribuir**
-- Abrir issues describiendo el problema o mejora.
-- Crear ramas `feature/` o `fix/` y enviar pull requests.
+## 🚧 Fuera de esta versión
 
-**Licencia**
+- **Tareas, informes y disponibilidad recurrente:** sus rutas no están montadas en la API. Los archivos existen en el repositorio, pero no forman parte de la versión publicada.
+- **SQLite y envío de correo:** no se usan.
+- **Creación de cursos y panel de administración en el cliente:** todavía no existen. Para el alta inicial, ver [DEPLOY.md](DEPLOY.md).
 
-MIT — ver LICENSE (si aplica).
+## 🌍 Despliegue
 
+Ver [DEPLOY.md](DEPLOY.md): MongoDB Atlas, Supabase Storage, Render (`render.yaml`), Vercel (`client/vercel.json`) y comprobaciones posteriores.
+
+## 📜 Licencia
+
+Apache License 2.0. Consulta el archivo [LICENSE](LICENSE).
+
+<div align="center">
+
+<sub>Hecho con ❤️ para Copérnico Academy</sub>
+
+</div>
