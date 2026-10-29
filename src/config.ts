@@ -6,7 +6,7 @@ loadDotenv();
 const DEV_MONGODB_URI = "mongodb://127.0.0.1:27017/copernico?replicaSet=rs0";
 const DEV_FRONTEND_ORIGIN = "http://localhost:5173";
 const DURATION_PATTERN = /^(\d+)([smhd])$/;
-const DURATION_UNITS_MS = { s: 1000, m: 60_000, h: 3_600_000, d: 86_400_000 };
+const DURATION_UNITS_MS: Record<string, number> = { s: 1000, m: 60_000, h: 3_600_000, d: 86_400_000 };
 
 /** Limits compartidos por los módulos de almacenamiento. */
 export const DOCUMENT_MAX_BYTES = 10 * 1024 * 1024;
@@ -14,7 +14,7 @@ export const AVATAR_MAX_BYTES = 2 * 1024 * 1024;
 export const MATERIAL_MAX_BYTES = 50 * 1024 * 1024;
 
 /** Convierte "15m", "12h" o "7d" a milisegundos. Devuelve null si el formato no es válido. */
-export function durationToMs(value) {
+export function durationToMs(value: unknown) {
   const match = DURATION_PATTERN.exec(String(value ?? "").trim());
   if (!match) return null;
   return Number(match[1]) * DURATION_UNITS_MS[match[2]];
@@ -30,7 +30,7 @@ export function redactUri(uri = "") {
  * Función pura: no escribe en consola ni termina el proceso; lanza ConfigError
  * con todos los problemas encontrados para que el arranque los muestre juntos.
  */
-export function buildConfig(env = process.env) {
+export function buildConfig(env: NodeJS.ProcessEnv = process.env) {
   const nodeEnv = env.NODE_ENV || "development";
   const isProduction = nodeEnv === "production";
   const problems = [];
@@ -124,7 +124,7 @@ export function buildConfig(env = process.env) {
 }
 
 export class ConfigError extends Error {
-  constructor(message) {
+  constructor(message: string) {
     super(message);
     this.name = "ConfigError";
   }

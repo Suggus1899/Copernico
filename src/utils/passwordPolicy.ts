@@ -5,7 +5,7 @@ export const PASSWORD_POLICY_MESSAGE =
   'La contraseña debe tener entre 8 y 72 caracteres e incluir una minúscula, una mayúscula y un número.';
 
 /** Devuelve true si la contraseña cumple la política mínima de la plataforma. */
-export function isStrongPassword(password) {
+export function isStrongPassword(password: unknown) {
   if (typeof password !== 'string') return false;
   if (password.length < PASSWORD_MIN_LENGTH) return false;
   if (Buffer.byteLength(password, 'utf8') > PASSWORD_MAX_BYTES) return false;

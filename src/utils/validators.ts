@@ -1,3 +1,4 @@
+import type { RequestHandler } from 'express';
 import mongoose from 'mongoose';
 import { AppError } from './AppError.js';
 
@@ -6,7 +7,7 @@ import { AppError } from './AppError.js';
  * @param {string} id - ID a validar
  * @returns {boolean} - true si es válido, false si no
  */
-export const isValidObjectId = (id) => {
+export const isValidObjectId = (id: unknown) => {
   if (!id) return false;
   return mongoose.isValidObjectId(id);
 };
@@ -17,7 +18,7 @@ export const isValidObjectId = (id) => {
  * @param {string} fieldName - Nombre del campo para el mensaje de error
  * @throws {AppError} - Si el ID no es válido (400 INVALID_ID)
  */
-export const validateObjectId = (id, fieldName = 'ID') => {
+export const validateObjectId = (id: unknown, fieldName = 'ID') => {
   if (!isValidObjectId(id)) {
     throw new AppError(400, 'INVALID_ID', `${fieldName} inválido`);
   }
@@ -29,7 +30,7 @@ export const validateObjectId = (id, fieldName = 'ID') => {
  * @param {string} paramName - Nombre del parámetro a validar (default: 'id')
  * @returns {Function} - Middleware de Express
  */
-export const validateObjectIdParam = (paramName = 'id') => {
+export const validateObjectIdParam = (paramName = 'id'): RequestHandler => {
   return (req, res, next) => {
     if (!isValidObjectId(req.params[paramName])) {
       return next(new AppError(400, 'INVALID_ID', `${paramName} inválido`));

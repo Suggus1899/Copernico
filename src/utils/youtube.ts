@@ -10,7 +10,7 @@ const PATH_ID_PREFIXES = new Set(['embed', 'shorts', 'live']);
  * Acepta el ID suelto o una URL de youtube.com (watch, embed, shorts, live) o youtu.be.
  * Devuelve null si la entrada no corresponde a un vídeo de YouTube.
  */
-export function parseYouTubeId(input) {
+export function parseYouTubeId(input: unknown) {
   if (typeof input !== 'string') return null;
   const value = input.trim();
   if (!value) return null;
@@ -39,4 +39,4 @@ export function parseYouTubeId(input) {
 }
 
 /** Miniatura pública de un vídeo de YouTube. */
-export const youTubeThumbnailUrl = (youtubeId) => `https://i.ytimg.com/vi/${youtubeId}/hqdefault.jpg`;
+export const youTubeThumbnailUrl = (youtubeId: string) => `https://i.ytimg.com/vi/${youtubeId}/hqdefault.jpg`;

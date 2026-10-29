@@ -8,33 +8,33 @@ const OFFICE_OPEN_XML = {
   pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
 };
 
-const startsWithBytes = (buffer, bytes, offset = 0) =>
+const startsWithBytes = (buffer: Buffer, bytes: number[], offset = 0) =>
   bytes.every((byte, index) => buffer[offset + index] === byte);
-const startsWithAscii = (buffer, text, offset = 0) =>
+const startsWithAscii = (buffer: Buffer, text: string, offset = 0) =>
   buffer.toString('latin1', offset, offset + text.length) === text;
-const isZipContainer = (buffer) => startsWithBytes(buffer, [0x50, 0x4b, 0x03, 0x04]);
-const isPlainText = (buffer) => !buffer.subarray(0, 8192).includes(0);
+const isZipContainer = (buffer: Buffer) => startsWithBytes(buffer, [0x50, 0x4b, 0x03, 0x04]);
+const isPlainText = (buffer: Buffer) => !buffer.subarray(0, 8192).includes(0);
 
 // Tipos admitidos. La validez se decide por la extensión y por la firma del contenido;
 // el mimetype declarado por el navegador no se usa porque se puede falsificar.
-const FILE_KINDS = {
-  jpg: { mime: 'image/jpeg', matches: (buffer) => startsWithBytes(buffer, [0xff, 0xd8, 0xff]) },
-  png: { mime: 'image/png', matches: (buffer) => startsWithBytes(buffer, [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]) },
-  webp: { mime: 'image/webp', matches: (buffer) => startsWithAscii(buffer, 'RIFF') && startsWithAscii(buffer, 'WEBP', 8) },
-  pdf: { mime: 'application/pdf', matches: (buffer) => startsWithAscii(buffer, '%PDF-') },
+const FILE_KINDS: Record<string, { mime: string; matches: (buffer: Buffer) => boolean }> = {
+  jpg: { mime: 'image/jpeg', matches: (buffer: Buffer) => startsWithBytes(buffer, [0xff, 0xd8, 0xff]) },
+  png: { mime: 'image/png', matches: (buffer: Buffer) => startsWithBytes(buffer, [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]) },
+  webp: { mime: 'image/webp', matches: (buffer: Buffer) => startsWithAscii(buffer, 'RIFF') && startsWithAscii(buffer, 'WEBP', 8) },
+  pdf: { mime: 'application/pdf', matches: (buffer: Buffer) => startsWithAscii(buffer, '%PDF-') },
   txt: { mime: 'text/plain; charset=utf-8', matches: isPlainText },
   docx: { mime: OFFICE_OPEN_XML.docx, matches: isZipContainer },
   xlsx: { mime: OFFICE_OPEN_XML.xlsx, matches: isZipContainer },
   pptx: { mime: OFFICE_OPEN_XML.pptx, matches: isZipContainer },
 };
 
-const EXTENSION_ALIASES = { jpeg: 'jpg' };
+const EXTENSION_ALIASES: Record<string, string> = { jpeg: 'jpg' };
 
 export const IMAGE_EXTENSIONS = ['jpg', 'png', 'webp'];
 export const DOCUMENT_EXTENSIONS = ['pdf', 'txt', 'docx', 'xlsx', 'pptx', 'jpg', 'png', 'webp'];
 
 // Valida extensión y firma del contenido. Devuelve el tipo canónico o lanza 415.
-export const identifyUpload = (file, allowedExtensions) => {
+export const identifyUpload = (file: Pick<Express.Multer.File, "originalname" | "buffer">, allowedExtensions: string[]) => {
   const extension = path.extname(file.originalname || '').slice(1).toLowerCase();
   const name = EXTENSION_ALIASES[extension] ?? extension;
   if (!allowedExtensions.includes(name)) {
@@ -48,11 +48,11 @@ export const identifyUpload = (file, allowedExtensions) => {
 };
 
 // Clave de objeto generada por el servidor: nunca incluye el nombre original.
-export const buildObjectKey = (folder, ext, ownerId) =>
+export const buildObjectKey = (folder: string, ext: string, ownerId?: unknown) =>
   ownerId ? `${folder}/${ownerId}/${randomUUID()}.${ext}` : `${folder}/${randomUUID()}.${ext}`;
 
 // Nombre visible y de descarga: sin rutas ni caracteres de control.
-export const toDisplayName = (originalName, ext) => {
+export const toDisplayName = (originalName: unknown, ext: string) => {
   const cleaned = path.basename(String(originalName || ''))
     .replace(/[\u0000-\u001f\u007f"\\/]/g, '_')
     .trim()
