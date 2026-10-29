@@ -30,7 +30,7 @@ flowchart LR
 
 1. Crea un cluster. M0 sirve para el piloto y ya es replica set.
 2. *Database Access*: crea un usuario dedicado con permiso `readWrite` solo sobre la base `copernico`. No uses el usuario administrador.
-3. *Network Access*: el plan free de Render no tiene IP fija, así que hay que permitir `0.0.0.0/0`. Compénsalo con un usuario dedicado y una contraseña fuerte. Con un plan de pago de Render, permite solo su IP saliente.
+3. *Network Access*: consulta en Render → servicio → *Connect → Outbound* los rangos de salida de la región y añádelos a la lista de acceso de Atlas. Los rangos son compartidos; usa un usuario dedicado y una contraseña fuerte. Si dispones de IP saliente dedicada, permite esa IP. Consulta la [documentación de IP salientes de Render](https://render.com/docs/outbound-ip-addresses).
 4. *Connect → Drivers*: copia la cadena `mongodb+srv://…`, sustituye la contraseña (codifica los caracteres especiales en URL) y añade la base: `…mongodb.net/copernico?retryWrites=true&w=majority`. Ese valor es `MONGODB_URI`.
 
 ## 2. Supabase Storage
