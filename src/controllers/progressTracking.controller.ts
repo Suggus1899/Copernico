@@ -1,47 +1,51 @@
+import type { Handler, BodyOf } from '../types/http.js';
+import type * as schemas from '../schemas/progressTracking.schema.js';
+import type { FilterQuery } from 'mongoose';
+import type { ProgressTrackingRecord } from '../models/ProgressTracking.js';
 import { AppError } from '../utils/AppError.js';
 import ProgressTracking from "../models/ProgressTracking.js";
 import User from "../models/User.js";
 import Appointment from "../models/Appointment.js";
 
-export const getProgressTrackings = async (req, res, next) => {
+export const getProgressTrackings: Handler<Record<string, string>, unknown, { studentId: string; subject: string }> = async (req, res, next) => {
   try {
-    const { 
-      studentId, 
-      trackedBy, 
-      subject, 
+    const {
+      studentId,
+      trackedBy,
+      subject,
       competencyLevel,
       dateFrom,
       dateTo,
-      page = 1, 
-      limit = 20 
+      page = 1,
+      limit = 20
     } = req.query;
-    
-    const filter = {};
-    
+
+    const filter: FilterQuery<ProgressTrackingRecord> = {};
+
     // Filtros según el rol del usuario
-    if (req.user.role === 'student') {
-      filter.studentId = req.user.id;
-    } else if (['tutor'].includes(req.user.role)) {
-      filter.trackedBy = req.user.id;
+    if (req.user!.role === 'student') {
+      filter.studentId = req.user!.id;
+    } else if (['tutor'].includes(req.user!.role)) {
+      filter.trackedBy = req.user!.id;
     }
-    
+
     // Filtros adicionales
-    if (studentId && req.user.role !== 'student') filter.studentId = studentId;
-    if (trackedBy && req.user.role !== 'tutor') filter.trackedBy = trackedBy;
-    if (subject) filter.subject = new RegExp(subject, 'i');
+    if (studentId && req.user!.role !== 'student') filter.studentId = studentId;
+    if (trackedBy && req.user!.role !== 'tutor') filter.trackedBy = trackedBy;
+    if (subject) filter.subject = new RegExp(subject as string, 'i');
     if (competencyLevel) filter.competencyLevel = competencyLevel;
-    
+
     // Filtro por fecha
     if (dateFrom || dateTo) {
       filter.createdAt = {};
-      if (dateFrom) filter.createdAt.$gte = new Date(dateFrom);
-      if (dateTo) filter.createdAt.$lte = new Date(dateTo);
+      if (dateFrom) filter.createdAt.$gte = new Date(dateFrom as string);
+      if (dateTo) filter.createdAt.$lte = new Date(dateTo as string);
     }
 
     const options = {
-      page: parseInt(page),
-      limit: parseInt(limit),
-      sort: { createdAt: -1 }
+      page: parseInt(String(page)),
+      limit: parseInt(String(limit)),
+      sort: { createdAt: -1 as const }
     };
 
     const progressTrackings = await ProgressTracking.find(filter)
@@ -72,7 +76,7 @@ export const getProgressTrackings = async (req, res, next) => {
   }
 };
 
-export const getProgressTrackingById = async (req, res, next) => {
+export const getProgressTrackingById: Handler<Record<string, string>, unknown, { studentId: string; subject: string }> = async (req, res, next) => {
   try {
     const progressTracking = await ProgressTracking.findById(req.params.id)
       .populate('studentId', 'personalInfo email studentProfile')
@@ -87,10 +91,10 @@ export const getProgressTrackingById = async (req, res, next) => {
     }
 
     // Verificar permisos
-    const canView = 
-      req.user.role === 'admin' ||
-      progressTracking.studentId._id.toString() === req.user.id ||
-      progressTracking.trackedBy._id.toString() === req.user.id;
+    const canView =
+      req.user!.role === 'admin' ||
+      progressTracking.studentId._id.toString() === req.user!.id ||
+      progressTracking.trackedBy._id.toString() === req.user!.id;
 
     if (!canView) {
       throw new AppError(403, 'FORBIDDEN', "Access denied to this progress tracking record");
@@ -105,7 +109,7 @@ export const getProgressTrackingById = async (req, res, next) => {
   }
 };
 
-export const createProgressTracking = async (req, res, next) => {
+export const createProgressTracking: Handler<Record<string, string>, unknown, BodyOf<typeof schemas.createProgressTrackingSchema> & { createdBy?: string; updatedBy?: string }> = async (req, res, next) => {
   try {
     const progressData = req.body;
 
@@ -122,7 +126,7 @@ export const createProgressTracking = async (req, res, next) => {
     }
 
     // Verificar permisos para crear seguimiento
-    if (!['tutor', 'admin'].includes(req.user.role)) {
+    if (!['tutor', 'admin'].includes(req.user!.role)) {
       throw new AppError(403, 'FORBIDDEN', "Only tutors and admins can create progress tracking");
     }
 
@@ -135,8 +139,8 @@ export const createProgressTracking = async (req, res, next) => {
     }
 
     // Agregar información de auditoría
-    progressData.createdBy = req.user.id;
-    progressData.updatedBy = req.user.id;
+    progressData.createdBy = req.user!.id;
+    progressData.updatedBy = req.user!.id;
 
     const newProgressTracking = new ProgressTracking(progressData);
     const progressSaved = await newProgressTracking.save();
@@ -157,22 +161,22 @@ export const createProgressTracking = async (req, res, next) => {
   }
 };
 
-export const updateProgressTracking = async (req, res, next) => {
+export const updateProgressTracking: Handler<Record<string, string>, unknown, BodyOf<typeof schemas.updateProgressTrackingSchema> & { createdBy?: string; updatedBy?: string }> = async (req, res, next) => {
   try {
     const progressTracking = await ProgressTracking.findById(req.params.id);
-    
+
     if (!progressTracking) {
       throw new AppError(404, 'NOT_FOUND', "Progress tracking record not found");
     }
 
     // Verificar permisos - solo tracker o admin puede editar
-    if (progressTracking.trackedBy.toString() !== req.user.id && req.user.role !== 'admin') {
+    if (progressTracking.trackedBy.toString() !== req.user!.id && req.user!.role !== 'admin') {
       throw new AppError(403, 'FORBIDDEN', "Not authorized to update this progress tracking");
     }
 
-    const updateData = { 
+    const updateData = {
       ...req.body,
-      updatedBy: req.user.id 
+      updatedBy: req.user!.id
     };
 
     const updatedProgress = await ProgressTracking.findByIdAndUpdate(
@@ -195,7 +199,7 @@ export const updateProgressTracking = async (req, res, next) => {
   }
 };
 
-export const addProgressHistory = async (req, res, next) => {
+export const addProgressHistory: Handler<Record<string, string>, unknown, BodyOf<typeof schemas.addProgressHistorySchema> & { createdBy?: string; updatedBy?: string }> = async (req, res, next) => {
   try {
     const { metricsSnapshot, notes } = req.body;
     const progressTracking = await ProgressTracking.findById(req.params.id);
@@ -205,11 +209,11 @@ export const addProgressHistory = async (req, res, next) => {
     }
 
     // Verificar permisos - solo tracker o admin puede agregar historial
-    if (progressTracking.trackedBy.toString() !== req.user.id && req.user.role !== 'admin') {
+    if (progressTracking.trackedBy.toString() !== req.user!.id && req.user!.role !== 'admin') {
       throw new AppError(403, 'FORBIDDEN', "Not authorized to add progress history");
     }
 
-    await progressTracking.addProgressHistory(metricsSnapshot, notes, req.user.id);
+    await progressTracking.addProgressHistory(metricsSnapshot, notes, req.user!.id);
 
     const updatedProgress = await ProgressTracking.findById(req.params.id)
       .populate('progressHistory.recordedBy', 'personalInfo');
@@ -217,14 +221,14 @@ export const addProgressHistory = async (req, res, next) => {
     res.json({
       success: true,
       message: "Progress history added successfully",
-      data: updatedProgress.progressHistory
+      data: updatedProgress!.progressHistory
     });
   } catch (error) {
     next(error);
   }
 };
 
-export const updateGoalStatus = async (req, res, next) => {
+export const updateGoalStatus: Handler<Record<string, string>, unknown, BodyOf<typeof schemas.updateGoalStatusSchema> & { createdBy?: string; updatedBy?: string }> = async (req, res, next) => {
   try {
     const { goalType, customGoalIndex, status, progress } = req.body;
     const progressTracking = await ProgressTracking.findById(req.params.id);
@@ -234,35 +238,35 @@ export const updateGoalStatus = async (req, res, next) => {
     }
 
     // Verificar permisos - estudiante, tracker o admin puede actualizar metas
-    const canUpdate = 
-      progressTracking.studentId.toString() === req.user.id ||
-      progressTracking.trackedBy.toString() === req.user.id ||
-      req.user.role === 'admin';
+    const canUpdate =
+      progressTracking.studentId.toString() === req.user!.id ||
+      progressTracking.trackedBy.toString() === req.user!.id ||
+      req.user!.role === 'admin';
 
     if (!canUpdate) {
       throw new AppError(403, 'FORBIDDEN', "Not authorized to update goals");
     }
 
-    if (goalType === 'shortTerm' && progressTracking.goals.shortTerm) {
-      progressTracking.goals.shortTerm.status = status;
+    if (goalType === 'shortTerm' && progressTracking.goals!.shortTerm) {
+      progressTracking.goals!.shortTerm.status = status;
       if (progress !== undefined) {
-        progressTracking.goals.shortTerm.progress = progress;
+        (progressTracking.goals!.shortTerm as { progress?: number }).progress = progress;
       }
-    } else if (goalType === 'longTerm' && progressTracking.goals.longTerm) {
-      progressTracking.goals.longTerm.status = status;
+    } else if (goalType === 'longTerm' && progressTracking.goals!.longTerm) {
+      progressTracking.goals!.longTerm.status = status;
       if (progress !== undefined) {
-        progressTracking.goals.longTerm.progress = progress;
+        (progressTracking.goals!.longTerm as { progress?: number }).progress = progress;
       }
-    } else if (goalType === 'custom' && progressTracking.goals.customGoals[customGoalIndex]) {
-      progressTracking.goals.customGoals[customGoalIndex].status = status;
+    } else if (goalType === 'custom' && progressTracking.goals!.customGoals[customGoalIndex!]) {
+      progressTracking.goals!.customGoals[customGoalIndex!].status = status;
       if (progress !== undefined) {
-        progressTracking.goals.customGoals[customGoalIndex].progress = progress;
+        progressTracking.goals!.customGoals[customGoalIndex!].progress = progress;
       }
     } else {
       throw new AppError(400, 'BAD_REQUEST', "Invalid goal type or index");
     }
 
-    progressTracking.updatedBy = req.user.id;
+    progressTracking.set('updatedBy', req.user!.id);
     await progressTracking.save();
 
     const updatedProgress = await ProgressTracking.findById(req.params.id);
@@ -270,27 +274,27 @@ export const updateGoalStatus = async (req, res, next) => {
     res.json({
       success: true,
       message: "Goal status updated successfully",
-      data: updatedProgress.goals
+      data: updatedProgress!.goals
     });
   } catch (error) {
     next(error);
   }
 };
 
-export const getStudentProgress = async (req, res, next) => {
+export const getStudentProgress: Handler<Record<string, string>, unknown, { studentId: string; subject: string }> = async (req, res, next) => {
   try {
     const { studentId, subject } = req.query;
-    
+
     let targetStudentId = studentId;
-    
+
     // Si es estudiante, solo puede ver su propio progreso
-    if (req.user.role === 'student') {
-      targetStudentId = req.user.id;
-    } else if (!studentId && !['tutor', 'admin'].includes(req.user.role)) {
+    if (req.user!.role === 'student') {
+      targetStudentId = req.user!.id;
+    } else if (!studentId && !['tutor', 'admin'].includes(req.user!.role)) {
       throw new AppError(400, 'BAD_REQUEST', "Student ID is required");
     }
 
-    const progress = await ProgressTracking.getStudentProgress(targetStudentId, subject);
+    const progress = await ProgressTracking.getStudentProgress(targetStudentId as string | undefined, subject as string | undefined);
 
     if (!progress) {
       return res.json({
@@ -309,12 +313,12 @@ export const getStudentProgress = async (req, res, next) => {
   }
 };
 
-export const getMyProgress = async (req, res, next) => {
+export const getMyProgress: Handler<Record<string, string>, unknown, { studentId: string; subject: string }> = async (req, res, next) => {
   try {
     const { subject } = req.query;
-    
-    const filter = { studentId: req.user.id };
-    if (subject) filter.subject = new RegExp(subject, 'i');
+
+    const filter: FilterQuery<ProgressTrackingRecord> = { studentId: req.user!.id };
+    if (subject) filter.subject = new RegExp(subject as string, 'i');
 
     const progressTrackings = await ProgressTracking.find(filter)
       .populate('trackedBy', 'personalInfo email tutorProfile')
@@ -330,25 +334,25 @@ export const getMyProgress = async (req, res, next) => {
   }
 };
 
-export const getProgressStatistics = async (req, res, next) => {
+export const getProgressStatistics: Handler<Record<string, string>, unknown, { studentId: string; subject: string }> = async (req, res, next) => {
   try {
     const { studentId, subject, period = 'all' } = req.query;
-    
-    let filter = {};
-    
-    if (req.user.role === 'student') {
-      filter.studentId = req.user.id;
+
+    let filter: FilterQuery<ProgressTrackingRecord> = {};
+
+    if (req.user!.role === 'student') {
+      filter.studentId = req.user!.id;
     } else if (studentId) {
       filter.studentId = studentId;
     }
-    
-    if (subject) filter.subject = new RegExp(subject, 'i');
+
+    if (subject) filter.subject = new RegExp(subject as string, 'i');
 
     // Filtrar por período
     if (period !== 'all') {
       const now = new Date();
       let startDate;
-      
+
       switch (period) {
         case 'week':
           startDate = new Date(now.setDate(now.getDate() - 7));
@@ -365,7 +369,7 @@ export const getProgressStatistics = async (req, res, next) => {
         default:
           startDate = new Date(0);
       }
-      
+
       filter.createdAt = { $gte: startDate };
     }
 
@@ -411,12 +415,12 @@ export const getProgressStatistics = async (req, res, next) => {
   }
 };
 
-export const createBaselineAssessment = async (req, res, next) => {
+export const createBaselineAssessment: Handler<Record<string, string>, unknown, { studentId: string; subject: string }> = async (req, res, next) => {
   try {
     const { studentId, subject } = req.body;
 
     // Verificar permisos
-    if (!['tutor', 'admin'].includes(req.user.role)) {
+    if (!['tutor', 'admin'].includes(req.user!.role)) {
       throw new AppError(403, 'FORBIDDEN', "Only tutors and admins can create baseline assessments");
     }
 
@@ -433,7 +437,7 @@ export const createBaselineAssessment = async (req, res, next) => {
 
     const baselineData = {
       studentId,
-      trackedBy: req.user.id,
+      trackedBy: req.user!.id,
       subject,
       metrics: {
         assignmentGrades: 0,
@@ -450,8 +454,8 @@ export const createBaselineAssessment = async (req, res, next) => {
         endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 días
       },
       isBaseline: true,
-      createdBy: req.user.id,
-      updatedBy: req.user.id
+      createdBy: req.user!.id,
+      updatedBy: req.user!.id
     };
 
     const baseline = new ProgressTracking(baselineData);

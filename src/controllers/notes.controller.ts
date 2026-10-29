@@ -1,15 +1,19 @@
+import type { Handler } from '../types/http.js';
+import type { FilterQuery } from 'mongoose';
+import type { NoteRecord } from '../models/Note.js';
+type NoteBody = { title?: string; content?: string; subject?: string; tags?: unknown; isFavorite?: boolean; email?: string; permission?: 'read' | 'write' };
 import { AppError } from '../utils/AppError.js';
 import Note from "../models/Note.js";
 import User from "../models/User.js";
 
-export const getNotes = async (req, res, next) => {
+export const getNotes: Handler<Record<string, string>, unknown, NoteBody> = async (req, res, next) => {
   try {
     // Filtrar notas por usuario autenticado o compartidas con él
-    const filter = {};
+    const filter: FilterQuery<NoteRecord> = {};
     if (req.user) {
       filter.$or = [
-        { userId: req.user.id },
-        { "sharedWith.user": req.user.id }
+        { userId: req.user!.id },
+        { "sharedWith.user": req.user!.id }
       ];
     }
 
@@ -27,7 +31,7 @@ export const getNotes = async (req, res, next) => {
   }
 };
 
-export const createNote = async (req, res, next) => {
+export const createNote: Handler<Record<string, string>, unknown, NoteBody> = async (req, res, next) => {
   try {
     const { title, content, subject, tags } = req.body;
 
@@ -42,7 +46,7 @@ export const createNote = async (req, res, next) => {
       subject: subject?.trim() || '',
       tags: Array.isArray(tags) ? tags : [],
       author: req.user?.personalInfo?.firstName
-        ? `${req.user.personalInfo.firstName} ${req.user.personalInfo.lastName || ''}`.trim()
+        ? `${req.user!.personalInfo.firstName} ${req.user!.personalInfo.lastName || ''}`.trim()
         : req.user?.email || 'Usuario',
       userId: req.user?.id
     };
@@ -64,7 +68,7 @@ export const createNote = async (req, res, next) => {
   }
 };
 
-export const getNote = async (req, res, next) => {
+export const getNote: Handler<Record<string, string>, unknown, NoteBody> = async (req, res, next) => {
   try {
     const note = await Note.findById(req.params.id)
       .populate('userId', 'personalInfo email')
@@ -75,9 +79,9 @@ export const getNote = async (req, res, next) => {
     }
 
     // Verificar acceso (propietario, admin o compartido)
-    const isOwner = note.userId._id.toString() === req.user.id;
-    const isAdmin = req.user.role === 'admin';
-    const isShared = note.sharedWith.some(share => share.user._id.toString() === req.user.id);
+    const isOwner = note.userId!._id.toString() === req.user!.id;
+    const isAdmin = req.user!.role === 'admin';
+    const isShared = note.sharedWith.some(share => share.user!._id.toString() === req.user!.id);
 
     if (!isOwner && !isAdmin && !isShared) {
       throw new AppError(403, 'FORBIDDEN', "Not authorized");
@@ -87,7 +91,7 @@ export const getNote = async (req, res, next) => {
       success: true,
       data: {
         ...note.toObject(),
-        permission: isOwner ? 'owner' : (isAdmin ? 'admin' : note.sharedWith.find(s => s.user._id.toString() === req.user.id).permission)
+        permission: isOwner ? 'owner' : (isAdmin ? 'admin' : note.sharedWith.find(s => s.user!._id.toString() === req.user!.id)!.permission)
       }
     });
   } catch (error) {
@@ -95,7 +99,7 @@ export const getNote = async (req, res, next) => {
   }
 };
 
-export const deleteNote = async (req, res, next) => {
+export const deleteNote: Handler<Record<string, string>, unknown, NoteBody> = async (req, res, next) => {
   try {
     const note = await Note.findById(req.params.id);
 
@@ -104,7 +108,7 @@ export const deleteNote = async (req, res, next) => {
     }
 
     // Solo permitir eliminar notas propias (excepto admin)
-    if (note.userId.toString() !== req.user.id && req.user.role !== 'admin') {
+    if (note.userId!.toString() !== req.user!.id && req.user!.role !== 'admin') {
       throw new AppError(403, 'FORBIDDEN', "Not authorized to delete this note");
     }
 
@@ -119,7 +123,7 @@ export const deleteNote = async (req, res, next) => {
   }
 };
 
-export const updateNote = async (req, res, next) => {
+export const updateNote: Handler<Record<string, string>, unknown, NoteBody> = async (req, res, next) => {
   try {
     const { title, content, subject, tags, isFavorite } = req.body;
 
@@ -130,9 +134,9 @@ export const updateNote = async (req, res, next) => {
     }
 
     // Verificar permisos
-    const isOwner = note.userId.toString() === req.user.id;
-    const isAdmin = req.user.role === 'admin';
-    const sharedPermission = note.sharedWith.find(s => s.user.toString() === req.user.id);
+    const isOwner = note.userId!.toString() === req.user!.id;
+    const isAdmin = req.user!.role === 'admin';
+    const sharedPermission = note.sharedWith.find(s => s.user!.toString() === req.user!.id);
     const canWrite = sharedPermission && sharedPermission.permission === 'write';
 
     if (!isOwner && !isAdmin && !canWrite) {
@@ -141,7 +145,7 @@ export const updateNote = async (req, res, next) => {
 
     // Si es compartido (no dueño/admin), solo puede editar título y contenido
     // Dueño puede editar todo
-    const updateData = {};
+    const updateData: Record<string, unknown> = {};
     if (title !== undefined) updateData.title = title.trim();
     if (content !== undefined) updateData.content = content.trim();
 
@@ -168,7 +172,7 @@ export const updateNote = async (req, res, next) => {
   }
 };
 
-export const shareNote = async (req, res, next) => {
+export const shareNote: Handler<Record<string, string>, unknown, NoteBody> = async (req, res, next) => {
   try {
     const { email, permission = 'read' } = req.body;
     const noteId = req.params.id;
@@ -183,7 +187,7 @@ export const shareNote = async (req, res, next) => {
     }
 
     // Solo el dueño puede compartir (o admin)
-    if (note.userId.toString() !== req.user.id && req.user.role !== 'admin') {
+    if (note.userId!.toString() !== req.user!.id && req.user!.role !== 'admin') {
       throw new AppError(403, 'FORBIDDEN', "Not authorized to share this note");
     }
 
@@ -193,13 +197,13 @@ export const shareNote = async (req, res, next) => {
       throw new AppError(404, 'NOT_FOUND', "User not found");
     }
 
-    if (userToShare._id.toString() === req.user.id) {
+    if (userToShare._id.toString() === req.user!.id) {
       throw new AppError(400, 'BAD_REQUEST', "Cannot share with yourself");
     }
 
     // Verificar si ya está compartido
     const existingShareIndex = note.sharedWith.findIndex(
-      s => s.user.toString() === userToShare._id.toString()
+      s => s.user!.toString() === userToShare._id.toString()
     );
 
     if (existingShareIndex > -1) {
@@ -230,7 +234,7 @@ export const shareNote = async (req, res, next) => {
   }
 };
 
-export const unshareNote = async (req, res, next) => {
+export const unshareNote: Handler<Record<string, string>, unknown, NoteBody> = async (req, res, next) => {
   try {
     const { userId } = req.params;
     const noteId = req.params.id;
@@ -242,13 +246,13 @@ export const unshareNote = async (req, res, next) => {
 
     // Solo el dueño puede dejar de compartir (o admin)
     // Opcional: el usuario con quien se compartió podría "salirse" (future improvement)
-    if (note.userId.toString() !== req.user.id && req.user.role !== 'admin') {
+    if (note.userId!.toString() !== req.user!.id && req.user!.role !== 'admin') {
       throw new AppError(403, 'FORBIDDEN', "Not authorized to unshare this note");
     }
 
-    note.sharedWith = note.sharedWith.filter(
-      s => s.user.toString() !== userId
-    );
+    note.set('sharedWith', note.sharedWith.filter(
+      s => s.user!.toString() !== userId
+    ));
 
     await note.save();
 

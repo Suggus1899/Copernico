@@ -68,4 +68,6 @@ noteSchema.index({ subject: 1 });
 noteSchema.index({ tags: 1 });
 noteSchema.index({ "sharedWith.user": 1 });
 
+export type NoteRecord = mongoose.InferSchemaType<typeof noteSchema>;
+export type NoteDocument = mongoose.HydratedDocument<NoteRecord>;
 export default mongoose.model("Note", noteSchema);
