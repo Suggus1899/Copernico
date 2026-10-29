@@ -1,4 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
+interface YouTubePlayerProps {
+  videoId: string; title: string;
+  onPlayerChange?: (player: YT.Player | null) => void;
+  onPlay?: () => void; onPause?: () => void; onEnded?: () => void;
+}
 
 const YOUTUBE_API_SRC = 'https://www.youtube.com/iframe_api';
 const YOUTUBE_HOST = 'https://www.youtube-nocookie.com';
@@ -6,10 +11,10 @@ const YOUTUBE_HOST = 'https://www.youtube-nocookie.com';
 // Valores de YT.PlayerState que usa la aplicación
 const PLAYER_STATE = { ENDED: 0, PLAYING: 1, PAUSED: 2 };
 
-let apiPromise = null;
+let apiPromise: Promise<typeof YT> | null = null;
 
 // Carga la API de YouTube una sola vez por página
-function loadYouTubeApi() {
+function loadYouTubeApi(): Promise<typeof YT> {
   if (window.YT?.Player) return Promise.resolve(window.YT);
 
   if (!apiPromise) {
@@ -17,7 +22,8 @@ function loadYouTubeApi() {
       const previousReady = window.onYouTubeIframeAPIReady;
       window.onYouTubeIframeAPIReady = () => {
         previousReady?.();
-        resolve(window.YT);
+        if (window.YT?.Player) resolve(window.YT);
+        else reject(new Error('No se pudo cargar la API de YouTube'));
       };
 
       const script = document.createElement('script');
@@ -39,9 +45,9 @@ function loadYouTubeApi() {
  * onPlayerChange recibe la instancia del reproductor al estar lista y null al desmontarse.
  * onPlay, onPause y onEnded se disparan con los cambios de estado de reproducción.
  */
-export default function YouTubePlayer({ videoId, title, onPlayerChange, onPlay, onPause, onEnded }) {
-  const containerRef = useRef(null);
-  const handlersRef = useRef({});
+export default function YouTubePlayer({ videoId, title, onPlayerChange, onPlay, onPause, onEnded }: YouTubePlayerProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const handlersRef = useRef<Pick<YouTubePlayerProps, 'onPlayerChange' | 'onPlay' | 'onPause' | 'onEnded'>>({});
   const [loadError, setLoadError] = useState(false);
 
   // Los manejadores se leen desde una ref para no recrear el reproductor cuando cambian
@@ -51,13 +57,13 @@ export default function YouTubePlayer({ videoId, title, onPlayerChange, onPlay, 
 
   useEffect(() => {
     let cancelled = false;
-    let player = null;
-    let node = null;
+    let player: YT.Player | null = null;
+    let node: HTMLDivElement | null = null;
     setLoadError(false);
 
     loadYouTubeApi()
       .then((YT) => {
-        if (cancelled) return;
+        if (cancelled || !containerRef.current) return;
 
         // YT.Player reemplaza su nodo por un iframe; el contenedor de React no se toca
         node = document.createElement('div');

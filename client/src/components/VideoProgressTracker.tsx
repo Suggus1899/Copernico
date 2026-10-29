@@ -1,6 +1,19 @@
+import type { ApiResponse } from '../types/api';
+import type { VideoProgress } from '../types/progress';
 import React, { Component } from 'react';
 import apiClient from '../utils/axiosConfig';
 import './VideoProgress.css';
+interface VideoProgressTrackerProps {
+  videoId: string; getVideoTime: () => { currentTime: number; totalDuration: number };
+  onProgressUpdate?: (progress: VideoProgress, videoId: string) => void;
+  onVideoCompleted?: (progress: VideoProgress, videoId: string) => void;
+  onSessionStart?: () => void; onSessionEnd?: () => void;
+  showProgress?: boolean; showCompletionBadge?: boolean;
+}
+interface VideoProgressTrackerState {
+  progress: VideoProgress; sessionActive: boolean; sessionStartTime: number | null;
+  lastUpdateTime: number | null; updateInterval: ReturnType<typeof setInterval> | null;
+}
 
 /**
  * Registra el progreso de un vídeo mientras se reproduce.
@@ -9,8 +22,8 @@ import './VideoProgress.css';
  * Los eventos de reproducción los llama el padre: handleVideoPlay, handleVideoPause, handleVideoEnded.
  * El cliente solo informa del tiempo; el servidor decide si el vídeo está completado (umbral 90%).
  */
-class VideoProgressTracker extends Component {
-  state = {
+class VideoProgressTracker extends Component<VideoProgressTrackerProps, VideoProgressTrackerState> {
+  state: VideoProgressTrackerState = {
     progress: {
       progressPercentage: 0,
       isCompleted: false,
@@ -39,7 +52,7 @@ class VideoProgressTracker extends Component {
 
   loadVideoProgress = async () => {
     try {
-      const response = await apiClient.get(`/video-progress/videos/${this.props.videoId}/progress`);
+      const response = await apiClient.get<ApiResponse<VideoProgress>>(`/video-progress/videos/${this.props.videoId}/progress`);
       this.setState({
         progress: response.data.data
       });
@@ -108,7 +121,7 @@ class VideoProgressTracker extends Component {
 
       // Actualizar siempre que sea final o cada intervalo para que la posición se guarde
       if (watchedSeconds > 0 || isFinalUpdate) {
-        const response = await apiClient.post(`/video-progress/videos/${this.props.videoId}/progress`, {
+        const response = await apiClient.post<ApiResponse<VideoProgress>>(`/video-progress/videos/${this.props.videoId}/progress`, {
           currentTime,
           watchedSeconds,
           totalDuration: totalDuration || undefined
@@ -197,7 +210,7 @@ class VideoProgressTracker extends Component {
     );
   }
 
-  formatTime = (seconds) => {
+  formatTime = (seconds: number) => {
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
     const secs = seconds % 60;

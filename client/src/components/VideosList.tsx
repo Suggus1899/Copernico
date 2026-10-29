@@ -1,3 +1,5 @@
+import type { ApiResponse } from '../types/api';
+import type { ClassVideo, VideoProgress } from '../types/progress';
 import React, { Component } from 'react';
 import apiClient from '../utils/axiosConfig';
 import VideoProgressTracker from './VideoProgressTracker';
@@ -5,9 +7,13 @@ import YouTubePlayer from './YouTubePlayer';
 import './Dashboard.css';
 import './VideoProgress.css';
 import './VideosList.css';
+interface VideosListState {
+  videos: ClassVideo[]; loading: boolean; selectedItem: ClassVideo | null; selectedType: string; activeTab: string;
+  filters: { subject: string; search: string }; likedVideos: Set<string>; videoProgress: Map<string, VideoProgress>;
+}
 
-class VideosList extends Component {
-  state = {
+class VideosList extends Component<Record<string, never>, VideosListState> {
+  state: VideosListState = {
     videos: [],
     loading: false,
     selectedItem: null,
@@ -22,7 +28,8 @@ class VideosList extends Component {
   };
 
   // Reproductor de YouTube del vídeo seleccionado; YouTubePlayer lo entrega cuando está listo
-  youtubePlayer = null;
+  youtubePlayer: YT.Player | null = null;
+  videoProgressTracker: VideoProgressTracker | null = null;
 
   componentDidMount() {
     this.loadContent();
@@ -33,7 +40,7 @@ class VideosList extends Component {
       this.setState({ loading: true });
 
       // El backend ya filtra los vídeos visibles para el usuario actual
-      const videosResponse = await apiClient.get('/videos').catch(err => {
+      const videosResponse = await apiClient.get<ApiResponse<ClassVideo[]>>('/videos').catch(err => {
         console.warn('Error loading videos:', err);
         return { data: { data: [] } };
       });
@@ -51,10 +58,10 @@ class VideosList extends Component {
     }
   };
 
-  handleItemSelect = async (item, type) => {
+  handleItemSelect = async (item: ClassVideo, type: string) => {
     try {
       // Incrementar vistas cuando se selecciona un video
-      const response = await apiClient.get(`/videos/${item._id}`);
+      const response = await apiClient.get<ApiResponse<ClassVideo>>(`/videos/${item._id}`);
       // Actualizar el item con la información de progreso si está disponible
       if (response.data.data.progress) {
         const progressMap = new Map(this.state.videoProgress);
@@ -74,7 +81,7 @@ class VideosList extends Component {
     }
   };
 
-  handleLike = async (videoId) => {
+  handleLike = async (videoId: string) => {
     try {
       await apiClient.post(`/videos/${videoId}/like`);
       const { likedVideos } = this.state;
@@ -94,7 +101,7 @@ class VideosList extends Component {
     }
   };
 
-  handleFilterChange = (e) => {
+  handleFilterChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     this.setState(prevState => ({
       filters: {
@@ -117,7 +124,7 @@ class VideosList extends Component {
     }).map(video => ({ ...video, contentType: 'video' }));
 
     // Ordenar por fecha de creación (más recientes primero)
-    return filteredVideos.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    return filteredVideos.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   };
 
   getUniqueSubjects = () => {
@@ -127,7 +134,7 @@ class VideosList extends Component {
     return subjects.sort();
   };
 
-  formatDuration = (minutes) => {
+  formatDuration = (minutes: number | undefined) => {
     if (!minutes) return '';
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
@@ -217,7 +224,7 @@ class VideosList extends Component {
                         ) : (
                           <span className="clases-page__card-placeholder">🎥</span>
                         )}
-                        {item.duration > 0 && (
+                        {(item.duration || 0) > 0 && (
                           <span className="clases-page__card-duration">
                             {this.formatDuration(item.duration)}
                           </span>
@@ -234,11 +241,11 @@ class VideosList extends Component {
                           <span>❤️ {item.likes || 0}</span>
                           {this.state.videoProgress.has(item._id) && (
                             <span className="clases-page__card-progress">
-                              {this.state.videoProgress.get(item._id).progressPercentage}%
+                              {this.state.videoProgress.get(item._id)?.progressPercentage}%
                             </span>
                           )}
                           {this.state.videoProgress.has(item._id) &&
-                            this.state.videoProgress.get(item._id).isCompleted && (
+                            this.state.videoProgress.get(item._id)?.isCompleted && (
                             <span className="clases-page__card-done">✅</span>
                           )}
                         </div>
@@ -303,7 +310,7 @@ class VideosList extends Component {
                       {selectedItem.topic && (
                         <span className="clases-page__badge clases-page__badge--secondary">{selectedItem.topic}</span>
                       )}
-                      {selectedItem.duration > 0 && (
+                      {(selectedItem.duration || 0) > 0 && (
                         <span className="clases-page__badge">⏱️ {this.formatDuration(selectedItem.duration)}</span>
                       )}
                       <span className="clases-page__badge clases-page__badge--muted">
@@ -367,7 +374,7 @@ class VideosList extends Component {
     };
   };
 
-  handlePlayerChange = (player) => {
+  handlePlayerChange = (player: YT.Player | null) => {
     this.youtubePlayer = player;
   };
 
@@ -378,13 +385,13 @@ class VideosList extends Component {
 
   handleVideoEnded = () => this.videoProgressTracker?.handleVideoEnded();
 
-  handleProgressUpdate = (progress, videoId) => {
+  handleProgressUpdate = (progress: VideoProgress, videoId: string) => {
     this.setState(prevState => ({
       videoProgress: new Map(prevState.videoProgress).set(videoId, progress)
     }));
   };
 
-  handleVideoCompleted = (progress, videoId) => {
+  handleVideoCompleted = (progress: VideoProgress, videoId: string) => {
     const video = this.state.videos.find(item => item._id === videoId);
     alert(`¡Felicidades! Has completado el video "${video?.title || ''}"`);
   };

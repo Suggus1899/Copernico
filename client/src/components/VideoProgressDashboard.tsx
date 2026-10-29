@@ -1,11 +1,14 @@
+import type { ApiResponse } from '../types/api';
+import type { VideoDashboard } from '../types/progress';
 import React, { Component } from 'react';
 import apiClient from '../utils/axiosConfig';
 import { getApiErrorMessage } from '../utils/apiError';
 import './Dashboard.css';
 import './VideoProgress.css';
+interface VideoProgressDashboardState { loading: boolean; dashboardData: VideoDashboard; error: string | null }
 
-class VideoProgressDashboard extends Component {
-  state = {
+class VideoProgressDashboard extends Component<Record<string, never>, VideoProgressDashboardState> {
+  state: VideoProgressDashboardState = {
     loading: true,
     dashboardData: {
       subjectStats: [],
@@ -26,7 +29,7 @@ class VideoProgressDashboard extends Component {
       console.log('Loading dashboard data...');
       this.setState({ loading: true, error: null });
       
-      const response = await apiClient.get('/video-progress/my-dashboard');
+      const response = await apiClient.get<ApiResponse<VideoDashboard>>('/video-progress/my-dashboard');
       console.log('Dashboard data loaded:', response.data);
       
       this.setState({
@@ -76,15 +79,15 @@ class VideoProgressDashboard extends Component {
     };
   };
 
-  formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('es-ES', {
+  formatDate = (dateString: string | null | undefined) => {
+    return new Date(dateString === null ? 0 : dateString === undefined ? NaN : dateString).toLocaleDateString('es-ES', {
       day: 'numeric',
       month: 'short',
       year: 'numeric'
     });
   };
 
-  formatTime = (seconds) => {
+  formatTime = (seconds: number) => {
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
     

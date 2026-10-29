@@ -1,8 +1,20 @@
+import type { ApiResponse } from '../types/api';
+import type { ClassVideo } from '../types/progress';
+import type { UserSummary } from '../types/auth';
 import React, { Component } from 'react';
 import apiClient from '../utils/axiosConfig';
 import { getApiErrorMessage } from '../utils/apiError';
 import TutorSidebarMenu from './TutorSidebarMenu';
 import './Dashboard.css';
+
+interface TutorVideosState {
+  videos: ClassVideo<string>[]; students: UserSummary[]; loading: boolean; uploading: boolean; showForm: boolean;
+  formData: Omit<typeof EMPTY_FORM, 'duration'> & { duration: string | number }; editMode: boolean; editingId: string | null;
+}
+interface VideoPayload {
+  title: string; description: string; subject: string; topic: string; grade: string;
+  visibility: string; tags: string[]; duration?: number; youtubeUrl?: string; allowedStudents?: string[];
+}
 
 // Los vídeos se reproducen desde YouTube: el tutor solo guarda la URL o el ID del vídeo.
 const EMPTY_FORM = {
@@ -18,8 +30,8 @@ const EMPTY_FORM = {
   targetStudentId: ''
 };
 
-class TutorVideos extends Component {
-  state = {
+class TutorVideos extends Component<Record<string, never>, TutorVideosState> {
+  state: TutorVideosState = {
     videos: [],
     students: [], // Estudiantes con citas confirmadas con el tutor
     loading: false,
@@ -37,7 +49,7 @@ class TutorVideos extends Component {
 
   loadStudents = async () => {
     try {
-      const response = await apiClient.get('/appointments/my-students');
+      const response = await apiClient.get<ApiResponse<UserSummary[]>>('/appointments/my-students');
       this.setState({
         students: response.data.data || []
       });
@@ -49,7 +61,7 @@ class TutorVideos extends Component {
   loadVideos = async () => {
     try {
       this.setState({ loading: true });
-      const response = await apiClient.get('/videos/my/videos');
+      const response = await apiClient.get<ApiResponse<ClassVideo<string>[]>>('/videos/my/videos');
       this.setState({
         videos: response.data.data,
         loading: false
@@ -60,7 +72,7 @@ class TutorVideos extends Component {
     }
   };
 
-  handleInputChange = (e) => {
+  handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     this.setState(prevState => ({
       formData: {
@@ -73,7 +85,7 @@ class TutorVideos extends Component {
   // Contrato de la API: JSON con youtubeUrl, tags como array y allowedStudents como lista de IDs.
   buildPayload = () => {
     const { formData, editMode } = this.state;
-    const payload = {
+    const payload: VideoPayload = {
       title: formData.title.trim(),
       description: formData.description.trim(),
       subject: formData.subject.trim(),
@@ -96,7 +108,7 @@ class TutorVideos extends Component {
     return payload;
   };
 
-  handleSubmit = async (e) => {
+  handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const { editMode, editingId, formData } = this.state;
 
@@ -128,7 +140,7 @@ class TutorVideos extends Component {
     }
   };
 
-  handleEdit = (video) => {
+  handleEdit = (video: ClassVideo<string>) => {
     this.setState({
       showForm: true,
       editMode: true,
@@ -147,7 +159,7 @@ class TutorVideos extends Component {
     });
   };
 
-  handleDelete = async (videoId) => {
+  handleDelete = async (videoId: string) => {
     if (!window.confirm('¿Estás seguro de que quieres eliminar este video?')) {
       return;
     }
@@ -160,7 +172,7 @@ class TutorVideos extends Component {
     }
   };
 
-  formatDuration = (minutes) => {
+  formatDuration = (minutes: number | undefined) => {
     if (!minutes) return '';
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
@@ -268,7 +280,7 @@ class TutorVideos extends Component {
                       value={formData.description}
                       onChange={this.handleInputChange}
                       placeholder="Descripción del video"
-                      rows="3"
+                      rows={3}
                     />
                   </div>
 
