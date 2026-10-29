@@ -1,3 +1,5 @@
+type Actor = { id: string; cookie: string };
+type VideoFixture = { id: string; thumbnailUrl: string; _id: string; title: string; youtubeId: string };
 import { after, before, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import request from 'supertest';
@@ -9,59 +11,60 @@ const SESSION = 'copernico_session';
 const VIDEO_ID = 'dQw4w9WgXcQ';
 const OTHER_VIDEO_ID = 'aaaaaaaaaaa';
 
-const cookieOf = (res) => {
-  const cookie = (res.headers['set-cookie'] ?? []).find((c) => c.startsWith(`${SESSION}=`));
-  return cookie?.split(';')[0];
+const cookieOf = (res: request.Response) => {
+  const cookie = [res.headers['set-cookie']].flat().filter((c): c is string => typeof c === 'string').find((c) => c.startsWith(`${SESSION}=`));
+  assert.ok(cookie); return cookie.split(';')[0];
 };
 
 describe('vídeos de YouTube: publicación, visibilidad y reacciones', () => {
-  let env;
-  let User;
-  let tutor;
-  let otherTutor;
-  let ana;
-  let bruno;
-  let admin;
+  let env: Awaited<ReturnType<typeof startIntegrationEnv>>;
+  let User: typeof import('../src/models/User.js').default;
+  let tutor: Actor;
+  let otherTutor: Actor;
+  let ana: Actor;
+  let bruno: Actor;
+  let admin: Actor;
 
   // Fixtures creados en before() y compartidos por los tests.
-  let openVideo;
-  let publicVideo;
-  let privateVideo;
-  let grantedVideo;
+  let openVideo: VideoFixture;
+  let publicVideo: VideoFixture;
+  let privateVideo: VideoFixture;
+  let grantedVideo: VideoFixture;
 
   /** Petición con sesión opcional: as = { cookie }. */
-  const call = (method, url, as, body) => {
+  const call = (method: 'get' | 'post' | 'put' | 'patch' | 'delete', url: string, as?: Actor | null, body?: object) => {
     let req = request(env.app)[method](url).set('Origin', ORIGIN);
     if (as) req = req.set('Cookie', as.cookie);
     return body === undefined ? req : req.send(body);
   };
 
-  const youtubeVideo = (overrides = {}) => ({
+  const youtubeVideo = (overrides: object = {}) => ({
     title: 'Derivadas',
     subject: 'Matemáticas',
     youtubeUrl: `https://www.youtube.com/watch?v=${VIDEO_ID}`,
     ...overrides,
   });
 
-  const createVideo = async (as, overrides) => {
+  const createVideo = async (as: Actor, overrides?: object): Promise<VideoFixture> => {
     const res = await call('post', '/api/videos', as, youtubeVideo(overrides));
     assert.equal(res.status, 201, JSON.stringify(res.body));
     return res.body.data;
   };
 
-  const titlesOf = (res) => res.body.data.map((video) => video.title);
+  const titlesOf = (res: request.Response) => res.body.data.map((video: { title: string }) => video.title);
 
   before(async () => {
     env = await startIntegrationEnv();
     ({ default: User } = await import('../src/models/User.js'));
 
-    const signup = async (body) => {
+    const signup = async (body: { email: string; role: string; personalInfo: { firstName: string; lastName: string }; tutorProfile?: { specialties: string[] }; studentProfile?: { studentId: string } }) => {
       const res = await request(env.app)
         .post('/api/auth/signup')
         .set('Origin', ORIGIN)
         .send({ password: PASSWORD, ...body });
       assert.equal(res.status, 201, JSON.stringify(res.body));
       const user = await User.findOne({ email: body.email }).lean();
+      assert.ok(user);
       return { id: String(user._id), cookie: cookieOf(res) };
     };
 

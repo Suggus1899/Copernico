@@ -1,3 +1,5 @@
+type Actor = { id: string; cookie: string };
+type VideoFixture = { _id: string; title: string; youtubeId: string };
 import { after, before, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import request from 'supertest';
@@ -8,26 +10,26 @@ const PASSWORD = 'Clave-Segura-2025';
 const SESSION = 'copernico_session';
 const VIDEO_ID = 'dQw4w9WgXcQ';
 
-const cookieOf = (res) => {
-  const cookie = (res.headers['set-cookie'] ?? []).find((c) => c.startsWith(`${SESSION}=`));
-  return cookie?.split(';')[0];
+const cookieOf = (res: request.Response) => {
+  const cookie = [res.headers['set-cookie']].flat().filter((c): c is string => typeof c === 'string').find((c) => c.startsWith(`${SESSION}=`));
+  assert.ok(cookie); return cookie.split(';')[0];
 };
 
 describe('progreso de vídeo: umbral de completado y permisos', () => {
-  let env;
-  let User;
-  let tutor;
-  let ana;
-  let bruno;
+  let env: Awaited<ReturnType<typeof startIntegrationEnv>>;
+  let User: typeof import('../src/models/User.js').default;
+  let tutor: Actor;
+  let ana: Actor;
+  let bruno: Actor;
 
   /** Petición con sesión opcional: as = { cookie }. */
-  const call = (method, url, as, body) => {
+  const call = (method: 'get' | 'post' | 'put' | 'patch' | 'delete', url: string, as?: Actor | null, body?: object) => {
     let req = request(env.app)[method](url).set('Origin', ORIGIN);
     if (as) req = req.set('Cookie', as.cookie);
     return body === undefined ? req : req.send(body);
   };
 
-  const createVideo = async (overrides = {}) => {
+  const createVideo = async (overrides: object = {}): Promise<VideoFixture> => {
     const res = await call('post', '/api/videos', tutor, {
       title: 'Derivadas',
       subject: 'Matemáticas',
@@ -39,20 +41,21 @@ describe('progreso de vídeo: umbral de completado y permisos', () => {
     return res.body.data;
   };
 
-  const report = (as, videoId, body) =>
+  const report = (as: Actor, videoId: string, body: object) =>
     call('post', `/api/video-progress/videos/${videoId}/progress`, as, body);
 
   before(async () => {
     env = await startIntegrationEnv();
     ({ default: User } = await import('../src/models/User.js'));
 
-    const signup = async (body) => {
+    const signup = async (body: { email: string; role: string; personalInfo: { firstName: string; lastName: string }; tutorProfile?: { specialties: string[] }; studentProfile?: { studentId: string } }) => {
       const res = await request(env.app)
         .post('/api/auth/signup')
         .set('Origin', ORIGIN)
         .send({ password: PASSWORD, ...body });
       assert.equal(res.status, 201, JSON.stringify(res.body));
       const user = await User.findOne({ email: body.email }).lean();
+      assert.ok(user);
       return { id: String(user._id), cookie: cookieOf(res) };
     };
 

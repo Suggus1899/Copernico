@@ -3,7 +3,7 @@ import { CLASS_VIDEO_STATUS, CLASS_VIDEO_VISIBILITY } from '../models/ClassVideo
 import { parseYouTubeId } from '../utils/youtube.js';
 
 import { objectId } from './common.js';
-const text = (max) => z.string().trim().max(max);
+const text = (max: number) => z.string().trim().max(max);
 const minutes = z.coerce.number().int().min(0).max(1440);
 
 /** Acepta el ID de YouTube o cualquier URL de youtube.com / youtu.be con un vídeo válido. */

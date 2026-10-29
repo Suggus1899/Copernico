@@ -1,16 +1,21 @@
+import type { Handler, BodyOf } from '../types/http.js';
+import type { ClassVideoDocument } from '../models/ClassVideo.js';
+import type { VideoProgressDocument } from '../models/VideoProgress.js';
+import type { updateVideoProgressSchema } from '../schemas/videoProgress.schema.js';
+import type { Types } from 'mongoose';
 import { AppError } from '../utils/AppError.js';
 import VideoProgress from "../models/VideoProgress.js";
 import ClassVideo from "../models/ClassVideo.js";
 import ProgressTracking from "../models/ProgressTracking.js";
 
-export const updateVideoProgress = async (req, res, next) => {
+export const updateVideoProgress: Handler<Record<string, string>, unknown, BodyOf<typeof updateVideoProgressSchema>> = async (req, res, next) => {
   try {
     const { videoId } = req.params;
     const { currentTime, watchedSeconds, totalDuration } = req.body;
-    const studentId = req.user.id;
+    const studentId = req.user!.id;
 
     const video = await ClassVideo.findById(videoId);
-    if (!video || !video.canAccess(req.user)) {
+    if (!video || !video.canAccess(req.user!)) {
       throw new AppError(404, 'NOT_FOUND', 'Vídeo no encontrado');
     }
 
@@ -77,10 +82,10 @@ export const updateVideoProgress = async (req, res, next) => {
   }
 };
 
-export const getVideoProgress = async (req, res, next) => {
+export const getVideoProgress: Handler<Record<string, string>, unknown, BodyOf<typeof updateVideoProgressSchema>> = async (req, res, next) => {
   try {
     const { videoId } = req.params;
-    const studentId = req.user.id;
+    const studentId = req.user!.id;
 
     const videoProgress = await VideoProgress.findOne({
       studentId,
@@ -108,16 +113,16 @@ export const getVideoProgress = async (req, res, next) => {
   }
 };
 
-export const getStudentVideoStats = async (req, res, next) => {
+export const getStudentVideoStats: Handler<Record<string, string>, unknown, BodyOf<typeof updateVideoProgressSchema>> = async (req, res, next) => {
   try {
-    const studentId = req.user.role === 'student' ? req.user.id : req.query.studentId;
+    const studentId = req.user!.role === 'student' ? req.user!.id : (req.query.studentId as string | undefined);
     
     if (!studentId) {
       throw new AppError(400, 'BAD_REQUEST', "Se requiere el identificador del estudiante");
     }
 
     // Verificar permisos
-    if (req.user.role === 'student' && req.user.id !== studentId) {
+    if (req.user!.role === 'student' && req.user!.id !== studentId) {
       throw new AppError(403, 'FORBIDDEN', "Acceso denegado");
     }
 
@@ -146,17 +151,17 @@ export const getStudentVideoStats = async (req, res, next) => {
   }
 };
 
-export const getStudentProgressBySubject = async (req, res, next) => {
+export const getStudentProgressBySubject: Handler<Record<string, string>, unknown, BodyOf<typeof updateVideoProgressSchema>> = async (req, res, next) => {
   try {
     const { subject } = req.params;
-    const studentId = req.user.role === 'student' ? req.user.id : req.query.studentId;
+    const studentId = req.user!.role === 'student' ? req.user!.id : (req.query.studentId as string | undefined);
     
     if (!studentId) {
       throw new AppError(400, 'BAD_REQUEST', "Se requiere el identificador del estudiante");
     }
 
     // Verificar permisos
-    if (req.user.role === 'student' && req.user.id !== studentId) {
+    if (req.user!.role === 'student' && req.user!.id !== studentId) {
       throw new AppError(403, 'FORBIDDEN', "Acceso denegado");
     }
 
@@ -171,21 +176,21 @@ export const getStudentProgressBySubject = async (req, res, next) => {
   }
 };
 
-export const getMostWatchedVideos = async (req, res, next) => {
+export const getMostWatchedVideos: Handler<Record<string, string>, unknown, BodyOf<typeof updateVideoProgressSchema>> = async (req, res, next) => {
   try {
     const { limit = 10 } = req.query;
-    const studentId = req.user.role === 'student' ? req.user.id : req.query.studentId;
+    const studentId = req.user!.role === 'student' ? req.user!.id : (req.query.studentId as string | undefined);
     
     if (!studentId) {
       throw new AppError(400, 'BAD_REQUEST', "Se requiere el identificador del estudiante");
     }
 
     // Verificar permisos
-    if (req.user.role === 'student' && req.user.id !== studentId) {
+    if (req.user!.role === 'student' && req.user!.id !== studentId) {
       throw new AppError(403, 'FORBIDDEN', "Acceso denegado");
     }
 
-    const mostWatched = await VideoProgress.getMostWatchedVideos(studentId, parseInt(limit));
+    const mostWatched = await VideoProgress.getMostWatchedVideos(studentId, parseInt(String(limit)));
 
     res.json({
       success: true,
@@ -196,10 +201,10 @@ export const getMostWatchedVideos = async (req, res, next) => {
   }
 };
 
-export const startVideoSession = async (req, res, next) => {
+export const startVideoSession: Handler<Record<string, string>, unknown, BodyOf<typeof updateVideoProgressSchema>> = async (req, res, next) => {
   try {
     const { videoId } = req.params;
-    const studentId = req.user.id;
+    const studentId = req.user!.id;
 
 
     // Verificar que el video existe y el usuario puede accederlo
@@ -208,7 +213,7 @@ export const startVideoSession = async (req, res, next) => {
       throw new AppError(404, 'NOT_FOUND', "Vídeo no encontrado");
     }
 
-    if (!video.canAccess(req.user)) {
+    if (!video.canAccess(req.user!)) {
       throw new AppError(403, 'FORBIDDEN', "No puedes acceder a este vídeo");
     }
 
@@ -235,7 +240,7 @@ export const startVideoSession = async (req, res, next) => {
     }
 
     // Agregar nueva sesión de visualización
-    const newSession = {
+    const newSession: { _id?: Types.ObjectId; startTime: Date; endTime: Date; watchedSeconds: number; lastPosition: number } = {
       startTime: new Date(),
       endTime: new Date(),
       watchedSeconds: 0,
@@ -266,16 +271,16 @@ export const startVideoSession = async (req, res, next) => {
   }
 };
 
-export const getVideoProgressDashboard = async (req, res, next) => {
+export const getVideoProgressDashboard: Handler<Record<string, string>, unknown, BodyOf<typeof updateVideoProgressSchema>> = async (req, res, next) => {
   try {
-    const studentId = req.user.role === 'student' ? req.user.id : req.query.studentId;
+    const studentId = req.user!.role === 'student' ? req.user!.id : (req.query.studentId as string | undefined);
     
     if (!studentId) {
       throw new AppError(400, 'BAD_REQUEST', "Se requiere el identificador del estudiante");
     }
 
     // Verificar permisos
-    if (req.user.role === 'student' && req.user.id !== studentId) {
+    if (req.user!.role === 'student' && req.user!.id !== studentId) {
       throw new AppError(403, 'FORBIDDEN', "Acceso denegado");
     }
 
@@ -315,7 +320,7 @@ export const getVideoProgressDashboard = async (req, res, next) => {
 };
 
 // Función auxiliar para actualizar ProgressTracking cuando se completa un video
-const updateProgressTrackingFromVideo = async (studentId, video, videoProgress) => {
+const updateProgressTrackingFromVideo = async (studentId: string, video: ClassVideoDocument, videoProgress: VideoProgressDocument) => {
   try {
     // Buscar un registro de progreso existente para la materia
     let progressTracking = await ProgressTracking.findOne({
@@ -359,20 +364,20 @@ const updateProgressTrackingFromVideo = async (studentId, video, videoProgress) 
     const completionRate = totalVideos > 0 ? Math.round((completedVideos / totalVideos) * 100) : 0;
 
     // Actualizar métricas
-    progressTracking.metrics.completionRate = completionRate;
+    progressTracking.metrics!.completionRate = completionRate;
     
     // Actualizar nivel de comprensión basado en la tasa de finalización
     if (completionRate >= 90) {
-      progressTracking.metrics.understandingLevel = 5;
+      progressTracking.metrics!.understandingLevel = 5;
       progressTracking.competencyLevel = 'advanced';
     } else if (completionRate >= 70) {
-      progressTracking.metrics.understandingLevel = 4;
+      progressTracking.metrics!.understandingLevel = 4;
       progressTracking.competencyLevel = 'intermediate';
     } else if (completionRate >= 50) {
-      progressTracking.metrics.understandingLevel = 3;
+      progressTracking.metrics!.understandingLevel = 3;
       progressTracking.competencyLevel = 'intermediate';
     } else {
-      progressTracking.metrics.understandingLevel = 2;
+      progressTracking.metrics!.understandingLevel = 2;
       progressTracking.competencyLevel = 'beginner';
     }
 
@@ -380,7 +385,7 @@ const updateProgressTrackingFromVideo = async (studentId, video, videoProgress) 
     await progressTracking.addProgressHistory(
       {
         completionRate: completionRate,
-        understandingLevel: progressTracking.metrics.understandingLevel
+        understandingLevel: progressTracking.metrics!.understandingLevel
       },
       `Video completado: "${video.title}" - Progreso de videos en ${video.subject}: ${completionRate}%`,
       video.uploadedBy

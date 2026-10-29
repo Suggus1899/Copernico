@@ -1,8 +1,8 @@
 import mongoose from 'mongoose';
 import { YOUTUBE_ID_PATTERN, youTubeThumbnailUrl } from '../utils/youtube.js';
 
-export const CLASS_VIDEO_VISIBILITY = ['private', 'students', 'public'];
-export const CLASS_VIDEO_STATUS = ['published', 'archived'];
+export const CLASS_VIDEO_VISIBILITY = ['private', 'students', 'public'] as const;
+export const CLASS_VIDEO_STATUS = ['published', 'archived'] as const;
 
 const userRef = { type: mongoose.Schema.Types.ObjectId, ref: 'User' };
 
