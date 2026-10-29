@@ -1,311 +1,288 @@
-/* ===== Página Home Estudiante - Estilos profesionales ===== */
-
-/* Sobrescribir el posicionamiento problemático del dashboard-main */
-.dashboard-main:has(.student-home) {
-  position: static !important;
-  bottom: auto !important;
-  display: block !important;
-  grid-template-columns: none !important;
-}
-
 .student-home {
-  display: flex;
-  flex-direction: column;
-  padding: 24px 32px;
-  max-width: 1200px;
+  display: grid;
+  gap: clamp(26px, 4vw, 42px);
   margin: 0 auto;
-  gap: 32px;
-  min-height: calc(100vh - 180px);
+  max-width: 1200px;
 }
 
-/* Header */
 .student-home__header {
-  text-align: center;
-  padding: 20px 0;
+  align-items: center;
+  display: flex;
+  gap: 24px;
+  justify-content: space-between;
+}
+
+.student-home__date,
+.student-home__eyebrow {
+  color: var(--gold-dark);
+  font-size: 0.69rem;
+  font-weight: 750;
+  letter-spacing: 0.13em;
+  margin: 0 0 8px;
+  text-transform: uppercase;
+}
+
+.student-home__title,
+.student-home__appointment-copy h2,
+.student-home__appointment-empty h2 {
+  color: var(--ink);
+  font-family: Georgia, "Times New Roman", serif;
+  font-weight: 500;
+  letter-spacing: -0.035em;
 }
 
 .student-home__title {
-  margin: 0 0 8px 0;
-  font-size: 2.25rem;
-  font-weight: 700;
-  color: #1a1d21;
-  letter-spacing: -0.02em;
-  background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  font-size: clamp(2.2rem, 4vw, 3.2rem);
+  line-height: 1.08;
+  margin: 0;
 }
 
 .student-home__subtitle {
-  margin: 0;
-  font-size: 1.125rem;
-  color: #6b7280;
+  color: var(--ink-muted);
+  font-size: 0.95rem;
+  margin: 12px 0 0;
 }
 
-/* Welcome Card */
-.student-home__welcome {
-  display: flex;
-  flex-direction: column;
+.student-home__cta,
+.student-home__appointment-link {
   align-items: center;
-  text-align: center;
-  padding: 40px 32px;
-  background: linear-gradient(135deg, #eff6ff 0%, #f5f3ff 100%);
-  border-radius: 16px;
-  border: 1px solid #e0e7ff;
-  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.08);
-}
-
-.student-home__welcome-icon {
-  font-size: 4rem;
-  margin-bottom: 16px;
-  animation: float 3s ease-in-out infinite;
-}
-
-@keyframes float {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-10px);
-  }
-}
-
-.student-home__welcome-title {
-  margin: 0 0 12px 0;
-  font-size: 1.75rem;
+  background: var(--gold);
+  border: 1px solid var(--gold);
+  border-radius: 7px;
+  color: var(--sidebar);
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-size: 0.84rem;
   font-weight: 700;
-  color: #1a1d21;
+  gap: 10px;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 18px;
+  text-decoration: none;
 }
 
-.student-home__welcome-text {
-  margin: 0;
-  font-size: 1.0625rem;
-  color: #4b5563;
-  line-height: 1.6;
-  max-width: 700px;
+.student-home__cta:hover,
+.student-home__appointment-link:hover {
+  background: #d1aa50;
+  border-color: #d1aa50;
+  color: var(--sidebar);
 }
 
-/* Section Title */
-.student-home__section-title {
-  margin: 0 0 20px 0;
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: #1a1d21;
+.student-home__appointment {
+  background: #f3eddc;
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  min-height: 150px;
+  overflow: hidden;
+  padding: 22px 26px;
 }
 
-/* Quick Links Grid */
-.student-home__quick-links {
+.student-home__appointment:not(:has(.student-home__appointment-empty)):not(:has(.student-home__loading)):not(:has(.student-home__error)) {
+  align-items: center;
+  display: grid;
+  gap: 22px;
+  grid-template-columns: 90px minmax(0, 1fr) auto;
+}
+
+.student-home__appointment-date {
+  align-items: center;
+  border-right: 1px solid var(--line-strong);
   display: flex;
   flex-direction: column;
+  padding-right: 18px;
+}
+
+.student-home__appointment-date span,
+.student-home__appointment-date small {
+  color: var(--gold-dark);
+  font-size: 0.66rem;
+  text-transform: uppercase;
+}
+
+.student-home__appointment-date strong {
+  color: var(--ink);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 2.6rem;
+  font-weight: 500;
+  line-height: 1.1;
+}
+
+.student-home__appointment-copy h2,
+.student-home__appointment-empty h2 {
+  font-size: clamp(1.35rem, 2.4vw, 1.8rem);
+  margin: 0 0 8px;
+}
+
+.student-home__appointment-copy p:last-child,
+.student-home__appointment-empty p:last-child {
+  color: var(--ink-muted);
+  font-size: 0.84rem;
+  margin: 0;
+}
+
+.student-home__appointment-copy .student-home__eyebrow,
+.student-home__appointment-empty .student-home__eyebrow {
+  margin-bottom: 7px;
+}
+
+.student-home__appointment-link {
+  justify-self: end;
+  white-space: nowrap;
+}
+
+.student-home__appointment-empty {
+  align-items: center;
+  display: flex;
+  gap: 24px;
+  justify-content: space-between;
+  min-height: 102px;
+}
+
+.student-home__loading,
+.student-home__error {
+  align-items: center;
+  color: var(--ink-muted);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: space-between;
+  margin: 0;
+  min-height: 100px;
+}
+
+.student-home__error {
+  color: var(--danger);
+}
+
+.student-home__error p {
+  margin: 0;
+}
+
+.student-home__error button {
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  color: var(--ink);
+  padding: 8px 13px;
+}
+
+.student-home__quick-links {
+  display: grid;
+  gap: 16px;
+}
+
+.student-home__section-heading h2 {
+  color: var(--ink);
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin: 0;
 }
 
 .student-home__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 20px;
+  gap: 14px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .student-home__card {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  padding: 24px;
-  background: #fff;
-  border-radius: 12px;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: var(--shadow-card);
+  color: var(--ink);
+  display: grid;
+  gap: 8px;
+  grid-template-columns: 42px minmax(0, 1fr) 18px;
+  grid-template-rows: auto auto;
+  min-height: 132px;
+  padding: 18px;
   text-decoration: none;
-  color: inherit;
-  transition: all 0.3s ease;
-  overflow: hidden;
-}
-
-.student-home__card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background: var(--card-color, #2563eb);
-  transform: scaleX(0);
-  transform-origin: left;
-  transition: transform 0.3s ease;
+  transition: border-color 140ms ease, transform 140ms ease;
 }
 
 .student-home__card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
-  border-color: var(--card-color, #2563eb);
-}
-
-.student-home__card:hover::before {
-  transform: scaleX(1);
+  border-color: var(--line-strong);
+  color: var(--ink);
+  transform: translateY(-2px);
 }
 
 .student-home__card-icon {
-  font-size: 2.5rem;
-  margin-bottom: 12px;
-  transition: transform 0.3s ease;
-}
-
-.student-home__card:hover .student-home__card-icon {
-  transform: scale(1.1);
+  align-items: center;
+  background: var(--gold-pale);
+  border-radius: 8px;
+  color: var(--gold-dark);
+  display: inline-flex;
+  font-size: 1.3rem;
+  grid-column: 1;
+  grid-row: 1 / span 2;
+  height: 42px;
+  justify-content: center;
+  width: 42px;
 }
 
 .student-home__card-title {
-  margin: 0 0 8px 0;
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: #1a1d21;
+  align-self: end;
+  font-size: 0.91rem;
+  font-weight: 700;
 }
 
 .student-home__card-description {
-  margin: 0 0 16px 0;
-  font-size: 0.9375rem;
-  color: #6b7280;
-  line-height: 1.5;
-  flex: 1;
+  color: var(--ink-muted);
+  font-size: 0.75rem;
+  line-height: 1.45;
 }
 
 .student-home__card-arrow {
-  align-self: flex-end;
-  font-size: 1.25rem;
-  color: var(--card-color, #2563eb);
-  font-weight: 600;
-  transition: transform 0.3s ease;
+  align-self: center;
+  color: var(--gold-dark);
+  font-size: 1.2rem;
+  grid-column: 3;
+  grid-row: 1 / span 2;
 }
 
-.student-home__card:hover .student-home__card-arrow {
-  transform: translateX(4px);
+@media (max-width: 1100px) {
+  .student-home__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
-/* Tips Section */
-.student-home__tips {
-  display: flex;
-  flex-direction: column;
-  padding: 32px;
-  background: #fff;
-  border-radius: 12px;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
-}
-
-.student-home__tips-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 24px;
-}
-
-.student-home__tip {
-  display: flex;
-  align-items: flex-start;
-  gap: 16px;
-  padding: 20px;
-  background: #f9fafb;
-  border-radius: 10px;
-  border: 1px solid #e5e7eb;
-  transition: all 0.2s ease;
-}
-
-.student-home__tip:hover {
-  background: #f3f4f6;
-  border-color: #d1d5db;
-}
-
-.student-home__tip-number {
-  flex-shrink: 0;
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: #fff;
-  background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
-  border-radius: 50%;
-  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
-}
-
-.student-home__tip-content h4 {
-  margin: 0 0 6px 0;
-  font-size: 1rem;
-  font-weight: 600;
-  color: #1a1d21;
-}
-
-.student-home__tip-content p {
-  margin: 0;
-  font-size: 0.9375rem;
-  color: #6b7280;
-  line-height: 1.5;
-}
-
-/* Responsive */
-@media (max-width: 768px) {
+@media (max-width: 640px) {
   .student-home {
-    padding: 16px;
     gap: 24px;
   }
 
-  .student-home__title {
-    font-size: 1.75rem;
+  .student-home__header,
+  .student-home__appointment-empty {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
-  .student-home__subtitle {
-    font-size: 1rem;
+  .student-home__appointment {
+    padding: 18px;
   }
 
-  .student-home__welcome {
-    padding: 32px 20px;
+  .student-home__appointment:not(:has(.student-home__appointment-empty)):not(:has(.student-home__loading)):not(:has(.student-home__error)) {
+    align-items: start;
+    gap: 14px;
+    grid-template-columns: 62px minmax(0, 1fr);
   }
 
-  .student-home__welcome-icon {
-    font-size: 3rem;
+  .student-home__appointment-date {
+    align-items: flex-start;
+    border-right: 0;
+    border-bottom: 1px solid var(--line-strong);
+    grid-row: 1 / span 2;
+    padding: 0 10px 12px 0;
   }
 
-  .student-home__welcome-title {
-    font-size: 1.5rem;
+  .student-home__appointment-date strong {
+    font-size: 2rem;
   }
 
-  .student-home__welcome-text {
-    font-size: 1rem;
-  }
-
-  .student-home__section-title {
-    font-size: 1.25rem;
+  .student-home__appointment-link {
+    justify-self: start;
   }
 
   .student-home__grid {
     grid-template-columns: 1fr;
-  }
-
-  .student-home__tips {
-    padding: 24px 20px;
-  }
-
-  .student-home__tips-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 480px) {
-  .student-home__card {
-    padding: 20px;
-  }
-
-  .student-home__card-icon {
-    font-size: 2rem;
-  }
-
-  .student-home__tip {
-    padding: 16px;
-  }
-
-  .student-home__tip-number {
-    width: 36px;
-    height: 36px;
-    font-size: 1.125rem;
   }
 }

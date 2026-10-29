@@ -1,6 +1,7 @@
 import type { ApiResponse } from '../types/api';
 import type { VideoDashboard } from '../types/progress';
 import React, { Component } from 'react';
+import { Link } from 'react-router-dom';
 import apiClient from '../utils/axiosConfig';
 import { getApiErrorMessage } from '../utils/apiError';
 import './Dashboard.css';
@@ -118,11 +119,10 @@ class VideoProgressDashboard extends Component<Record<string, never>, VideoProgr
       return (
         <div className="video-progress-dashboard">
           <div className="error-container">
-            <div className="error-icon">⚠️</div>
             <h3>Error al cargar datos</h3>
             <p>{error}</p>
             <button className="btn btn-primary" onClick={this.loadDashboardData}>
-              🔄 Reintentar
+              Reintentar
             </button>
           </div>
         </div>
@@ -133,7 +133,7 @@ class VideoProgressDashboard extends Component<Record<string, never>, VideoProgr
       <div className="video-progress-dashboard">
         <header className="progress-dashboard-header">
           <div>
-            <h2>📊 Mi Progreso</h2>
+            <h2>Mi progreso</h2>
             <p>Seguimiento de tu progreso en videos educativos</p>
           </div>
           <button
@@ -142,35 +142,31 @@ class VideoProgressDashboard extends Component<Record<string, never>, VideoProgr
             onClick={this.loadDashboardData}
             style={{ marginLeft: 'auto' }}
           >
-            🔄 Actualizar
+            Actualizar
           </button>
         </header>
 
         {/* Estadísticas generales */}
         <section className="progress-stats-overview">
           <div className="stat-card">
-            <div className="stat-icon">🎥</div>
             <div className="stat-content">
               <h3>{overallStats.totalVideos}</h3>
               <p>Videos vistos</p>
             </div>
           </div>
           <div className="stat-card">
-            <div className="stat-icon">✅</div>
             <div className="stat-content">
               <h3>{overallStats.completedVideos}</h3>
               <p>Videos completados</p>
             </div>
           </div>
           <div className="stat-card">
-            <div className="stat-icon">⏱️</div>
             <div className="stat-content">
               <h3>{overallStats.totalWatchTime.toFixed(1)}h</h3>
               <p>Tiempo total</p>
             </div>
           </div>
           <div className="stat-card">
-            <div className="stat-icon">📈</div>
             <div className="stat-content">
               <h3>{overallStats.averageCompletion}%</h3>
               <p>Progreso promedio</p>
@@ -181,11 +177,10 @@ class VideoProgressDashboard extends Component<Record<string, never>, VideoProgr
         {/* Mensaje inicial si no hay datos */}
         {subjectStats.length === 0 && (
           <section className="progress-empty-state">
-            <div className="empty-icon">🎬</div>
             <h3>¡Comienza a ver videos!</h3>
             <p>Tu progreso aparecerá aquí cuando empieces a ver videos de clases.</p>
             <div className="getting-started-tips">
-              <h4>💡 Para empezar:</h4>
+              <h4>Para empezar</h4>
               <ol>
                 <li>Ve a la sección &quot;Clases&quot; en el menú</li>
                 <li>Selecciona un video para reproducir</li>
@@ -194,19 +189,18 @@ class VideoProgressDashboard extends Component<Record<string, never>, VideoProgr
               </ol>
             </div>
             <div className="progress-empty-actions">
-              <button
-                type="button"
+              <Link
                 className="btn btn-primary progress-empty-action-btn"
-                onClick={() => window.location.href = '/dashboard/videos'}
+                to="/dashboard/videos"
               >
-                🎥 Ver Videos de Clases
-              </button>
+                Ver videos de clases
+              </Link>
               <button
                 type="button"
                 className="btn btn-secondary progress-empty-action-btn"
                 onClick={this.loadDashboardData}
               >
-                🔄 Actualizar datos
+                Actualizar datos
               </button>
             </div>
           </section>
@@ -232,7 +226,7 @@ class VideoProgressDashboard extends Component<Record<string, never>, VideoProgr
                             {progress.videoId?.thumbnailUrl ? (
                               <img src={progress.videoId.thumbnailUrl} alt={progress.videoTitle} />
                             ) : (
-                              <div className="thumbnail-placeholder-small">🎥</div>
+                              <div className="thumbnail-placeholder-small">Video</div>
                             )}
                             <div className="progress-overlay">
                               {progress.progressPercentage}%
@@ -242,9 +236,9 @@ class VideoProgressDashboard extends Component<Record<string, never>, VideoProgr
                             <h5>{progress.videoTitle}</h5>
                             <p className="video-subject">{progress.videoSubject}</p>
                             <div className="video-stats-small">
-                              <span>⏱️ {this.formatTime(progress.watchTime)}</span>
-                              <span>👁️ {progress.videoId?.views || 0}</span>
-                              {progress.isCompleted && <span className="completed-badge">✅</span>}
+                              <span>{this.formatTime(progress.watchTime)} vistos</span>
+                              <span>{progress.videoId?.views || 0} vistas</span>
+                              {progress.isCompleted && <span className="completed-badge">Completado</span>}
                             </div>
                           </div>
                         </div>
@@ -264,7 +258,7 @@ class VideoProgressDashboard extends Component<Record<string, never>, VideoProgr
                       {recentProgress.slice(0, 5).map(progress => (
                         <div key={progress._id} className="activity-item">
                           <div className="activity-icon">
-                            {progress.isCompleted ? '✅' : '▶️'}
+                            {progress.isCompleted ? 'Completado' : 'En progreso'}
                           </div>
                           <div className="activity-content">
                             <p className="activity-title">
@@ -310,7 +304,7 @@ class VideoProgressDashboard extends Component<Record<string, never>, VideoProgr
                 className="btn btn-secondary"
                 onClick={this.loadDashboardData}
               >
-                🔄 Actualizar datos
+                Actualizar datos
               </button>
             </div>
           </>

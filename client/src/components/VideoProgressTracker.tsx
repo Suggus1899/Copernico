@@ -188,14 +188,13 @@ class VideoProgressTracker extends Component<VideoProgressTrackerProps, VideoPro
 
           {progress.watchTime > 0 && (
             <div className="watch-time">
-              <span>⏱️ Tiempo visto: {this.formatTime(progress.watchTime)}</span>
+              <span>Tiempo visto: {this.formatTime(progress.watchTime)}</span>
             </div>
           )}
         </div>
 
         {showCompletionBadge && progress.isCompleted && (
           <div className="completion-badge">
-            <span className="badge-icon">✅</span>
             <span className="badge-text">Video Completado</span>
           </div>
         )}

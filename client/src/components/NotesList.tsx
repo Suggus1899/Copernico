@@ -3,12 +3,12 @@ import type { ApiResponse } from '../types/api';
 import { useEffect, useState } from "react";
 import apiClient from "../utils/axiosConfig";
 import { getApiErrorMessage } from "../utils/apiError";
-import { Link } from "react-router-dom";
 import "./Notes.css";
 function NotesList() {
   const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [feedback, setFeedback] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterBy, setFilterBy] = useState('all'); // all, recent, favorites
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -26,8 +26,8 @@ function NotesList() {
   const getNotes = async () => {
     try {
       setLoading(true);
+      setError('');
       const res = await apiClient.get<ApiResponse<Note[]>>("/notes");
-      console.log(res);
       setNotes(res.data.data || []);
     } catch (error) {
       console.error("Error fetching notes:", error);
@@ -43,16 +43,19 @@ function NotesList() {
         const res = await apiClient.delete("/notes/" + noteId);
         if (res.status === 204 || res.status === 200) {
           setNotes([...notes.filter((note) => note._id !== noteId)]);
+          setError('');
+          setFeedback('Apunte eliminado.');
         }
       } catch (error) {
         console.error("Error deleting note:", error);
-        alert('Error al eliminar el apunte');
+        setError('No se pudo eliminar el apunte. Inténtalo de nuevo.');
       }
     }
   };
 
   const handleCreateNote = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setError('');
     try {
       const noteData = {
         ...newNote,
@@ -64,10 +67,10 @@ function NotesList() {
       setNotes([createdNote, ...notes]);
       setNewNote({ title: '', content: '', subject: '', tags: '' });
       setShowCreateForm(false);
-      alert('Apunte creado exitosamente');
+      setFeedback('Apunte creado exitosamente.');
     } catch (error) {
       console.error('Error creating note:', error);
-      alert(getApiErrorMessage(error, 'Error al crear el apunte'));
+      setError(getApiErrorMessage(error, 'Error al crear el apunte'));
     }
   };
 
@@ -80,7 +83,7 @@ function NotesList() {
   };
 
   const getFilteredNotes = () => {
-    let filtered = notes;
+    let filtered = [...notes];
 
     // Filtrar por búsqueda
     if (searchTerm) {
@@ -135,7 +138,7 @@ function NotesList() {
     <div className="notes-page">
       <header className="notes-page__header">
         <div>
-          <h1 className="notes-page__title">📝 Mis Apuntes</h1>
+          <h1 className="notes-page__title">Mis apuntes</h1>
           <p className="notes-page__subtitle">Organiza y gestiona tus apuntes de estudio</p>
         </div>
         <button
@@ -147,17 +150,19 @@ function NotesList() {
         </button>
       </header>
 
-      {error && <div className="notes-page__alert">{error}</div>}
+      {error && <div className="notes-page__alert" role="alert">{error} <button type="button" onClick={() => void getNotes()}>Volver a cargar</button></div>}
+      {feedback && <p className="notes-page__feedback" role="status">{feedback}</p>}
 
       {/* Formulario de creación */}
       {showCreateForm && (
         <section className="notes-page__form-section">
-          <h3>✏️ Crear Nuevo Apunte</h3>
+          <h3>Crear nuevo apunte</h3>
           <form onSubmit={handleCreateNote}>
             <div className="form-row">
               <div className="form-group">
-                <label>📌 Título *</label>
+                <label htmlFor="note-title">Título *</label>
                 <input
+                  id="note-title"
                   type="text"
                   name="title"
                   value={newNote.title}
@@ -167,8 +172,9 @@ function NotesList() {
                 />
               </div>
               <div className="form-group">
-                <label>📚 Materia</label>
+                <label htmlFor="note-subject">Materia</label>
                 <input
+                  id="note-subject"
                   type="text"
                   name="subject"
                   value={newNote.subject}
@@ -179,8 +185,9 @@ function NotesList() {
             </div>
 
             <div className="form-group">
-              <label>📝 Contenido *</label>
+              <label htmlFor="note-content">Contenido *</label>
               <textarea
+                id="note-content"
                 name="content"
                 value={newNote.content}
                 onChange={handleFormChange}
@@ -191,8 +198,9 @@ function NotesList() {
             </div>
 
             <div className="form-group">
-              <label>🏷️ Etiquetas</label>
+              <label htmlFor="note-tags">Etiquetas</label>
               <input
+                id="note-tags"
                 type="text"
                 name="tags"
                 value={newNote.tags}
@@ -203,7 +211,7 @@ function NotesList() {
 
             <div className="form-actions">
               <button type="submit" className="btn btn-primary">
-                💾 Guardar Apunte
+                Guardar apunte
               </button>
               <button 
                 type="button" 
@@ -226,12 +234,14 @@ function NotesList() {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="notes-page__search"
+            aria-label="Buscar en tus apuntes"
           />
         </div>
         <div className="notes-page__filter-btns">
           <button
             type="button"
             className={`notes-page__filter-btn ${filterBy === 'all' ? 'notes-page__filter-btn--active' : ''}`}
+            aria-pressed={filterBy === 'all'}
             onClick={() => setFilterBy('all')}
           >
             Todas ({notes.length})
@@ -239,6 +249,7 @@ function NotesList() {
           <button
             type="button"
             className={`notes-page__filter-btn ${filterBy === 'recent' ? 'notes-page__filter-btn--active' : ''}`}
+            aria-pressed={filterBy === 'recent'}
             onClick={() => setFilterBy('recent')}
           >
             Recientes
@@ -246,6 +257,7 @@ function NotesList() {
           <button
             type="button"
             className={`notes-page__filter-btn ${filterBy === 'favorites' ? 'notes-page__filter-btn--active' : ''}`}
+            aria-pressed={filterBy === 'favorites'}
             onClick={() => setFilterBy('favorites')}
           >
             Favoritas
@@ -271,9 +283,8 @@ function NotesList() {
         </div>
       </section>
 
-      {filteredNotes.length === 0 ? (
+      {error && notes.length === 0 ? null : filteredNotes.length === 0 ? (
         <section className="notes-page__empty">
-          <div className="notes-page__empty-icon">📝</div>
           <h3>
             {notes.length === 0 
               ? 'No tienes apuntes aún' 
@@ -288,12 +299,12 @@ function NotesList() {
           </p>
           {notes.length === 0 && (
             <div className="notes-page__empty-benefits">
-              <h4>💡 Los apuntes te ayudan a:</h4>
+              <h4>Los apuntes te ayudan a</h4>
               <ul>
-                <li>📚 Organizar información importante</li>
-                <li>🎯 Prepararte para exámenes</li>
-                <li>💭 Recordar conceptos clave</li>
-                <li>🔍 Encontrar información rápidamente</li>
+                <li>Organizar información importante</li>
+                <li>Prepararte para exámenes</li>
+                <li>Recordar conceptos clave</li>
+                <li>Encontrar información rápidamente</li>
               </ul>
             </div>
           )}
@@ -303,7 +314,7 @@ function NotesList() {
               className="btn btn-primary"
               onClick={() => setShowCreateForm(true)}
             >
-              ✏️ Crear mi primer apunte
+              Crear mi primer apunte
             </button>
           )}
         </section>
@@ -314,14 +325,13 @@ function NotesList() {
               <div className="note-header">
                 <h3 className="note-title">{note.title}</h3>
                 <div className="note-actions">
-                  <Link to={"/edit/" + note._id} className="btn btn-outline btn-small">
-                    ✏️ Editar
-                  </Link>
                   <button
+                    type="button"
                     className="btn btn-danger btn-small"
                     onClick={() => deleteNote(note._id)}
+                    aria-label={`Eliminar apunte: ${note.title}`}
                   >
-                    🗑️ Eliminar
+                    Eliminar
                   </button>
                 </div>
               </div>
@@ -353,12 +363,12 @@ function NotesList() {
 
               <div className="note-footer">
                 <div className="note-info">
-                  <span className="note-author">👤 {note.author || 'Tú'}</span>
-                  <span className="note-date">📅 {formatDate(note.createdAt)}</span>
+                  <span className="note-author">{note.author || 'Tú'}</span>
+                  <span className="note-date">{formatDate(note.createdAt)}</span>
                 </div>
                 {note.updatedAt && note.updatedAt !== note.createdAt && (
                   <span className="note-updated">
-                    ✏️ Editado: {formatDate(note.updatedAt)}
+                    Editado: {formatDate(note.updatedAt)}
                   </span>
                 )}
               </div>

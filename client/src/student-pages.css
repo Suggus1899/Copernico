@@ -1,0 +1,588 @@
+.cursos-page,
+.notes-page,
+.tutors-page,
+.clases-page,
+.video-progress-dashboard {
+  color: var(--ink);
+  gap: 24px;
+  margin: 0 auto;
+  max-width: 1120px;
+  padding: 0;
+  width: 100%;
+}
+
+.cursos-page__header,
+.notes-page__header,
+.tutors-header,
+.clases-page__header,
+.progress-dashboard-header {
+  color: var(--ink);
+  margin: 0;
+}
+
+.cursos-page__title,
+.notes-page__title,
+.tutors-header h1,
+.clases-page__title,
+.progress-dashboard-header h2 {
+  color: var(--ink);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1.8rem, 3vw, 2.35rem);
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  line-height: 1.15;
+  margin: 0 0 8px;
+}
+
+.cursos-page__subtitle,
+.notes-page__subtitle,
+.tutors-header > p,
+.clases-page__subtitle,
+.progress-dashboard-header p {
+  color: var(--ink-muted);
+  margin: 0;
+}
+
+.cursos-page__toolbar,
+.notes-page__toolbar,
+.tutors-toolbar,
+.clases-page__toolbar,
+.progress-stats-overview {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: var(--shadow-card);
+  padding: 20px;
+}
+
+.cursos-page__stats,
+.notes-page__stats,
+.tutors-stats {
+  border-color: var(--line);
+  color: var(--ink-muted);
+}
+
+.cursos-page__stat-num,
+.notes-page__stat-num,
+.tutors-stats .stat-number {
+  color: var(--ink);
+}
+
+.cursos-page__stat-label,
+.notes-page__stat-label,
+.tutors-stats .stat-label {
+  color: var(--ink-muted);
+}
+
+.cursos-page__filter-btn,
+.notes-page__filter-btn {
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  color: var(--ink-muted);
+}
+
+.cursos-page__filter-btn--active,
+.notes-page__filter-btn--active {
+  background: var(--gold-pale);
+  border-color: var(--gold);
+  color: var(--ink);
+}
+
+.cursos-page__card,
+.note-card,
+.educator-card,
+.clases-page__card,
+.clases-page__empty,
+.stat-card,
+.subject-stat-card,
+.video-item-small,
+.completed-video-card,
+.activity-item,
+.student-progress-card,
+.progress-card,
+.progress-section,
+.progress-empty-state,
+.clases-page__player,
+.clases-page__placeholder {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: var(--shadow-card);
+  color: var(--ink);
+}
+
+.video-progress-dashboard .progress-fill,
+.video-progress-dashboard .progress-bar-large .progress-fill,
+.video-progress-dashboard .video-progress-fill,
+.video-progress-dashboard .attendance-fill {
+  background: var(--gold);
+}
+
+.video-progress-dashboard .completion-badge,
+.video-progress-dashboard .completed-badge,
+.video-progress-dashboard .completed-indicator,
+.clases-page .completion-badge {
+  background: var(--gold-pale);
+  border-color: var(--line-strong);
+  color: var(--gold-dark);
+}
+
+.video-progress-dashboard .progress-dashboard-section h3,
+.video-progress-dashboard .subject-header h4,
+.video-progress-dashboard .stat-content h3,
+.video-progress-dashboard .completed-info h5 {
+  color: var(--ink);
+}
+
+.video-progress-dashboard .progress-text,
+.video-progress-dashboard .watch-time,
+.video-progress-dashboard .stat-content p,
+.video-progress-dashboard .subject-details,
+.video-progress-dashboard .video-subject,
+.video-progress-dashboard .video-stats-small,
+.video-progress-dashboard .activity-details {
+  color: var(--ink-muted);
+}
+
+.cursos-page__card-title,
+.note-title,
+.educator-card h3,
+.clases-page__card-title,
+.clases-page__player-title {
+  color: var(--ink);
+}
+
+.cursos-page__card-status,
+.cursos-page__card-tag,
+.subject-badge,
+.tag,
+.clases-page__badge {
+  background: var(--gold-pale);
+  border-color: var(--line);
+  color: var(--gold-dark);
+}
+
+.cursos-page__card-progress-bar,
+.progress-bar { background: var(--surface-muted); }
+
+.cursos-page__card-progress-fill,
+.progress-fill,
+.clases-page__card-progress-fill {
+  background: var(--gold);
+}
+
+.clases-page__card--active {
+  background: var(--gold-pale);
+  border-color: var(--gold);
+  box-shadow: 0 0 0 1px var(--gold);
+}
+
+.clases-page__card-done,
+.clases-page__card-progress {
+  background: var(--gold-pale);
+  border-color: var(--line);
+  color: var(--gold-dark);
+}
+
+.clases-page__btn-like--active { background: var(--gold-pale); color: var(--ink); }
+
+.clases-page__placeholder-tips li::before {
+  background: var(--gold);
+  background-image: none;
+}
+
+.clases-page input:focus,
+.clases-page select:focus {
+  border-color: var(--gold-dark);
+  box-shadow: var(--focus-ring);
+}
+
+.cursos-page__card-detail,
+.note-meta,
+.note-footer,
+.educator-details,
+.clases-page__description,
+.clases-page__meta,
+.progress-dashboard-header {
+  border-color: var(--line);
+  color: var(--ink-muted);
+}
+
+.cursos-page__alert button,
+.notes-page__alert button {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  font-weight: 700;
+  margin-left: 10px;
+  text-decoration: underline;
+}
+
+.cursos-page__card-detail dt,
+.cursos-page__card-detail dd,
+.note-text,
+.note-author,
+.note-date,
+.note-updated,
+.clases-page__instructor-role,
+.progress-empty-state p {
+  color: var(--ink-muted);
+}
+
+.cursos-page__btn-primary,
+.cursos-page__btn-outline,
+.notes-page__primary-btn,
+.tutors-page .btn-primary,
+.tutors-page .btn-outline,
+.clases-page__btn-like,
+.progress-empty-action-btn {
+  align-items: center;
+  background: var(--gold);
+  border: 1px solid var(--gold);
+  border-radius: 8px;
+  color: var(--sidebar);
+  display: inline-flex;
+  font-weight: 650;
+  justify-content: center;
+  min-height: 42px;
+  padding: 9px 16px;
+  text-decoration: none;
+}
+
+.cursos-page__btn-outline,
+.tutors-page .btn-outline {
+  background: var(--surface);
+  border-color: var(--line-strong);
+  color: var(--ink);
+}
+
+.cursos-page__alert,
+.notes-page__alert,
+.tutors-feedback--error {
+  background: var(--danger-pale);
+  border: 1px solid #e7c4be;
+  border-radius: 10px;
+  color: var(--danger);
+  padding: 12px 16px;
+}
+
+.notes-page__feedback,
+.tutors-feedback--success,
+.clases-page__feedback {
+  background: var(--gold-pale);
+  border: 1px solid var(--gold);
+  border-radius: 10px;
+  color: var(--ink);
+  margin: 0;
+  padding: 12px 16px;
+}
+
+.clases-page__error {
+  background: var(--danger-pale);
+  border: 1px solid #e7c4be;
+  border-radius: 10px;
+  color: var(--danger);
+  margin: 0;
+  padding: 12px 16px;
+}
+
+.clases-page__error button {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  font-weight: 700;
+  margin-left: 10px;
+  text-decoration: underline;
+}
+
+.notes-page__form-section,
+.educator-expanded,
+.educator-details,
+.progress-card,
+.progress-section {
+  background: var(--surface);
+  border-color: var(--line);
+  color: var(--ink);
+}
+
+.educator-header,
+.educator-actions,
+.educator-expanded h4,
+.educator-expanded h5,
+.educator-expanded h6,
+.info-label,
+.info-value,
+.contact-label,
+.contact-value,
+.expanded-content,
+.clases-page__player-header,
+.progress-empty-state h3,
+.progress-empty-state h4 {
+  border-color: var(--line);
+  color: var(--ink);
+}
+
+.tutors-dialog {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: 0 24px 72px rgb(28 27 24 / 25%);
+  color: var(--ink);
+  margin: auto;
+  max-height: min(88dvh, 900px);
+  max-width: 760px;
+  overflow: auto;
+  padding: 0;
+  width: min(92vw, 760px);
+}
+
+dialog.tutors-dialog:not([open]) { display: none; }
+
+dialog.tutors-dialog[open] { display: block; }
+
+.tutors-dialog::backdrop {
+  background: rgb(28 27 24 / 58%);
+  backdrop-filter: blur(2px);
+}
+
+.tutors-dialog .modal-header,
+.tutors-dialog .modal-body {
+  padding: 20px 24px;
+}
+
+.tutors-dialog .modal-header {
+  align-items: center;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  justify-content: space-between;
+}
+
+.tutors-dialog .modal-header h2 {
+  color: var(--ink);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.5rem;
+  margin: 0;
+}
+
+.tutors-dialog .modal-close {
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--ink);
+  font-size: 1.5rem;
+  height: 40px;
+  width: 40px;
+}
+
+.tutors-dialog .tutor-info-header {
+  background: var(--surface-muted);
+  border-left: 3px solid var(--gold);
+  color: var(--ink);
+}
+
+.tutors-page .info-banner {
+  align-items: flex-start;
+  background: var(--gold-pale);
+  border: 1px solid var(--line-strong);
+  box-shadow: none;
+  flex-direction: row;
+  text-align: left;
+}
+
+.tutors-page .info-icon {
+  align-items: center;
+  background: var(--gold);
+  border-radius: 50%;
+  color: var(--sidebar);
+  display: inline-flex;
+  font-size: 0.8rem;
+  font-weight: 800;
+  height: 24px;
+  justify-content: center;
+  width: 24px;
+}
+
+.tutors-page .info-content,
+.tutors-page .info-content strong {
+  color: var(--ink);
+}
+
+.tutors-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  width: 100%;
+}
+
+.tutors-stats .stat-item {
+  background: var(--surface-muted);
+  border: 1px solid var(--line);
+  box-shadow: none;
+  min-width: 0;
+  padding: 12px 8px;
+}
+
+.tutors-stats .stat-number { font-size: 1.35rem; }
+
+.educators-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+}
+
+.educator-card { padding: 20px; }
+
+.educator-header { align-items: flex-start; }
+
+.educator-avatar { flex: 0 0 60px; }
+
+.avatar-circle {
+  background: var(--gold-pale);
+  border: 1px solid var(--line);
+  color: var(--ink);
+}
+
+.avatar-image { border-radius: 50%; height: 100%; object-fit: cover; width: 100%; }
+
+.role-badge,
+.role-badge.tutor,
+.role-badge.advisor {
+  background: var(--gold);
+  color: var(--sidebar);
+}
+
+.educator-info { min-width: 0; }
+
+.educator-info h3 { font-size: 1.1rem; margin: 0 0 4px; }
+
+.educator-email { overflow-wrap: anywhere; }
+
+.educator-rating {
+  color: var(--ink-muted);
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 0.78rem;
+  gap: 4px 10px;
+  margin-top: 6px;
+}
+
+.availability-indicator.online {
+  background: var(--gold-pale);
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  color: var(--gold-dark);
+  display: inline-block;
+  font-size: 0.72rem;
+  margin-top: 8px;
+  padding: 3px 9px;
+}
+
+.educator-details { margin: 14px 0; }
+
+.educator-details h4,
+.educator-expanded h4,
+.educator-expanded h5,
+.educator-expanded h6 {
+  color: var(--ink);
+  font-family: Georgia, "Times New Roman", serif;
+  font-weight: 600;
+}
+
+.specialty-tag {
+  background: var(--gold-pale);
+  border: 1px solid var(--line);
+  color: var(--ink);
+}
+
+.educator-stats {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+  margin: 14px 0;
+}
+
+.educator-stats .stat-item {
+  background: var(--surface-muted);
+  border: 1px solid var(--line);
+  box-shadow: none;
+  flex: initial;
+  min-width: 0;
+  padding: 10px 8px;
+}
+
+.educator-stats .stat-label {
+  color: var(--ink-muted);
+  display: block;
+  font-size: 0.7rem;
+}
+
+.educator-stats .stat-value { color: var(--ink); font-weight: 700; }
+
+.bio h4 { color: var(--ink); font-size: 0.9rem; margin: 0 0 4px; }
+
+.bio p { color: var(--ink-muted); margin: 0; }
+
+.educator-actions { border: 0; gap: 10px; }
+
+.educator-actions .btn { flex: 1; min-width: 0; }
+
+.educator-actions .btn-secondary {
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  color: var(--ink);
+}
+
+.educator-actions .btn-secondary:hover { background: var(--surface-muted); }
+
+.educator-expanded { border-top: 1px solid var(--line); }
+
+.educator-expanded .info-grid,
+.educator-expanded .contact-grid { gap: 10px; }
+
+.educator-expanded .info-item,
+.educator-expanded .contact-item {
+  background: var(--surface-muted);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.educator-expanded .info-label,
+.educator-expanded .contact-label { color: var(--ink-muted); }
+
+.educator-expanded .info-value,
+.educator-expanded .contact-value { overflow-wrap: anywhere; }
+
+.tutors-dialog .modal-actions {
+  border-top: 1px solid var(--line);
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 24px;
+  padding-top: 20px;
+}
+
+@media (max-width: 720px) {
+  .cursos-page,
+  .notes-page,
+  .tutors-page,
+  .clases-page,
+  .video-progress-dashboard {
+    gap: 18px;
+  }
+
+  .cursos-page__toolbar,
+  .notes-page__toolbar,
+  .tutors-toolbar,
+  .clases-page__toolbar,
+  .progress-stats-overview {
+    padding: 16px;
+  }
+
+  .tutors-dialog .modal-header,
+  .tutors-dialog .modal-body {
+    padding: 16px;
+  }
+
+  .tutors-dialog .modal-actions {
+    flex-direction: column-reverse;
+  }
+
+  .tutors-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

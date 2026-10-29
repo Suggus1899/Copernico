@@ -2,6 +2,7 @@ import { getAppointmentTutor } from '../utils/appointments';
 import type { Appointment } from '../types/appointments';
 import type { ApiResponse } from '../types/api';
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import apiClient from '../utils/axiosConfig';
 import './Dashboard.css';
 import './MyCourses.css';
@@ -153,15 +154,11 @@ const MyCourses = () => {
   };
 
   const getStatusBadge = (status: string) => {
-    const statusConfig: Record<string, { label: string; class: string; icon: string }> = {
-      active: { label: 'Activo', class: 'status-active', icon: '🟢' },
-      completed: { label: 'Completado', class: 'status-completed', icon: '✅' }
+    const statusConfig: Record<string, { label: string }> = {
+      active: { label: 'Activo' },
+      completed: { label: 'Completado' }
     };
-    return statusConfig[status] || { label: 'Desconocido', class: 'status-unknown', icon: '❓' };
-  };
-
-  const getRoleIcon = (role: string | undefined) => {
-    return role === 'advisor' ? '🎯' : '👨‍🏫';
+    return statusConfig[status] || { label: 'Desconocido' };
   };
 
   const filteredCourses = getFilteredCourses();
@@ -185,6 +182,7 @@ const MyCourses = () => {
       {error && (
         <div className="cursos-page__alert" role="alert">
           {error}
+          <button type="button" onClick={() => void fetchMyCourses()}>Reintentar</button>
         </div>
       )}
 
@@ -203,6 +201,7 @@ const MyCourses = () => {
               <button
                 type="button"
                 className={`cursos-page__filter-btn ${filterStatus === 'all' ? 'cursos-page__filter-btn--active' : ''}`}
+                aria-pressed={filterStatus === 'all'}
                 onClick={() => setFilterStatus('all')}
               >
                 Todos ({courses.length})
@@ -210,6 +209,7 @@ const MyCourses = () => {
               <button
                 type="button"
                 className={`cursos-page__filter-btn ${filterStatus === 'active' ? 'cursos-page__filter-btn--active' : ''}`}
+                aria-pressed={filterStatus === 'active'}
                 onClick={() => setFilterStatus('active')}
               >
                 Activos ({courses.filter(c => c.status === 'active').length})
@@ -217,6 +217,7 @@ const MyCourses = () => {
               <button
                 type="button"
                 className={`cursos-page__filter-btn ${filterStatus === 'completed' ? 'cursos-page__filter-btn--active' : ''}`}
+                aria-pressed={filterStatus === 'completed'}
                 onClick={() => setFilterStatus('completed')}
               >
                 Completados ({courses.filter(c => c.status === 'completed').length})
@@ -244,9 +245,8 @@ const MyCourses = () => {
         </div>
       )}
 
-      {filteredCourses.length === 0 ? (
+      {error ? null : filteredCourses.length === 0 ? (
         <div className="cursos-page__empty">
-          <span className="cursos-page__empty-icon" aria-hidden>📚</span>
           <h3>
             {courses.length === 0
               ? 'Aún no tienes cursos'
@@ -259,13 +259,12 @@ const MyCourses = () => {
           </p>
           {courses.length === 0 && (
             <>
-              <button
-                type="button"
+              <Link
                 className="cursos-page__btn-primary"
-                onClick={() => window.location.href = '/dashboard/tutores'}
+                to="/dashboard/tutores"
               >
                 Ir a Tutores
-              </button>
+              </Link>
               <div className="cursos-page__help">
                 <h4>¿Cómo funcionan los cursos?</h4>
                 <ul>
@@ -286,12 +285,11 @@ const MyCourses = () => {
                 <div className="cursos-page__card-header">
                   <h3 className="cursos-page__card-title">{course.subject}</h3>
                   <span className={`cursos-page__card-status cursos-page__card-status--${course.status}`}>
-                    {statusBadge.icon} {statusBadge.label}
+                    {statusBadge.label}
                   </span>
                 </div>
                 <div className="cursos-page__card-tutor">
-                  <span>{getRoleIcon(course.tutorRole)}</span>
-                  <span>{course.tutorName}</span>
+                  <span>{course.tutorRole === 'advisor' ? 'Asesoría con' : 'Tutoría con'} {course.tutorName}</span>
                 </div>
 
                 {course.topics.length > 0 && (
@@ -310,11 +308,15 @@ const MyCourses = () => {
                     <span>{course.progress}%</span>
                     <span>{course.completedSessions}/{course.totalSessions} sesiones</span>
                   </div>
-                  <div className="cursos-page__card-progress-bar">
-                    <div
-                      className="cursos-page__card-progress-fill"
-                      style={{ width: `${course.progress}%` }}
-                    />
+                  <div
+                    className="cursos-page__card-progress-bar"
+                    role="progressbar"
+                    aria-label={`Progreso de ${course.subject}`}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-valuenow={course.progress}
+                  >
+                    <div className="cursos-page__card-progress-fill" style={{ width: `${course.progress}%` }} />
                   </div>
                 </div>
 
@@ -347,21 +349,19 @@ const MyCourses = () => {
 
                 <div className="cursos-page__card-actions">
                   {course.status !== 'active' ? (
-                    <button
-                      type="button"
+                    <Link
                       className="cursos-page__btn-outline"
-                      onClick={() => window.location.href = '/dashboard/tutores'}
+                      to="/dashboard/tutores"
                     >
                       Solicitar más sesiones
-                    </button>
+                    </Link>
                   ) : (
-                    <button
-                      type="button"
+                    <Link
                       className="cursos-page__btn-outline"
-                      onClick={() => window.location.href = `/dashboard/mensajes?userId=${course.tutorId}`}
+                      to={`/dashboard/mensajes?userId=${encodeURIComponent(course.tutorId ?? '')}`}
                     >
                       Enviar mensaje
-                    </button>
+                    </Link>
                   )}
                 </div>
               </article>

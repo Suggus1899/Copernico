@@ -9,7 +9,7 @@ import './VideoProgress.css';
 import './VideosList.css';
 interface VideosListState {
   videos: ClassVideo[]; loading: boolean; selectedItem: ClassVideo | null; selectedType: string; activeTab: string;
-  filters: { subject: string; search: string }; likedVideos: Set<string>; videoProgress: Map<string, VideoProgress>;
+  filters: { subject: string; search: string }; likedVideos: Set<string>; videoProgress: Map<string, VideoProgress>; completionMessage: string; error: string;
 }
 
 class VideosList extends Component<Record<string, never>, VideosListState> {
@@ -24,7 +24,9 @@ class VideosList extends Component<Record<string, never>, VideosListState> {
       search: ''
     },
     likedVideos: new Set(),
-    videoProgress: new Map()
+    videoProgress: new Map(),
+    completionMessage: '',
+    error: ''
   };
 
   // Reproductor de YouTube del vídeo seleccionado; YouTubePlayer lo entrega cuando está listo
@@ -37,23 +39,22 @@ class VideosList extends Component<Record<string, never>, VideosListState> {
 
   loadContent = async () => {
     try {
-      this.setState({ loading: true });
+      this.setState({ loading: true, error: '' });
 
       // El backend ya filtra los vídeos visibles para el usuario actual
-      const videosResponse = await apiClient.get<ApiResponse<ClassVideo[]>>('/videos').catch(err => {
-        console.warn('Error loading videos:', err);
-        return { data: { data: [] } };
-      });
+      const videosResponse = await apiClient.get<ApiResponse<ClassVideo[]>>('/videos');
 
       this.setState({
         videos: videosResponse.data.data || [],
-        loading: false
+        loading: false,
+        error: ''
       });
     } catch (error) {
       console.error('Error loading content:', error);
       this.setState({
         videos: [],
-        loading: false
+        loading: false,
+        error: 'No se pudieron cargar las clases. Inténtalo de nuevo.'
       });
     }
   };
@@ -70,13 +71,15 @@ class VideosList extends Component<Record<string, never>, VideosListState> {
       }
       this.setState({
         selectedItem: item,
-        selectedType: type
+        selectedType: type,
+        completionMessage: ''
       });
     } catch (error) {
       console.error('Error selecting item:', error);
       this.setState({
         selectedItem: item,
-        selectedType: type
+        selectedType: type,
+        completionMessage: ''
       });
     }
   };
@@ -155,6 +158,8 @@ class VideosList extends Component<Record<string, never>, VideosListState> {
           <h1 className="clases-page__title">Clases</h1>
           <p className="clases-page__subtitle">Videos educativos de tus tutores</p>
         </header>
+        {this.state.completionMessage && <p className="clases-page__feedback" role="status">{this.state.completionMessage}</p>}
+        {this.state.error && <p className="clases-page__error" role="alert">{this.state.error} <button type="button" onClick={() => void this.loadContent()}>Reintentar</button></p>}
 
         <div className="clases-page__toolbar">
           <div className="clases-page__filters">
@@ -199,9 +204,8 @@ class VideosList extends Component<Record<string, never>, VideosListState> {
                 <div className="clases-page__spinner" />
                 <p>Cargando clases...</p>
               </div>
-            ) : filteredContent.length === 0 ? (
+            ) : this.state.error ? null : filteredContent.length === 0 ? (
               <div className="clases-page__empty">
-                <span className="clases-page__empty-icon" aria-hidden>🎥</span>
                 <h3>No hay videos</h3>
                 <p>
                   {this.state.videos.length === 0
@@ -222,7 +226,7 @@ class VideosList extends Component<Record<string, never>, VideosListState> {
                         {item.thumbnailUrl ? (
                           <img src={item.thumbnailUrl} alt="" />
                         ) : (
-                          <span className="clases-page__card-placeholder">🎥</span>
+                          <span className="clases-page__card-placeholder">Video</span>
                         )}
                         {(item.duration || 0) > 0 && (
                           <span className="clases-page__card-duration">
@@ -237,8 +241,8 @@ class VideosList extends Component<Record<string, never>, VideosListState> {
                           <span className="clases-page__card-topic">{item.topic}</span>
                         )}
                         <div className="clases-page__card-meta">
-                          <span>👁️ {item.views || 0}</span>
-                          <span>❤️ {item.likes || 0}</span>
+                          <span>{item.views || 0} vistas</span>
+                          <span>{item.likes || 0} me gusta</span>
                           {this.state.videoProgress.has(item._id) && (
                             <span className="clases-page__card-progress">
                               {this.state.videoProgress.get(item._id)?.progressPercentage}%
@@ -246,7 +250,7 @@ class VideosList extends Component<Record<string, never>, VideosListState> {
                           )}
                           {this.state.videoProgress.has(item._id) &&
                             this.state.videoProgress.get(item._id)?.isCompleted && (
-                            <span className="clases-page__card-done">✅</span>
+                            <span className="clases-page__card-done">Completado</span>
                           )}
                         </div>
                         <span className="clases-page__card-tutor">
@@ -271,9 +275,9 @@ class VideosList extends Component<Record<string, never>, VideosListState> {
                       type="button"
                       className={`clases-page__btn-like ${this.state.likedVideos.has(selectedItem._id) ? 'clases-page__btn-like--active' : ''}`}
                       onClick={() => this.handleLike(selectedItem._id)}
-                      aria-label="Me gusta"
+                      aria-pressed={this.state.likedVideos.has(selectedItem._id)}
                     >
-                      ❤️ {selectedItem.likes || 0}
+                      Me gusta · {selectedItem.likes || 0}
                     </button>
                   </div>
                 </div>
@@ -311,10 +315,10 @@ class VideosList extends Component<Record<string, never>, VideosListState> {
                         <span className="clases-page__badge clases-page__badge--secondary">{selectedItem.topic}</span>
                       )}
                       {(selectedItem.duration || 0) > 0 && (
-                        <span className="clases-page__badge">⏱️ {this.formatDuration(selectedItem.duration)}</span>
+                        <span className="clases-page__badge">{this.formatDuration(selectedItem.duration)}</span>
                       )}
                       <span className="clases-page__badge clases-page__badge--muted">
-                        👁️ {selectedItem.views || 0} vistas
+                        {selectedItem.views || 0} vistas
                       </span>
                     </div>
 
@@ -349,7 +353,6 @@ class VideosList extends Component<Record<string, never>, VideosListState> {
               </div>
             ) : (
               <div className="clases-page__placeholder">
-                <span className="clases-page__placeholder-icon" aria-hidden>🎥</span>
                 <h3>Elige una clase</h3>
                 <p>Selecciona un video de la lista para comenzar a reproducirlo</p>
                 <ul className="clases-page__placeholder-tips">
@@ -391,9 +394,9 @@ class VideosList extends Component<Record<string, never>, VideosListState> {
     }));
   };
 
-  handleVideoCompleted = (progress: VideoProgress, videoId: string) => {
+  handleVideoCompleted = (_progress: VideoProgress, videoId: string) => {
     const video = this.state.videos.find(item => item._id === videoId);
-    alert(`¡Felicidades! Has completado el video "${video?.title || ''}"`);
+    this.setState({ completionMessage: `Has completado el video «${video?.title || ''}».` });
   };
 }
 
