@@ -12,4 +12,6 @@ ui-audit
 .agent
 .agents
 .kiro
+.superpowers
+graphify-out
 *.log

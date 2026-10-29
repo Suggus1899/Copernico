@@ -22,6 +22,19 @@ jobs:
       - run: npm run typecheck
       - run: npm run build
       - run: npm test
+      - run: npm run test:compiled
+
+  api-image:
+    name: API (imagen de producción)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker compose config --quiet
+      - run: docker build --tag copernico-api:ci .
+      - name: Importar la API compilada sin dependencias de desarrollo
+        run: >-
+          docker run --rm -e NODE_ENV=test --entrypoint node copernico-api:ci
+          -e "import('./dist/src/app.js').then(() => console.log('API compilada disponible'))"
 
   client:
     name: Cliente (build)
@@ -37,4 +50,5 @@ jobs:
           cache: npm
           cache-dependency-path: client/package-lock.json
       - run: npm ci
+      - run: npm test
       - run: npm run build
