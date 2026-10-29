@@ -4,11 +4,19 @@ import assert from 'node:assert/strict';
 import mongoose from 'mongoose';
 import request from 'supertest';
 import { startIntegrationEnv } from './helpers/integration.js';
+import { confirmAppointmentSchema } from '../src/schemas/appointment.schema.js';
 
 const ORIGIN = 'http://localhost:5173';
 const PASSWORD = 'Clave-Segura-2025';
 const HOUR = 60 * 60 * 1000;
 const SESSION = 'copernico_session';
+
+it('solo acepta enlaces web para las reuniones', () => {
+  for (const meetingLink of ['javascript:alert(1)', 'data:text/html,unsafe']) {
+    assert.equal(confirmAppointmentSchema.safeParse({ body: { meetingLink } }).success, false);
+  }
+  assert.equal(confirmAppointmentSchema.safeParse({ body: { meetingLink: 'https://meet.example.com/cita' } }).success, true);
+});
 
 /** Fecha ISO a `hours` horas desde ahora, para construir horarios futuros. */
 const inHours = (hours: number) => new Date(Date.now() + hours * HOUR).toISOString();
@@ -113,6 +121,18 @@ describe('citas: propuesta, confirmación y reservas', () => {
   };
 
   const notificationsFor = (user: Actor, type: string) => Notification.find({ userId: user.id, type }).lean();
+
+  it('reserva el perfil completo por identificador al administrador', async () => {
+    await User.findByIdAndUpdate(ana.id, { $set: { 'personalInfo.phone': '555-0123', 'personalInfo.address': 'Dirección privada' } });
+    const denied = await call('get', `/api/users/${ana.id}`, tutor);
+    assert.equal(denied.status, 403);
+    const allowed = await call('get', `/api/users/${ana.id}`, admin);
+    assert.equal(allowed.status, 200);
+    assert.equal(allowed.body.data.personalInfo.phone, '555-0123');
+    const ownProfile = await call('get', '/api/users/profile', ana);
+    assert.equal(ownProfile.status, 200);
+    assert.equal(ownProfile.body.data.personalInfo.address, 'Dirección privada');
+  });
 
   it('un estudiante propone una cita pendiente en UTC y notifica al tutor', async () => {
     const startsAt = inHours(48);

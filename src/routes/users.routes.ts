@@ -54,7 +54,7 @@ router.get('/available-educators', requireRole(['student']), getAvailableEducato
 
 // Rutas administrativas
 router.get('/', requireRole(['admin', 'tutor', 'student']), getUsers);
-router.get('/:id', validateObjectIdParam('id'), requireRole(['admin', 'tutor']), getUserById);
+router.get('/:id', validateObjectIdParam('id'), requireRole(['admin']), getUserById);
 
 // Solo admin puede crear usuarios
 router.post('/', requireRole(['admin']), schemaValidator(createUserSchema), createUser);

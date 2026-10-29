@@ -26,6 +26,7 @@ const localToday = () => {
 const Tutors = () => {
   const navigate = useNavigate();
   const requestDialogRef = useRef<HTMLDialogElement>(null);
+  const requestPending = useRef(false);
   const [tutors, setTutors] = useState<TutorDirectoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -36,6 +37,7 @@ const Tutors = () => {
   const [requestForm, setRequestForm] = useState(EMPTY_REQUEST);
   const [courses, setCourses] = useState<CourseSummary[]>([]);
   const [coursesError, setCoursesError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
   const [requestFeedback, setRequestFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   const fetchTutors = async () => {
@@ -107,6 +109,9 @@ const Tutors = () => {
 
   const handleRequestSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (requestPending.current) return;
+    requestPending.current = true;
+    setSubmitting(true);
     try {
       const startsAt = new Date(`${requestForm.date}T${requestForm.time}`);
       const appointmentData = {
@@ -117,10 +122,7 @@ const Tutors = () => {
         ...(requestForm.topic.trim() && { topic: requestForm.topic.trim() }),
       };
 
-      console.log('Enviando datos de tutoría:', appointmentData);
-
-      const response = await apiClient.post('/appointments', appointmentData);
-      console.log('Respuesta del servidor:', response.data);
+      await apiClient.post('/appointments', appointmentData);
       
       setRequestFeedback({ type: 'success', message: 'Solicitud enviada. El tutor deberá confirmarla.' });
       setShowRequestModal(false);
@@ -131,6 +133,9 @@ const Tutors = () => {
       const errorMessage = getApiErrorMessage(error, 'Error al enviar la solicitud. Inténtalo nuevamente.');
       
       setRequestFeedback({ type: 'error', message: errorMessage });
+    } finally {
+      requestPending.current = false;
+      setSubmitting(false);
     }
   };
 
@@ -161,7 +166,7 @@ const Tutors = () => {
         <div className="info-banner">
           <div className="info-icon" aria-hidden="true">i</div>
           <div className="info-content">
-            <strong>Nota:</strong> Solo se muestran tutores disponibles. Los tutores con los que ya tienes citas confirmadas no aparecen en esta lista.
+            <strong>Nota:</strong> Solo se muestran tutores disponibles.
           </div>
         </div>
       </header>
@@ -664,8 +669,8 @@ const Tutors = () => {
                   <button type="button" className="btn btn-secondary" onClick={() => setShowRequestModal(false)}>
                     Cancelar
                   </button>
-                  <button type="submit" className="btn btn-primary" disabled={courses.length === 0}>
-                    Enviar solicitud
+                  <button type="submit" className="btn btn-primary" disabled={courses.length === 0 || submitting}>
+                    {submitting ? 'Enviando…' : 'Enviar solicitud'}
                   </button>
                 </div>
               </form>

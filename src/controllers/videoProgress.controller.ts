@@ -1,17 +1,43 @@
+import { createHash } from 'node:crypto';
+import mongoose from 'mongoose';
 import type { Handler, BodyOf } from '../types/http.js';
+import { assertStudentAccess } from '../utils/studentAccess.js';
 import type { ClassVideoDocument } from '../models/ClassVideo.js';
 import type { VideoProgressDocument } from '../models/VideoProgress.js';
+import type { VideoProgressRequestRecord, VideoProgressRequestResult } from '../models/VideoProgressRequest.js';
 import type { updateVideoProgressSchema } from '../schemas/videoProgress.schema.js';
-import type { Types } from 'mongoose';
+import type { ClientSession, Types } from 'mongoose';
 import { AppError } from '../utils/AppError.js';
-import VideoProgress from "../models/VideoProgress.js";
-import ClassVideo from "../models/ClassVideo.js";
-import ProgressTracking from "../models/ProgressTracking.js";
+import VideoProgress from '../models/VideoProgress.js';
+import VideoProgressRequest from '../models/VideoProgressRequest.js';
+import ClassVideo from '../models/ClassVideo.js';
+import ProgressTracking from '../models/ProgressTracking.js';
+
+const IDEMPOTENCY_RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
+
+const isDuplicateKeyError = (error: unknown): error is { code: number } =>
+  typeof error === 'object' && error !== null && 'code' in error && error.code === 11000;
+
+const previousResult = (
+  record: VideoProgressRequestRecord,
+  studentId: string,
+  videoId: string,
+  payloadHash: string,
+): VideoProgressRequestResult => {
+  if (
+    String(record.studentId) !== studentId ||
+    String(record.videoId) !== videoId ||
+    record.payloadHash !== payloadHash
+  ) {
+    throw new AppError(409, 'IDEMPOTENCY_KEY_REUSED', 'El identificador ya se usó con otra operación');
+  }
+  return record.result;
+};
 
 export const updateVideoProgress: Handler<Record<string, string>, unknown, BodyOf<typeof updateVideoProgressSchema>> = async (req, res, next) => {
   try {
     const { videoId } = req.params;
-    const { currentTime, watchedSeconds, totalDuration } = req.body;
+    const { currentTime, watchedSeconds, totalDuration, requestId } = req.body;
     const studentId = req.user!.id;
 
     const video = await ClassVideo.findById(videoId);
@@ -19,64 +45,93 @@ export const updateVideoProgress: Handler<Record<string, string>, unknown, BodyO
       throw new AppError(404, 'NOT_FOUND', 'Vídeo no encontrado');
     }
 
-    let videoProgress = await VideoProgress.findOne({ studentId, videoId });
-    if (!videoProgress) {
-      videoProgress = new VideoProgress({
-        studentId,
-        videoId,
-        totalDuration: totalDuration ?? (video.duration ? video.duration * 60 : 0),
-        videoTitle: video.title,
-        videoSubject: video.subject,
-        videoTopic: video.topic,
-        uploadedBy: video.uploadedBy,
-        watchTime: 0
-      });
-    } else if (totalDuration) {
-      // La duración la informa el reproductor de YouTube; se conserva la última conocida.
-      videoProgress.totalDuration = totalDuration;
-    }
+    const payloadHash = createHash('sha256')
+      .update(JSON.stringify({ currentTime, watchedSeconds, totalDuration }))
+      .digest('hex');
 
-    const wasCompleted = videoProgress.isCompleted;
+    const updateInTransaction = async (): Promise<VideoProgressRequestResult> => {
+      const session = await mongoose.startSession();
+      try {
+        const result = await session.withTransaction(async () => {
+          const priorRequest = await VideoProgressRequest.findOne({ requestId }).session(session).lean();
+          if (priorRequest) return previousResult(priorRequest, studentId, videoId, payloadHash);
 
-    if (watchedSeconds) {
-      videoProgress.watchTime += watchedSeconds;
-    }
+          let videoProgress = await VideoProgress.findOne({ studentId, videoId }).session(session);
+          if (!videoProgress) {
+            videoProgress = new VideoProgress({
+              studentId,
+              videoId,
+              totalDuration: totalDuration ?? (video.duration ? video.duration * 60 : 0),
+              videoTitle: video.title,
+              videoSubject: video.subject,
+              videoTopic: video.topic,
+              uploadedBy: video.uploadedBy,
+              watchTime: 0,
+            });
+          } else if (totalDuration) {
+            videoProgress.totalDuration = totalDuration;
+          }
 
-    // Actualiza la última sesión, o abre una si el progreso llega sin /start.
-    const lastSession = videoProgress.viewingSessions[videoProgress.viewingSessions.length - 1];
-    if (lastSession) {
-      lastSession.endTime = new Date();
-      lastSession.lastPosition = currentTime;
-      lastSession.watchedSeconds = (lastSession.watchedSeconds || 0) + (watchedSeconds || 0);
-    } else {
-      videoProgress.viewingSessions.push({
-        startTime: new Date(),
-        endTime: new Date(),
-        watchedSeconds: watchedSeconds || 0,
-        lastPosition: currentTime
-      });
-    }
-    videoProgress.totalSessions = videoProgress.viewingSessions.length;
-    videoProgress.lastWatchedAt = new Date();
+          const wasCompleted = videoProgress.isCompleted;
+          videoProgress.watchTime += watchedSeconds || 0;
 
-    // El middleware pre-save recalcula porcentaje y estado.
-    await videoProgress.save();
+          const lastSession = videoProgress.viewingSessions[videoProgress.viewingSessions.length - 1];
+          if (lastSession) {
+            lastSession.endTime = new Date();
+            lastSession.lastPosition = currentTime;
+            lastSession.watchedSeconds = (lastSession.watchedSeconds || 0) + (watchedSeconds || 0);
+          } else {
+            videoProgress.viewingSessions.push({
+              startTime: new Date(),
+              endTime: new Date(),
+              watchedSeconds: watchedSeconds || 0,
+              lastPosition: currentTime,
+            });
+          }
+          videoProgress.totalSessions = videoProgress.viewingSessions.length;
+          videoProgress.lastWatchedAt = new Date();
 
-    // ProgressTracking solo se actualiza la primera vez que el vídeo se completa.
-    if (!wasCompleted && videoProgress.isCompleted) {
-      await updateProgressTrackingFromVideo(studentId, video, videoProgress);
-    }
+          await videoProgress.save({ session });
+          if (!wasCompleted && videoProgress.isCompleted) {
+            await updateProgressTrackingFromVideo(studentId, video, videoProgress, session);
+          }
 
-    res.json({
-      success: true,
-      message: 'Progreso de vídeo actualizado',
-      data: {
-        progressPercentage: videoProgress.progressPercentage,
-        isCompleted: videoProgress.isCompleted,
-        watchTime: videoProgress.watchTime,
-        status: videoProgress.status
+          const response: VideoProgressRequestResult = {
+            progressPercentage: videoProgress.progressPercentage,
+            isCompleted: videoProgress.isCompleted,
+            watchTime: videoProgress.watchTime,
+            status: videoProgress.status,
+          };
+          await VideoProgressRequest.create([{
+            requestId,
+            studentId,
+            videoId,
+            payloadHash,
+            result: response,
+            expiresAt: new Date(Date.now() + IDEMPOTENCY_RETENTION_MS),
+          }], { session });
+          return response;
+        });
+        if (!result) throw new Error('La transacción no devolvió el resultado del progreso');
+        return result;
+      } finally {
+        await session.endSession();
       }
-    });
+    };
+
+    let result: VideoProgressRequestResult | undefined;
+    for (let attempt = 0; attempt < 2 && !result; attempt += 1) {
+      try {
+        result = await updateInTransaction();
+      } catch (error) {
+        if (!isDuplicateKeyError(error) || attempt === 1) throw error;
+        const committedRequest = await VideoProgressRequest.findOne({ requestId }).lean();
+        if (committedRequest) result = previousResult(committedRequest, studentId, videoId, payloadHash);
+      }
+    }
+    if (!result) throw new Error('No se pudo guardar el progreso del vídeo');
+
+    res.json({ success: true, message: 'Progreso de vídeo actualizado', data: result });
   } catch (error) {
     next(error);
   }
@@ -121,10 +176,7 @@ export const getStudentVideoStats: Handler<Record<string, string>, unknown, Body
       throw new AppError(400, 'BAD_REQUEST', "Se requiere el identificador del estudiante");
     }
 
-    // Verificar permisos
-    if (req.user!.role === 'student' && req.user!.id !== studentId) {
-      throw new AppError(403, 'FORBIDDEN', "Acceso denegado");
-    }
+    await assertStudentAccess(req.user!, studentId);
 
     const stats = await VideoProgress.getStudentVideoStats(studentId);
     
@@ -160,10 +212,7 @@ export const getStudentProgressBySubject: Handler<Record<string, string>, unknow
       throw new AppError(400, 'BAD_REQUEST', "Se requiere el identificador del estudiante");
     }
 
-    // Verificar permisos
-    if (req.user!.role === 'student' && req.user!.id !== studentId) {
-      throw new AppError(403, 'FORBIDDEN', "Acceso denegado");
-    }
+    await assertStudentAccess(req.user!, studentId);
 
     const progress = await VideoProgress.getStudentProgressBySubject(studentId, subject);
 
@@ -185,10 +234,7 @@ export const getMostWatchedVideos: Handler<Record<string, string>, unknown, Body
       throw new AppError(400, 'BAD_REQUEST', "Se requiere el identificador del estudiante");
     }
 
-    // Verificar permisos
-    if (req.user!.role === 'student' && req.user!.id !== studentId) {
-      throw new AppError(403, 'FORBIDDEN', "Acceso denegado");
-    }
+    await assertStudentAccess(req.user!, studentId);
 
     const mostWatched = await VideoProgress.getMostWatchedVideos(studentId, parseInt(String(limit)));
 
@@ -279,10 +325,7 @@ export const getVideoProgressDashboard: Handler<Record<string, string>, unknown,
       throw new AppError(400, 'BAD_REQUEST', "Se requiere el identificador del estudiante");
     }
 
-    // Verificar permisos
-    if (req.user!.role === 'student' && req.user!.id !== studentId) {
-      throw new AppError(403, 'FORBIDDEN', "Acceso denegado");
-    }
+    await assertStudentAccess(req.user!, studentId);
 
     // Obtener estadísticas por materia
     const subjectStats = await VideoProgress.getStudentVideoStats(studentId);
@@ -320,13 +363,11 @@ export const getVideoProgressDashboard: Handler<Record<string, string>, unknown,
 };
 
 // Función auxiliar para actualizar ProgressTracking cuando se completa un video
-const updateProgressTrackingFromVideo = async (studentId: string, video: ClassVideoDocument, videoProgress: VideoProgressDocument) => {
-  try {
-    // Buscar un registro de progreso existente para la materia
+const updateProgressTrackingFromVideo = async (studentId: string, video: ClassVideoDocument, videoProgress: VideoProgressDocument, session: ClientSession) => {
     let progressTracking = await ProgressTracking.findOne({
       studentId,
       subject: video.subject
-    }).sort({ createdAt: -1 });
+    }).sort({ createdAt: -1 }).session(session);
 
     if (!progressTracking) {
       // Crear un nuevo registro de progreso si no existe
@@ -354,12 +395,12 @@ const updateProgressTrackingFromVideo = async (studentId: string, video: ClassVi
       studentId,
       videoSubject: video.subject,
       isCompleted: true
-    });
+    }).session(session);
 
     const totalVideos = await VideoProgress.countDocuments({
       studentId,
       videoSubject: video.subject
-    });
+    }).session(session);
 
     const completionRate = totalVideos > 0 ? Math.round((completedVideos / totalVideos) * 100) : 0;
 
@@ -388,13 +429,7 @@ const updateProgressTrackingFromVideo = async (studentId: string, video: ClassVi
         understandingLevel: progressTracking.metrics!.understandingLevel
       },
       `Video completado: "${video.title}" - Progreso de videos en ${video.subject}: ${completionRate}%`,
-      video.uploadedBy
+      video.uploadedBy,
+      session,
     );
-
-    await progressTracking.save();
-    
-  } catch (error) {
-    // Fallo no crítico: el progreso del vídeo ya está guardado y no debe convertir
-    // la respuesta en un error. Queda pendiente un logger estructurado (ver informe).
-  }
 };

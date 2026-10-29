@@ -1,6 +1,9 @@
 import type { Handler, BodyOf } from '../types/http.js';
 import type * as schemas from '../schemas/progressTracking.schema.js';
 import type { FilterQuery } from 'mongoose';
+import { Types } from 'mongoose';
+import { escapeRegex } from '../utils/escapeRegex.js';
+import { assertStudentAccess, relatedStudentIds } from '../utils/studentAccess.js';
 import type { ProgressTrackingRecord } from '../models/ProgressTracking.js';
 import { AppError } from '../utils/AppError.js';
 import ProgressTracking from "../models/ProgressTracking.js";
@@ -30,9 +33,12 @@ export const getProgressTrackings: Handler<Record<string, string>, unknown, { st
     }
 
     // Filtros adicionales
-    if (studentId && req.user!.role !== 'student') filter.studentId = studentId;
+    if (req.user!.role === 'tutor') {
+      if (studentId && typeof studentId === 'string') await assertStudentAccess(req.user!, studentId);
+      filter.studentId = studentId || { $in: await relatedStudentIds(req.user!._id) };
+    } else if (studentId && req.user!.role === 'admin') filter.studentId = studentId;
     if (trackedBy && req.user!.role !== 'tutor') filter.trackedBy = trackedBy;
-    if (subject) filter.subject = new RegExp(subject as string, 'i');
+    if (subject) filter.subject = new RegExp(escapeRegex(subject), 'i');
     if (competencyLevel) filter.competencyLevel = competencyLevel;
 
     // Filtro por fecha
@@ -49,12 +55,12 @@ export const getProgressTrackings: Handler<Record<string, string>, unknown, { st
     };
 
     const progressTrackings = await ProgressTracking.find(filter)
-      .populate('studentId', 'personalInfo email studentProfile')
-      .populate('trackedBy', 'personalInfo email tutorProfile')
+      .populate('studentId', 'personalInfo.firstName personalInfo.lastName email studentProfile.career')
+      .populate('trackedBy', 'personalInfo.firstName personalInfo.lastName email')
       .populate('appointmentId', 'topic startsAt')
-      .populate('progressHistory.recordedBy', 'personalInfo')
-      .populate('createdBy', 'personalInfo')
-      .populate('updatedBy', 'personalInfo')
+      .populate('progressHistory.recordedBy', 'personalInfo.firstName personalInfo.lastName')
+      .populate('createdBy', 'personalInfo.firstName personalInfo.lastName')
+      .populate('updatedBy', 'personalInfo.firstName personalInfo.lastName')
       .limit(options.limit * 1)
       .skip((options.page - 1) * options.limit)
       .sort(options.sort);
@@ -79,12 +85,12 @@ export const getProgressTrackings: Handler<Record<string, string>, unknown, { st
 export const getProgressTrackingById: Handler<Record<string, string>, unknown, { studentId: string; subject: string }> = async (req, res, next) => {
   try {
     const progressTracking = await ProgressTracking.findById(req.params.id)
-      .populate('studentId', 'personalInfo email studentProfile')
-      .populate('trackedBy', 'personalInfo email tutorProfile')
+      .populate('studentId', 'personalInfo.firstName personalInfo.lastName email studentProfile.career')
+      .populate('trackedBy', 'personalInfo.firstName personalInfo.lastName email')
       .populate('appointmentId', 'topic startsAt')
-      .populate('progressHistory.recordedBy', 'personalInfo')
-      .populate('createdBy', 'personalInfo')
-      .populate('updatedBy', 'personalInfo');
+      .populate('progressHistory.recordedBy', 'personalInfo.firstName personalInfo.lastName')
+      .populate('createdBy', 'personalInfo.firstName personalInfo.lastName')
+      .populate('updatedBy', 'personalInfo.firstName personalInfo.lastName');
 
     if (!progressTracking) {
       throw new AppError(404, 'NOT_FOUND', "Progress tracking record not found");
@@ -99,6 +105,7 @@ export const getProgressTrackingById: Handler<Record<string, string>, unknown, {
     if (!canView) {
       throw new AppError(403, 'FORBIDDEN', "Access denied to this progress tracking record");
     }
+    if (req.user!.role === 'tutor') await assertStudentAccess(req.user!, String(progressTracking.studentId._id));
 
     res.json({
       success: true,
@@ -119,6 +126,11 @@ export const createProgressTracking: Handler<Record<string, string>, unknown, Bo
       throw new AppError(404, 'NOT_FOUND', "Student not found or invalid role");
     }
 
+    await assertStudentAccess(req.user!, progressData.studentId);
+    if (req.user!.role === 'tutor' && progressData.trackedBy !== req.user!.id) {
+      throw new AppError(403, 'FORBIDDEN', 'Solo puedes registrar tu propio seguimiento');
+    }
+
     // Verificar que el tracker existe y tiene permisos
     const tracker = await User.findById(progressData.trackedBy);
     if (!tracker || !['tutor', 'admin'].includes(tracker.role)) {
@@ -136,6 +148,9 @@ export const createProgressTracking: Handler<Record<string, string>, unknown, Bo
       if (!appointment) {
         throw new AppError(404, 'NOT_FOUND', "Appointment not found");
       }
+      if (String(appointment.studentId) !== progressData.studentId || String(appointment.tutorId) !== progressData.trackedBy) {
+        throw new AppError(403, 'FORBIDDEN', 'La cita no corresponde al estudiante y tutor');
+      }
     }
 
     // Agregar información de auditoría
@@ -147,8 +162,8 @@ export const createProgressTracking: Handler<Record<string, string>, unknown, Bo
 
     // Populate para la respuesta
     const populatedProgress = await ProgressTracking.findById(progressSaved._id)
-      .populate('studentId', 'personalInfo email studentProfile')
-      .populate('trackedBy', 'personalInfo email tutorProfile')
+      .populate('studentId', 'personalInfo.firstName personalInfo.lastName email studentProfile.career')
+      .populate('trackedBy', 'personalInfo.firstName personalInfo.lastName email')
       .populate('appointmentId', 'topic startsAt');
 
     res.status(201).json({
@@ -173,6 +188,7 @@ export const updateProgressTracking: Handler<Record<string, string>, unknown, Bo
     if (progressTracking.trackedBy.toString() !== req.user!.id && req.user!.role !== 'admin') {
       throw new AppError(403, 'FORBIDDEN', "Not authorized to update this progress tracking");
     }
+    if (req.user!.role === 'tutor') await assertStudentAccess(req.user!, String(progressTracking.studentId));
 
     const updateData = {
       ...req.body,
@@ -184,10 +200,10 @@ export const updateProgressTracking: Handler<Record<string, string>, unknown, Bo
       updateData,
       { new: true, runValidators: true }
     )
-    .populate('studentId', 'personalInfo email studentProfile')
-    .populate('trackedBy', 'personalInfo email tutorProfile')
+    .populate('studentId', 'personalInfo.firstName personalInfo.lastName email studentProfile.career')
+    .populate('trackedBy', 'personalInfo.firstName personalInfo.lastName email')
     .populate('appointmentId', 'topic startsAt')
-    .populate('updatedBy', 'personalInfo');
+    .populate('updatedBy', 'personalInfo.firstName personalInfo.lastName');
 
     res.json({
       success: true,
@@ -212,11 +228,12 @@ export const addProgressHistory: Handler<Record<string, string>, unknown, BodyOf
     if (progressTracking.trackedBy.toString() !== req.user!.id && req.user!.role !== 'admin') {
       throw new AppError(403, 'FORBIDDEN', "Not authorized to add progress history");
     }
+    if (req.user!.role === 'tutor') await assertStudentAccess(req.user!, String(progressTracking.studentId));
 
     await progressTracking.addProgressHistory(metricsSnapshot, notes, req.user!.id);
 
     const updatedProgress = await ProgressTracking.findById(req.params.id)
-      .populate('progressHistory.recordedBy', 'personalInfo');
+      .populate('progressHistory.recordedBy', 'personalInfo.firstName personalInfo.lastName');
 
     res.json({
       success: true,
@@ -246,6 +263,7 @@ export const updateGoalStatus: Handler<Record<string, string>, unknown, BodyOf<t
     if (!canUpdate) {
       throw new AppError(403, 'FORBIDDEN', "Not authorized to update goals");
     }
+    if (req.user!.role === 'tutor') await assertStudentAccess(req.user!, String(progressTracking.studentId));
 
     if (goalType === 'shortTerm' && progressTracking.goals!.shortTerm) {
       progressTracking.goals!.shortTerm.status = status;
@@ -290,11 +308,17 @@ export const getStudentProgress: Handler<Record<string, string>, unknown, { stud
     // Si es estudiante, solo puede ver su propio progreso
     if (req.user!.role === 'student') {
       targetStudentId = req.user!.id;
-    } else if (!studentId && !['tutor', 'admin'].includes(req.user!.role)) {
+    }
+    if (!targetStudentId || typeof targetStudentId !== 'string') {
       throw new AppError(400, 'BAD_REQUEST', "Student ID is required");
     }
-
-    const progress = await ProgressTracking.getStudentProgress(targetStudentId as string | undefined, subject as string | undefined);
+    if (subject !== undefined && typeof subject !== 'string') {
+      throw new AppError(400, 'BAD_REQUEST', 'Materia inválida');
+    }
+    await assertStudentAccess(req.user!, targetStudentId);
+    const filter: FilterQuery<ProgressTrackingRecord> = { studentId: targetStudentId, subject };
+    if (req.user!.role === 'tutor') filter.trackedBy = req.user!.id;
+    const progress = await ProgressTracking.findOne(filter).sort({ createdAt: -1 });
 
     if (!progress) {
       return res.json({
@@ -318,10 +342,10 @@ export const getMyProgress: Handler<Record<string, string>, unknown, { studentId
     const { subject } = req.query;
 
     const filter: FilterQuery<ProgressTrackingRecord> = { studentId: req.user!.id };
-    if (subject) filter.subject = new RegExp(subject as string, 'i');
+    if (subject) filter.subject = new RegExp(escapeRegex(subject), 'i');
 
     const progressTrackings = await ProgressTracking.find(filter)
-      .populate('trackedBy', 'personalInfo email tutorProfile')
+      .populate('trackedBy', 'personalInfo.firstName personalInfo.lastName email')
       .populate('appointmentId', 'topic startsAt')
       .sort({ createdAt: -1 });
 
@@ -341,12 +365,18 @@ export const getProgressStatistics: Handler<Record<string, string>, unknown, { s
     let filter: FilterQuery<ProgressTrackingRecord> = {};
 
     if (req.user!.role === 'student') {
-      filter.studentId = req.user!.id;
+      filter.studentId = req.user!._id;
     } else if (studentId) {
-      filter.studentId = studentId;
+      if (typeof studentId !== 'string') throw new AppError(400, 'INVALID_ID', 'Identificador de estudiante inválido');
+      await assertStudentAccess(req.user!, studentId);
+      filter.studentId = new Types.ObjectId(studentId);
+    }
+    if (req.user!.role === 'tutor') {
+      filter.trackedBy = req.user!._id;
+      if (!studentId) filter.studentId = { $in: await relatedStudentIds(req.user!._id) };
     }
 
-    if (subject) filter.subject = new RegExp(subject as string, 'i');
+    if (subject) filter.subject = new RegExp(escapeRegex(subject), 'i');
 
     // Filtrar por período
     if (period !== 'all') {
@@ -424,6 +454,8 @@ export const createBaselineAssessment: Handler<Record<string, string>, unknown, 
       throw new AppError(403, 'FORBIDDEN', "Only tutors and admins can create baseline assessments");
     }
 
+    await assertStudentAccess(req.user!, studentId);
+
     // Verificar que no exista ya una evaluación base
     const existingBaseline = await ProgressTracking.findOne({
       studentId,
@@ -462,8 +494,8 @@ export const createBaselineAssessment: Handler<Record<string, string>, unknown, 
     await baseline.save();
 
     const populatedBaseline = await ProgressTracking.findById(baseline._id)
-      .populate('studentId', 'personalInfo email')
-      .populate('trackedBy', 'personalInfo email');
+      .populate('studentId', 'personalInfo.firstName personalInfo.lastName email')
+      .populate('trackedBy', 'personalInfo.firstName personalInfo.lastName email');
 
     res.status(201).json({
       success: true,

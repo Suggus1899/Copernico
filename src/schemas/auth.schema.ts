@@ -2,24 +2,24 @@ import { z } from 'zod';
 import { isStrongPassword, PASSWORD_POLICY_MESSAGE } from '../utils/passwordPolicy.js';
 
 export const emailField = z
-  .string({ required_error: 'El correo es obligatorio' })
+  .string({ error: (issue) => issue.input === undefined ? 'El correo es obligatorio' : undefined })
   .trim()
   .toLowerCase()
   .email('El correo no es válido')
   .max(254, 'El correo es demasiado largo');
 
 export const passwordField = z
-  .string({ required_error: 'La contraseña es obligatoria' })
+  .string({ error: (issue) => issue.input === undefined ? 'La contraseña es obligatoria' : undefined })
   .refine(isStrongPassword, { message: PASSWORD_POLICY_MESSAGE });
 
 // Al iniciar sesión o confirmar una acción no se revela la política de contraseñas.
 export const currentPasswordField = z
-  .string({ required_error: 'La contraseña actual es obligatoria' })
+  .string({ error: (issue) => issue.input === undefined ? 'La contraseña actual es obligatoria' : undefined })
   .min(1, 'La contraseña actual es obligatoria');
 
 const nameField = (label: string) =>
   z
-    .string({ required_error: `${label} es obligatorio` })
+    .string({ error: (issue) => issue.input === undefined ? `${label} es obligatorio` : undefined })
     .trim()
     .min(2, `${label} debe tener al menos 2 caracteres`)
     .max(60, `${label} no puede superar 60 caracteres`);

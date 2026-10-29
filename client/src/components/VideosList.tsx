@@ -1,6 +1,7 @@
 import type { ApiResponse } from '../types/api';
 import type { ClassVideo, VideoProgress } from '../types/progress';
 import React, { Component } from 'react';
+import { useSessionUser } from './ProtectedRoute';
 import apiClient from '../utils/axiosConfig';
 import VideoProgressTracker from './VideoProgressTracker';
 import YouTubePlayer from './YouTubePlayer';
@@ -12,7 +13,7 @@ interface VideosListState {
   filters: { subject: string; search: string }; likedVideos: Set<string>; videoProgress: Map<string, VideoProgress>; completionMessage: string; error: string;
 }
 
-class VideosList extends Component<Record<string, never>, VideosListState> {
+class VideosListView extends Component<{ userId: string }, VideosListState> {
   state: VideosListState = {
     videos: [],
     loading: false,
@@ -288,7 +289,9 @@ class VideosList extends Component<Record<string, never>, VideosListState> {
                       key={selectedItem._id}
                       ref={(ref) => { this.videoProgressTracker = ref; }}
                       videoId={selectedItem._id}
+                      userId={this.props.userId}
                       getVideoTime={this.getVideoTime}
+                      onResume={(position) => this.youtubePlayer?.seekTo(position, true)}
                       onProgressUpdate={this.handleProgressUpdate}
                       onVideoCompleted={this.handleVideoCompleted}
                     />
@@ -400,4 +403,7 @@ class VideosList extends Component<Record<string, never>, VideosListState> {
   };
 }
 
-export default VideosList;
+export default function VideosList() {
+  const user = useSessionUser();
+  return <VideosListView userId={user._id} />;
+}

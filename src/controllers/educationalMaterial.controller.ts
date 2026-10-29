@@ -22,11 +22,11 @@ const notFound = () => new AppError(404, 'NOT_FOUND', 'Material educativo no enc
 
 const withPublicRefs = <T>(query: Query<T, EducationalMaterialDocument>) =>
   query
-    .populate('createdBy', 'personalInfo email tutorProfile')
-    .populate('allowedStudents', 'personalInfo email')
-    .populate('ratings.userId', 'personalInfo')
-    .populate('updatedBy', 'personalInfo')
-    .populate('reviewedBy', 'personalInfo');
+    .populate('createdBy', 'personalInfo.firstName personalInfo.lastName personalInfo.avatar email tutorProfile')
+    .populate('allowedStudents', 'personalInfo.firstName personalInfo.lastName personalInfo.avatar email')
+    .populate('ratings.userId', 'personalInfo.firstName personalInfo.lastName personalInfo.avatar')
+    .populate('updatedBy', 'personalInfo.firstName personalInfo.lastName personalInfo.avatar')
+    .populate('reviewedBy', 'personalInfo.firstName personalInfo.lastName personalInfo.avatar');
 
 // Incluye fileKey (no se devuelve: el toJSON del modelo la elimina).
 const findMaterial = (id: string) => EducationalMaterial.findById(id).select('+fileKey');
@@ -221,7 +221,7 @@ export const rateEducationalMaterial: Handler<Record<string, string>, unknown, B
     }
 
     await material.addRating(req.user!.id, rating, comment);
-    const updated = await EducationalMaterial.findById(req.params.id).populate('ratings.userId', 'personalInfo');
+    const updated = await EducationalMaterial.findById(req.params.id).populate('ratings.userId', 'personalInfo.firstName personalInfo.lastName personalInfo.avatar');
 
     res.json({ success: true, message: 'Material calificado correctamente.', data: updated!.ratings });
   } catch (error) {
@@ -259,7 +259,7 @@ export const getMyEducationalMaterials: Handler<Record<string, string>, unknown,
     if (isAssignment !== undefined) filter.isAssignment = isAssignment === 'true';
 
     const materials = await EducationalMaterial.find(filter)
-      .populate('allowedStudents', 'personalInfo email')
+      .populate('allowedStudents', 'personalInfo.firstName personalInfo.lastName personalInfo.avatar email')
       .sort({ createdAt: -1 });
 
     res.json({ success: true, data: materials });
@@ -312,7 +312,7 @@ export const getPopularMaterials: Handler<Record<string, string>, unknown, { tit
     }
 
     const materials = await EducationalMaterial.find(filter)
-      .populate('createdBy', 'personalInfo email tutorProfile')
+      .populate('createdBy', 'personalInfo.firstName personalInfo.lastName personalInfo.avatar email tutorProfile')
       .sort({ views: -1, averageRating: -1 })
       .limit(limit);
 

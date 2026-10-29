@@ -36,7 +36,7 @@ export const createNotificationSchema = z.object({
     expiresAt: z.string().datetime().optional(),
     metadata: z.unknown().optional(),
     templateId: z.string().optional(),
-    variables: z.record(z.string()).optional(),
+    variables: z.record(z.string(), z.string()).optional(),
     category: z.enum([
       'academic',
       'appointment', 

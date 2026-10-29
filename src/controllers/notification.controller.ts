@@ -39,8 +39,8 @@ export const getNotifications: Handler<Record<string, string>, unknown, unknown>
       .populate('relatedAssignment', 'title dueDate')
       .populate('relatedMaterial', 'title type')
       .populate('relatedReport', 'title type')
-      .populate('relatedUser', 'personalInfo')
-      .populate('createdBy', 'personalInfo')
+      .populate('relatedUser', 'personalInfo.firstName personalInfo.lastName personalInfo.avatar')
+      .populate('createdBy', 'personalInfo.firstName personalInfo.lastName personalInfo.avatar')
       .limit(options.limit * 1)
       .skip((options.page - 1) * options.limit)
       .sort(options.sort);
@@ -74,8 +74,8 @@ export const getNotificationById: Handler<Record<string, string>, unknown, unkno
       .populate('relatedAssignment', 'title dueDate')
       .populate('relatedMaterial', 'title type')
       .populate('relatedReport', 'title type')
-      .populate('relatedUser', 'personalInfo')
-      .populate('createdBy', 'personalInfo');
+      .populate('relatedUser', 'personalInfo.firstName personalInfo.lastName personalInfo.avatar')
+      .populate('createdBy', 'personalInfo.firstName personalInfo.lastName personalInfo.avatar');
 
     if (!notification) {
       throw new AppError(404, 'NOT_FOUND', "Notification not found");
@@ -138,8 +138,8 @@ export const createNotification: Handler<Record<string, string>, unknown, BodyOf
 
     // Populate para la respuesta
     const populatedNotification = await Notification.findById(notificationSaved._id)
-      .populate('userId', 'personalInfo email')
-      .populate('createdBy', 'personalInfo');
+      .populate('userId', 'personalInfo.firstName personalInfo.lastName personalInfo.avatar email')
+      .populate('createdBy', 'personalInfo.firstName personalInfo.lastName personalInfo.avatar');
 
     res.status(201).json({
       success: true,

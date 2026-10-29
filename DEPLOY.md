@@ -1,4 +1,4 @@
-# Despliegue en producción
+# Despliegue y desarrollo local
 
 Copérnico Academy se despliega en cuatro piezas:
 
@@ -23,8 +23,9 @@ flowchart LR
 ## Antes de empezar
 
 - El historial de git anterior contiene credenciales antiguas. **Rota** las de MongoDB, `JWT_SECRET` y Supabase antes de publicar; no reutilices valores de un `.env` local.
+- Mantén este entorno separado de cualquier dato real. Los planes gratuitos descritos aquí son para pruebas, no para producción.
 - El repositorio debe estar en GitHub: Render y Vercel despliegan desde ahí.
-- Los cambios deben estar en la rama que despliegas (normalmente `main`, tras aprobar el merge).
+- Despliega desde `main` solo después de rotar las credenciales expuestas y completar las comprobaciones de seguridad.
 
 ## 1. MongoDB Atlas
 
@@ -84,9 +85,16 @@ Hazlas contra el dominio de Vercel, no contra Render directamente.
 - [ ] Una lección con vídeo de YouTube reproduce y guarda el progreso.
 - [ ] Reservar una cita (requiere un curso publicado; ver siguiente sección).
 
+### Reintentos del progreso de vídeo
+
+- El cliente conserva cada envío pendiente en el almacenamiento local del navegador, separado por cuenta y vídeo, y lo reintenta al recuperar sesión o conexión.
+- La API deduplica el mismo identificador durante siete días. El cliente descarta envíos pendientes después de 24 horas y muestra un aviso; cerrar sesión o borrar los datos del navegador también elimina los pendientes no sincronizados.
+- El progreso se calcula con datos reportados por el reproductor y sirve para reanudar y estimar finalización; no demuestra que una persona haya visto el vídeo.
+
 ## 7. Datos iniciales
 
 - **No hay pantalla para crear cursos todavía.** Para reservar citas, inserta en la colección `courses` (Atlas → Data Explorer) al menos un documento con `title`, `instructor` (ObjectId de un usuario con `role: "tutor"`), `isPublished: true` y `level` (`beginner`, `intermediate` o `advanced`).
+- En una base de pruebas, registra dos estudiantes y dos tutores; cambia el `role` de dos cuentas a `"tutor"` en `users` y usa una como `instructor` del curso publicado. No reutilices cuentas reales.
 - Los usuarios se crean con el registro. Para hacer administrador a alguien, cambia su `role` a `"admin"` en la colección `users`.
 - `npm run migrate:advisors` y `npm run migrate:courses` ejecutan scripts compilados de `dist/scripts/`: requieren haber ejecutado `npm run build`. Solo sirven para datos de la versión anterior. Haz una copia de seguridad de Atlas antes de ejecutarlos y no los ejecutes sobre una base nueva.
 
@@ -96,6 +104,34 @@ Hazlas contra el dominio de Vercel, no contra Render directamente.
 - **Límites de peticiones en memoria:** cada proceso cuenta por separado. Mantén una sola instancia hasta mover los limitadores a un almacén compartido.
 - **Logs:** Render → *Logs*.
 - **Rotación:** cambiar `JWT_SECRET` cierra todas las sesiones. Si cambias la clave de Supabase o la contraseña de Atlas, actualiza Render y reinicia.
+
+### Arranque local
+
+Usa Node 24 (versión de `.nvmrc`) y una base de pruebas MongoDB que admita replica set. Copia `.env.example` a `.env` en la raíz, configura `MONGODB_URI`, `JWT_SECRET` y `FRONTEND_URL=http://localhost:5173`; para probar archivos configura también las variables de Supabase. Nunca pongas claves de servidor en `client/.env*`.
+
+En dos terminales, desde la raíz del repositorio:
+
+```sh
+npm ci
+npm run dev
+```
+
+```sh
+cd client
+npm ci
+npm run dev
+```
+
+Vite reenvía `/api` a `http://localhost:4002` de forma predeterminada. Para ejecutar el cliente local contra una API Render de pruebas, define `API_PROXY_TARGET=https://<api-render-de-pruebas>` en `client/.env.local` y permite `http://localhost:5173` en `FRONTEND_URL` de esa API de pruebas. No agregues el origen local a una API de producción.
+
+### Límites gratuitos consultados el 29-10-2026
+
+- **Render:** la instancia gratuita duerme tras 15 minutos sin tráfico, puede tardar alrededor de un minuto en volver y usa disco efímero; hay 750 horas gratuitas por espacio de trabajo al mes y límites adicionales de ancho de banda y compilación. Consulta [límites gratuitos de Render](https://render.com/docs/free).
+- **Atlas Free:** hasta 512 MB de datos e índices, 10 GB de entrada y 10 GB de salida por cada periodo móvil de siete días, 100 operaciones por segundo y 500 conexiones; pausa el clúster tras 30 días sin conexiones. Consulta [límites de Atlas Free](https://www.mongodb.com/docs/atlas/reference/free-shared-limitations/).
+- **Supabase Free:** hasta 1 GB de almacenamiento de archivos y 5 GB de egreso; el plan permite dos proyectos gratuitos. Consulta [límites y facturación de Supabase](https://supabase.com/docs/guides/platform/billing-on-supabase).
+- **Vercel Hobby:** el frontend es estático y `/api` usa una reescritura externa; las solicitudes reenviadas tienen un máximo de 120 segundos. La carga de archivos de ~9 MB a través de la reescritura sigue pendiente de probar en el entorno real. Si hay un `413`, identifica qué capa lo genera antes de cambiar el flujo; la subida directa firmada a Supabase aún no está implementada. Consulta [límites de Vercel](https://vercel.com/docs/limits).
+
+Los proveedores pueden cambiar cuotas y condiciones; confirma los límites vigentes en los paneles antes de abrir el entorno a usuarios.
 
 ## Problemas frecuentes
 

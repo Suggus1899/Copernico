@@ -1,4 +1,3 @@
-import type { RequestHandler } from 'express';
 import type { UserDocument } from '../models/User.js';
 import type { BodyOf } from '../types/http.js';
 import type { signupSchema, signinSchema, changePasswordSchema, changeEmailSchema, deactivateSchema } from '../schemas/auth.schema.js';
@@ -8,7 +7,7 @@ import User from '../models/User.js';
 import { AppError } from '../utils/AppError.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { buildProfileSet } from '../utils/profileUpdate.js';
-import { issueSession, clearSession } from '../utils/session.js';
+import { issueSession, clearSession, SESSION_COOKIE, verifySessionToken } from '../utils/session.js';
 
 const MAX_LOGIN_ATTEMPTS = 5;
 const LOCK_DURATION_MS = 30 * 60 * 1000;
@@ -104,10 +103,18 @@ export const signin = asyncHandler<Record<string, string>, unknown, BodyOf<typeo
   res.json({ success: true, data: user });
 });
 
-export const signout: RequestHandler = (req, res) => {
+export const signout = asyncHandler(async (req, res) => {
+  const token = req.cookies?.[SESSION_COOKIE];
+  let claims: ReturnType<typeof verifySessionToken> | undefined;
+  if (typeof token === 'string') {
+    try { claims = verifySessionToken(token); } catch { /* An invalid or expired cookie is already signed out. */ }
+  }
+  if (typeof claims?.sub === 'string' && /^[a-f\d]{24}$/i.test(claims.sub) && Number.isInteger(claims.sv)) {
+    await User.updateOne({ _id: claims.sub, sessionVersion: claims.sv }, { $inc: { sessionVersion: 1 } });
+  }
   clearSession(res);
   res.json({ success: true });
-};
+});
 
 export const profile = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user!._id);

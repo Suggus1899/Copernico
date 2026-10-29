@@ -224,7 +224,7 @@ videoProgressSchema.statics.getStudentVideoStats = function(studentId) {
 videoProgressSchema.statics.getMostWatchedVideos = function(studentId, limit = 10) {
   return this.find({ studentId })
     .populate('videoId', 'title subject topic duration views likes')
-    .populate('uploadedBy', 'personalInfo')
+    .populate('uploadedBy', 'personalInfo.firstName personalInfo.lastName personalInfo.avatar')
     .sort({ watchTime: -1, progressPercentage: -1 })
     .limit(limit);
 };

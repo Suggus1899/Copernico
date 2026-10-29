@@ -74,6 +74,12 @@ export default function YouTubePlayer({ videoId, title, onPlayerChange, onPlay, 
           playerVars: { rel: 0, modestbranding: 1 },
           events: {
             onReady: () => handlersRef.current.onPlayerChange?.(player),
+            onError: () => {
+              if (!cancelled) {
+                handlersRef.current.onPause?.();
+                setLoadError(true);
+              }
+            },
             onStateChange: ({ data }) => {
               const handlers = handlersRef.current;
               if (data === PLAYER_STATE.PLAYING) handlers.onPlay?.();
@@ -99,7 +105,7 @@ export default function YouTubePlayer({ videoId, title, onPlayerChange, onPlay, 
     <div className="youtube-player" ref={containerRef} role="region" aria-label={`Reproductor: ${title}`}>
       {loadError && (
         <p className="clases-page__video-missing" role="alert">
-          No se pudo cargar el reproductor.{' '}
+          No se pudo reproducir este vídeo aquí.{' '}
           <a href={`https://www.youtube.com/watch?v=${videoId}`} target="_blank" rel="noreferrer">
             Ver en YouTube
           </a>

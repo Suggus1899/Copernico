@@ -5,6 +5,8 @@ import type { Pagination } from '../types/api';
 import type { UserRole } from '../types/auth';
 import apiClient from '../utils/axiosConfig';
 import usePolling from '../utils/usePolling';
+import { useSessionUser } from './ProtectedRoute';
+import { clearPendingVideoProgress } from '../utils/videoProgressQueue';
 import logo from '../assets/logo.jpg';
 import iconCursos from '../assets/course.png';
 import iconVideos from '../assets/videos.png';
@@ -54,6 +56,7 @@ const SidebarMenu = ({
 }) => {
   const location = useLocation();
   const navigate = useNavigate();
+  const user = useSessionUser();
   const navRef = useRef<HTMLElement>(null);
   const [unreadCount, setUnreadCount] = useState(0);
   const isTutor = userRole === 'tutor' || userRole === 'advisor';
@@ -99,6 +102,11 @@ const SidebarMenu = ({
       await apiClient.post('/auth/signout');
     } catch {
       // Si la sesión ya no es válida en el servidor, igualmente volvemos al login.
+    }
+    try {
+      clearPendingVideoProgress(user._id);
+    } catch {
+      // El cierre de sesión no debe quedar bloqueado si el navegador no permite limpiar el almacenamiento local.
     }
     navigate('/login');
   };

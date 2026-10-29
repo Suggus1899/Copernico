@@ -41,7 +41,7 @@ const hasMessagingRelationship = async (userId: string | Types.ObjectId, otherUs
 
 /** Carga al otro participante y comprueba que la conversación esté permitida. */
 const loadChatPartner = async (user: AuthenticatedUser, otherUserId: string) => {
-  const otherUser = await User.findById(otherUserId).select('personalInfo role');
+  const otherUser = await User.findById(otherUserId).select('personalInfo.firstName personalInfo.lastName personalInfo.avatar role');
   if (!otherUser) {
     throw new AppError(404, 'USER_NOT_FOUND', 'Usuario no encontrado.');
   }
@@ -99,8 +99,8 @@ export const createMessage = asyncHandler<Record<string, string>, unknown, BodyO
   }
 
   const populated = await Message.findById(message._id)
-    .populate('sender', 'personalInfo role')
-    .populate('receiver', 'personalInfo role');
+    .populate('sender', 'personalInfo.firstName personalInfo.lastName personalInfo.avatar role')
+    .populate('receiver', 'personalInfo.firstName personalInfo.lastName personalInfo.avatar role');
 
   res.status(201).json({ success: true, data: populated });
 });
@@ -160,7 +160,7 @@ export const getConversations = asyncHandler(async (req, res) => {
   ]);
   const summaryByUser = new Map(summaries.map((summary) => [String(summary._id), summary]));
 
-  const users = await User.find({ _id: { $in: Array.from(relatedIds) } }).select('personalInfo role');
+  const users = await User.find({ _id: { $in: Array.from(relatedIds) } }).select('personalInfo.firstName personalInfo.lastName personalInfo.avatar role');
 
   const conversations = users
     .filter((other) => canUsersChat(user.role, other.role))
@@ -202,8 +202,8 @@ export const getConversationWithUser = asyncHandler(async (req, res) => {
       .sort({ createdAt: -1 })
       .limit(limitNum)
       .skip((pageNum - 1) * limitNum)
-      .populate('sender', 'personalInfo role')
-      .populate('receiver', 'personalInfo role'),
+      .populate('sender', 'personalInfo.firstName personalInfo.lastName personalInfo.avatar role')
+      .populate('receiver', 'personalInfo.firstName personalInfo.lastName personalInfo.avatar role'),
     Message.countDocuments(filter)
   ]);
 

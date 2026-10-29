@@ -19,8 +19,8 @@ export const getNotes: Handler<Record<string, string>, unknown, NoteBody> = asyn
 
     const notes = await Note.find(filter)
       .sort({ createdAt: -1 })
-      .populate('userId', 'personalInfo email')
-      .populate('sharedWith.user', 'personalInfo email');
+      .populate('userId', 'personalInfo.firstName personalInfo.lastName personalInfo.avatar email')
+      .populate('sharedWith.user', 'personalInfo.firstName personalInfo.lastName personalInfo.avatar email');
 
     res.json({
       success: true,
@@ -56,7 +56,7 @@ export const createNote: Handler<Record<string, string>, unknown, NoteBody> = as
 
     // Populate para la respuesta
     const populatedNote = await Note.findById(savedNote._id)
-      .populate('userId', 'personalInfo email');
+      .populate('userId', 'personalInfo.firstName personalInfo.lastName personalInfo.avatar email');
 
     res.status(201).json({
       success: true,
@@ -71,8 +71,8 @@ export const createNote: Handler<Record<string, string>, unknown, NoteBody> = as
 export const getNote: Handler<Record<string, string>, unknown, NoteBody> = async (req, res, next) => {
   try {
     const note = await Note.findById(req.params.id)
-      .populate('userId', 'personalInfo email')
-      .populate('sharedWith.user', 'personalInfo email');
+      .populate('userId', 'personalInfo.firstName personalInfo.lastName personalInfo.avatar email')
+      .populate('sharedWith.user', 'personalInfo.firstName personalInfo.lastName personalInfo.avatar email');
 
     if (!note) {
       throw new AppError(404, 'NOT_FOUND', "Note not found");
@@ -159,8 +159,8 @@ export const updateNote: Handler<Record<string, string>, unknown, NoteBody> = as
       req.params.id,
       updateData,
       { new: true, runValidators: true }
-    ).populate('userId', 'personalInfo email')
-      .populate('sharedWith.user', 'personalInfo email');
+    ).populate('userId', 'personalInfo.firstName personalInfo.lastName personalInfo.avatar email')
+      .populate('sharedWith.user', 'personalInfo.firstName personalInfo.lastName personalInfo.avatar email');
 
     res.json({
       success: true,
@@ -220,8 +220,8 @@ export const shareNote: Handler<Record<string, string>, unknown, NoteBody> = asy
     await note.save();
 
     const updatedNote = await Note.findById(noteId)
-      .populate('userId', 'personalInfo email')
-      .populate('sharedWith.user', 'personalInfo email');
+      .populate('userId', 'personalInfo.firstName personalInfo.lastName personalInfo.avatar email')
+      .populate('sharedWith.user', 'personalInfo.firstName personalInfo.lastName personalInfo.avatar email');
 
     res.json({
       success: true,
@@ -257,8 +257,8 @@ export const unshareNote: Handler<Record<string, string>, unknown, NoteBody> = a
     await note.save();
 
     const updatedNote = await Note.findById(noteId)
-      .populate('userId', 'personalInfo email')
-      .populate('sharedWith.user', 'personalInfo email');
+      .populate('userId', 'personalInfo.firstName personalInfo.lastName personalInfo.avatar email')
+      .populate('sharedWith.user', 'personalInfo.firstName personalInfo.lastName personalInfo.avatar email');
 
     res.json({
       success: true,

@@ -13,6 +13,8 @@ export const videoIdParamSchema = z.object({
 export const updateVideoProgressSchema = z.object({
   params: videoIdParams,
   body: z.object({
+    // Id UUID estable que se conserva al reintentar el mismo envío.
+    requestId: z.string().uuid(),
     // Posición actual del reproductor, en segundos.
     currentTime: z.number().min(0).max(86400),
     // Segundos reproducidos desde el último envío (incremental, no acumulado).

@@ -9,7 +9,7 @@ const isoDate = z
   .datetime({ offset: true, message: 'Fecha inválida (ISO 8601 con zona horaria)' })
   .transform((value) => new Date(value));
 
-const meetingLinkField = z.string().trim().url().max(500);
+const meetingLinkField = z.string().trim().url().max(500).regex(/^https?:\/\//i, 'El enlace debe usar HTTP o HTTPS');
 const reasonField = z.string().trim().max(500).optional();
 
 export const createAppointmentSchema = z.object({

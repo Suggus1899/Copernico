@@ -252,14 +252,14 @@ progressTrackingSchema.pre('save', function(next) {
 });
 
 // Método para agregar entrada al historial
-progressTrackingSchema.methods.addProgressHistory = function(this: ProgressTrackingDocument, metricsSnapshot: unknown, notes: string | undefined, recordedBy: string | mongoose.Types.ObjectId): Promise<ProgressTrackingDocument> {
+progressTrackingSchema.methods.addProgressHistory = function(this: ProgressTrackingDocument, metricsSnapshot: unknown, notes: string | undefined, recordedBy: string | mongoose.Types.ObjectId, session?: mongoose.ClientSession): Promise<ProgressTrackingDocument> {
   this.progressHistory.push({
     date: new Date(),
     metricsSnapshot,
     notes,
     recordedBy
   });
-  return this.save();
+  return this.save({ session });
 };
 
 // Método para actualizar nivel de competencia basado en métricas
@@ -306,7 +306,7 @@ progressTrackingSchema.statics.getStudentProgress = function(studentId, subject)
 export type ProgressTrackingRecord = mongoose.InferSchemaType<typeof progressTrackingSchema>;
 export type ProgressTrackingDocument = mongoose.HydratedDocument<ProgressTrackingRecord, ProgressTrackingMethods>;
 export interface ProgressTrackingMethods {
-  addProgressHistory(metricsSnapshot: unknown, notes: string | undefined, recordedBy: string | mongoose.Types.ObjectId): Promise<ProgressTrackingDocument>;
+  addProgressHistory(metricsSnapshot: unknown, notes: string | undefined, recordedBy: string | mongoose.Types.ObjectId, session?: mongoose.ClientSession): Promise<ProgressTrackingDocument>;
   updateCompetencyLevel(): Promise<ProgressTrackingDocument>;
   calculateOverallProgress(): number;
 }

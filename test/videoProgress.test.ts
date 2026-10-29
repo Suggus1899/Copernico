@@ -2,6 +2,7 @@ type Actor = { id: string; cookie: string };
 type VideoFixture = { _id: string; title: string; youtubeId: string };
 import { after, before, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { randomUUID } from 'node:crypto';
 import request from 'supertest';
 import { startIntegrationEnv } from './helpers/integration.js';
 
@@ -18,6 +19,8 @@ const cookieOf = (res: request.Response) => {
 describe('progreso de vídeo: umbral de completado y permisos', () => {
   let env: Awaited<ReturnType<typeof startIntegrationEnv>>;
   let User: typeof import('../src/models/User.js').default;
+  let VideoProgress: typeof import('../src/models/VideoProgress.js').default;
+  let VideoProgressRequest: typeof import('../src/models/VideoProgressRequest.js').default;
   let tutor: Actor;
   let ana: Actor;
   let bruno: Actor;
@@ -42,11 +45,14 @@ describe('progreso de vídeo: umbral de completado y permisos', () => {
   };
 
   const report = (as: Actor, videoId: string, body: object) =>
-    call('post', `/api/video-progress/videos/${videoId}/progress`, as, body);
+    call('post', `/api/video-progress/videos/${videoId}/progress`, as, { requestId: randomUUID(), ...body });
 
   before(async () => {
     env = await startIntegrationEnv();
     ({ default: User } = await import('../src/models/User.js'));
+    ({ default: VideoProgress } = await import('../src/models/VideoProgress.js'));
+    ({ default: VideoProgressRequest } = await import('../src/models/VideoProgressRequest.js'));
+    await VideoProgressRequest.init();
 
     const signup = async (body: { email: string; role: string; personalInfo: { firstName: string; lastName: string }; tutorProfile?: { specialties: string[] }; studentProfile?: { studentId: string } }) => {
       const res = await request(env.app)
@@ -77,6 +83,8 @@ describe('progreso de vídeo: umbral de completado y permisos', () => {
       personalInfo: { firstName: 'Bruno', lastName: 'Estudiante' },
       studentProfile: { studentId: 'B001' },
     });
+    const { default: Course } = await import('../src/models/Course.js');
+    await Course.create({ title: 'Matemáticas', instructor: tutor.id, enrolledStudents: [{ student: ana.id }] });
   });
 
   after(async () => {
@@ -121,6 +129,34 @@ describe('progreso de vídeo: umbral de completado y permisos', () => {
     assert.equal(exact.body.data.isCompleted, true);
   });
 
+  it('aplica una operación de progreso una sola vez y rechaza reutilizar la clave con otro contenido', async () => {
+    const video = await createVideo({ title: 'Idempotencia' });
+    const body = { requestId: randomUUID(), currentTime: 10, watchedSeconds: 10, totalDuration: 100 };
+    const [first, concurrentRetry] = await Promise.all([
+      report(ana, video._id, body),
+      report(ana, video._id, body),
+    ]);
+
+    assert.equal(first.status, 200, JSON.stringify(first.body));
+    assert.equal(concurrentRetry.status, 200, JSON.stringify(concurrentRetry.body));
+    assert.deepEqual(concurrentRetry.body.data, first.body.data);
+
+    const lostResponseRetry = await report(ana, video._id, body);
+    assert.equal(lostResponseRetry.status, 200, JSON.stringify(lostResponseRetry.body));
+    assert.deepEqual(lostResponseRetry.body.data, first.body.data);
+
+    const changedPayload = await report(ana, video._id, { ...body, currentTime: 11 });
+    assert.equal(changedPayload.status, 409);
+    assert.equal(changedPayload.body.error.code, 'IDEMPOTENCY_KEY_REUSED');
+
+    const savedProgress = await VideoProgress.findOne({ studentId: ana.id, videoId: video._id }).lean();
+    assert.equal(savedProgress?.watchTime, 10);
+    const savedRequest = await VideoProgressRequest.findOne({ requestId: body.requestId }).lean();
+    assert.ok(savedRequest);
+    assert.ok(savedRequest.expiresAt.getTime() >= Date.now() + 7 * 24 * 60 * 60 * 1000 - 5000);
+    assert.ok(VideoProgressRequest.schema.indexes().some(([keys, options]) => keys.expiresAt === 1 && options.expireAfterSeconds === 0));
+  });
+
   it('rechaza progreso con valores fuera de rango o identificadores no válidos', async () => {
     const video = await createVideo({ title: 'Validación' });
 
@@ -130,6 +166,9 @@ describe('progreso de vídeo: umbral de completado y permisos', () => {
 
     const hugeIncrement = await report(ana, video._id, { currentTime: 10, watchedSeconds: 99999 });
     assert.equal(hugeIncrement.status, 422);
+
+    const missingRequestId = await call('post', `/api/video-progress/videos/${video._id}/progress`, ana, { currentTime: 10 });
+    assert.equal(missingRequestId.status, 422);
 
     const badId = await report(ana, 'xyz', { currentTime: 10 });
     assert.equal(badId.status, 422);

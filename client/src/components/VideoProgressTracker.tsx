@@ -2,17 +2,22 @@ import type { ApiResponse } from '../types/api';
 import type { VideoProgress } from '../types/progress';
 import React, { Component } from 'react';
 import apiClient from '../utils/axiosConfig';
+import {
+  enqueueVideoProgress,
+  syncPendingVideoProgress,
+  VIDEO_PROGRESS_SYNC_EVENT,
+  type VideoProgressSyncResult,
+} from '../utils/videoProgressQueue';
 import './VideoProgress.css';
 interface VideoProgressTrackerProps {
-  videoId: string; getVideoTime: () => { currentTime: number; totalDuration: number };
+  videoId: string; userId: string; getVideoTime: () => { currentTime: number; totalDuration: number };
   onProgressUpdate?: (progress: VideoProgress, videoId: string) => void;
   onVideoCompleted?: (progress: VideoProgress, videoId: string) => void;
-  onSessionStart?: () => void; onSessionEnd?: () => void;
+  onSessionStart?: () => void; onSessionEnd?: () => void; onResume?: (position: number) => void;
   showProgress?: boolean; showCompletionBadge?: boolean;
 }
 interface VideoProgressTrackerState {
-  progress: VideoProgress; sessionActive: boolean; sessionStartTime: number | null;
-  lastUpdateTime: number | null; updateInterval: ReturnType<typeof setInterval> | null;
+  progress: VideoProgress; sessionActive: boolean; sessionStartTime: number | null; syncMessage: string;
 }
 
 /**
@@ -32,14 +37,24 @@ class VideoProgressTracker extends Component<VideoProgressTrackerProps, VideoPro
     },
     sessionActive: false,
     sessionStartTime: null,
-    lastUpdateTime: null,
-    updateInterval: null
+    syncMessage: '',
   };
 
   // true mientras el vídeo está reproduciéndose (fuente de verdad para no iniciar sesiones duplicadas)
   playing = false;
+  mounted = false;
+  generation = 0;
+  updateInterval: ReturnType<typeof setInterval> | null = null;
+  lastUpdateTime: number | null = null;
+  pendingSeconds = 0;
+  sendQueue: Promise<void> = Promise.resolve();
+  startQueue: Promise<void> = Promise.resolve();
+  resumeApplied = false;
+  resumePosition: number | null = null;
 
   componentDidMount() {
+    this.mounted = true;
+    window.addEventListener(VIDEO_PROGRESS_SYNC_EVENT, this.handleProgressSync);
     if (this.props.videoId) {
       this.loadVideoProgress();
     }
@@ -47,123 +62,119 @@ class VideoProgressTracker extends Component<VideoProgressTrackerProps, VideoPro
 
   componentWillUnmount() {
     this.playing = false;
+    this.generation += 1;
     this.endSession();
+    this.mounted = false;
+    window.removeEventListener(VIDEO_PROGRESS_SYNC_EVENT, this.handleProgressSync);
   }
+
+  handleProgressSync = (event: Event) => {
+    const { userId, result } = (event as CustomEvent<{ userId: string; result: VideoProgressSyncResult }>).detail;
+    if (userId !== this.props.userId) return;
+
+    const latest = result.confirmed.filter((entry) => entry.videoId === this.props.videoId).at(-1);
+    if (latest) {
+      const wasCompleted = this.state.progress.isCompleted;
+      this.setState({ progress: latest.progress });
+      this.props.onProgressUpdate?.(latest.progress, this.props.videoId);
+      if (latest.progress.isCompleted && !wasCompleted) {
+        this.props.onVideoCompleted?.(latest.progress, this.props.videoId);
+      }
+    }
+
+    const syncMessage = result.storageError
+      ? 'No se pudo leer la cola local de progreso.'
+      : result.expiredCount > 0
+        ? `${result.expiredCount} intervalo(s) de reproducción no se pudo/pudieron recuperar porque venció el plazo de 24 horas.`
+        : result.failedCount > 0
+          ? 'Un envío de progreso no se pudo sincronizar y se descartó.'
+          : result.hasPending
+            ? 'Progreso guardado en este dispositivo; pendiente de sincronizar.'
+            : '';
+    this.setState({ syncMessage });
+  };
 
   loadVideoProgress = async () => {
     try {
       const response = await apiClient.get<ApiResponse<VideoProgress>>(`/video-progress/videos/${this.props.videoId}/progress`);
-      this.setState({
-        progress: response.data.data
-      });
+      if (this.mounted) this.setState({ progress: response.data.data });
     } catch (error) {
       console.error('Error loading video progress:', error);
     }
   };
 
-  startSession = async () => {
+  startSession = async (generation: number) => {
     try {
-      await apiClient.post(`/video-progress/videos/${this.props.videoId}/start`);
-
-      // Si se pausó mientras se abría la sesión, no empezar a contar tiempo
-      if (!this.playing) return;
-
-      this.setState({
-        sessionActive: true,
-        sessionStartTime: Date.now(),
-        lastUpdateTime: Date.now()
-      });
-
-      // Actualizar progreso cada 5 segundos para que la barra se actualice al reproducir
-      const interval = setInterval(this.updateProgress, 5000);
-      this.setState({ updateInterval: interval });
-
-      if (this.props.onSessionStart) {
-        this.props.onSessionStart();
+      if (!this.playing || !this.mounted || generation !== this.generation) return;
+      const response = await apiClient.post<ApiResponse<{ lastPosition: number }>>(`/video-progress/videos/${this.props.videoId}/start`);
+      if (!this.resumeApplied && this.resumePosition === null) this.resumePosition = response.data.data.lastPosition;
+      if (!this.playing || !this.mounted || generation !== this.generation) return;
+      if (!this.resumeApplied) {
+        this.resumeApplied = true;
+        if (this.resumePosition !== null && this.resumePosition > 0) this.props.onResume?.(this.resumePosition);
       }
+      if (!this.playing || !this.mounted || generation !== this.generation) return;
+      this.lastUpdateTime = Date.now();
+      const interval = setInterval(this.updateProgress, 5000);
+      this.updateInterval = interval;
+      this.setState({ sessionActive: true, sessionStartTime: this.lastUpdateTime });
+      this.props.onSessionStart?.();
     } catch (error) {
       console.error('Error starting video session:', error);
     }
   };
 
   endSession = () => {
-    if (this.state.updateInterval) {
-      clearInterval(this.state.updateInterval);
-    }
-
-    if (this.state.sessionActive) {
-      this.updateProgress(true); // Actualización final
-    }
-
-    this.setState({
-      sessionActive: false,
-      sessionStartTime: null,
-      lastUpdateTime: null,
-      updateInterval: null
-    });
-
-    if (this.props.onSessionEnd) {
-      this.props.onSessionEnd();
-    }
+    if (this.updateInterval) clearInterval(this.updateInterval);
+    this.updateInterval = null;
+    if (this.lastUpdateTime !== null) this.updateProgress(true);
+    this.lastUpdateTime = null;
+    if (this.mounted) this.setState({ sessionActive: false, sessionStartTime: null });
+    this.props.onSessionEnd?.();
   };
 
-  updateProgress = async (isFinalUpdate = false) => {
-    if (!this.state.sessionActive && !isFinalUpdate) return;
+  updateProgress = (isFinalUpdate = false) => {
+    if (this.lastUpdateTime === null) return;
+    const now = Date.now();
+    const elapsed = Math.max(0, Math.floor((now - this.lastUpdateTime) / 1000));
+    this.lastUpdateTime += elapsed * 1000;
+    this.pendingSeconds += elapsed;
+    const { currentTime, totalDuration } = this.props.getVideoTime();
+    if (!this.pendingSeconds && !isFinalUpdate) return;
 
-    try {
-      // La posición se lee al momento de la petición; en la actualización final el reproductor aún existe
-      const { currentTime, totalDuration } = this.props.getVideoTime();
-
-      const now = Date.now();
-      const watchedSeconds = this.state.lastUpdateTime
-        ? Math.floor((now - this.state.lastUpdateTime) / 1000)
-        : 0;
-
-      // Actualizar siempre que sea final o cada intervalo para que la posición se guarde
-      if (watchedSeconds > 0 || isFinalUpdate) {
-        const response = await apiClient.post<ApiResponse<VideoProgress>>(`/video-progress/videos/${this.props.videoId}/progress`, {
+    this.sendQueue = this.sendQueue.then(async () => {
+      const watchedSeconds = this.pendingSeconds;
+      this.pendingSeconds = 0;
+      if (!watchedSeconds && !isFinalUpdate) return;
+      try {
+        enqueueVideoProgress(this.props.userId, this.props.videoId, {
           currentTime,
           watchedSeconds,
-          totalDuration: totalDuration || undefined
+          totalDuration: totalDuration || undefined,
         });
-
-        const newProgress = response.data.data;
-        const wasCompleted = this.state.progress.isCompleted;
-
-        this.setState({
-          progress: newProgress,
-          lastUpdateTime: now
-        });
-
-        if (this.props.onProgressUpdate) {
-          this.props.onProgressUpdate(newProgress, this.props.videoId);
-        }
-
-        if (newProgress.isCompleted && !wasCompleted && this.props.onVideoCompleted) {
-          this.props.onVideoCompleted(newProgress, this.props.videoId);
-        }
+        await syncPendingVideoProgress(this.props.userId);
+      } catch (error) {
+        this.pendingSeconds += watchedSeconds;
+        if (this.mounted) this.setState({ syncMessage: 'No se pudo guardar el progreso en este dispositivo.' });
+        console.error('Error updating video progress:', error);
       }
-    } catch (error) {
-      console.error('Error updating video progress:', error);
-    }
+    });
   };
 
   handleVideoPlay = () => {
     if (this.playing) return;
     this.playing = true;
-    this.startSession();
+    const generation = ++this.generation;
+    this.startQueue = this.startQueue.then(() => this.startSession(generation));
   };
 
-  // Pausar cierra la sesión para no contar el tiempo parado; al reanudar se abre una nueva
   handleVideoPause = () => {
     this.playing = false;
+    this.generation += 1;
     this.endSession();
   };
 
-  handleVideoEnded = () => {
-    this.playing = false;
-    this.endSession();
-  };
+  handleVideoEnded = () => this.handleVideoPause();
 
   render() {
     const { progress } = this.state;
@@ -173,6 +184,7 @@ class VideoProgressTracker extends Component<VideoProgressTrackerProps, VideoPro
 
     return (
       <div className="video-progress-tracker">
+        {this.state.syncMessage && <p role="status">{this.state.syncMessage}</p>}
         <div className="progress-info">
           <div className="progress-bar-container">
             <div className="progress-bar">
