@@ -1,3 +1,7 @@
+import type { Handler, BodyOf } from '../types/http.js';
+import type * as schemas from '../schemas/notification.schema.js';
+import type { FilterQuery } from 'mongoose';
+import type { NotificationRecord } from '../models/Notification.js';
 import { AppError } from '../utils/AppError.js';
 import Notification from "../models/Notification.js";
 import User from "../models/User.js";
@@ -5,19 +9,19 @@ import Appointment from "../models/Appointment.js";
 import Assignment from "../models/Assignment.js";
 import EducationalMaterial from "../models/EducationalMaterial.js";
 
-export const getNotifications = async (req, res, next) => {
+export const getNotifications: Handler<Record<string, string>, unknown, unknown> = async (req, res, next) => {
   try {
-    const { 
-      read, 
-      type, 
+    const {
+      read,
+      type,
       priority,
       category,
-      page = 1, 
-      limit = 20 
+      page = 1,
+      limit = 20
     } = req.query;
-    
-    const filter = { userId: req.user.id };
-    
+
+    const filter: FilterQuery<NotificationRecord> = { userId: req.user!.id };
+
     // Filtros
     if (read !== undefined) filter.read = read === 'true';
     if (type) filter.type = type;
@@ -25,9 +29,9 @@ export const getNotifications = async (req, res, next) => {
     if (category) filter.category = category;
 
     const options = {
-      page: parseInt(page),
-      limit: parseInt(limit),
-      sort: { createdAt: -1 }
+      page: parseInt(String(page)),
+      limit: parseInt(String(limit)),
+      sort: { createdAt: -1 as const }
     };
 
     const notifications = await Notification.find(filter)
@@ -42,9 +46,9 @@ export const getNotifications = async (req, res, next) => {
       .sort(options.sort);
 
     const total = await Notification.countDocuments(filter);
-    const unreadCount = await Notification.countDocuments({ 
-      userId: req.user.id, 
-      read: false 
+    const unreadCount = await Notification.countDocuments({
+      userId: req.user!.id,
+      read: false
     });
 
     res.json({
@@ -63,7 +67,7 @@ export const getNotifications = async (req, res, next) => {
   }
 };
 
-export const getNotificationById = async (req, res, next) => {
+export const getNotificationById: Handler<Record<string, string>, unknown, unknown> = async (req, res, next) => {
   try {
     const notification = await Notification.findById(req.params.id)
       .populate('relatedAppointment', 'topic startsAt')
@@ -78,7 +82,7 @@ export const getNotificationById = async (req, res, next) => {
     }
 
     // Verificar que el usuario es el destinatario
-    if (notification.userId.toString() !== req.user.id && req.user.role !== 'admin') {
+    if (notification.userId.toString() !== req.user!.id && req.user!.role !== 'admin') {
       throw new AppError(403, 'FORBIDDEN', "Access denied to this notification");
     }
 
@@ -91,7 +95,7 @@ export const getNotificationById = async (req, res, next) => {
   }
 };
 
-export const createNotification = async (req, res, next) => {
+export const createNotification: Handler<Record<string, string>, unknown, BodyOf<typeof schemas.createNotificationSchema> & { createdBy?: string; updatedBy?: string }> = async (req, res, next) => {
   try {
     const notificationData = req.body;
 
@@ -103,7 +107,7 @@ export const createNotification = async (req, res, next) => {
 
     // Las notificaciones manuales son solo para administración. Las del flujo de citas
     // se generan en el controlador de citas, nunca desde el cliente.
-    if (req.user.role !== 'admin') {
+    if (req.user!.role !== 'admin') {
       throw new AppError(403, 'FORBIDDEN', "Only admins can create notifications");
     }
 
@@ -123,8 +127,8 @@ export const createNotification = async (req, res, next) => {
     }
 
     // Agregar información de auditoría
-    notificationData.createdBy = req.user.id;
-    notificationData.updatedBy = req.user.id;
+    notificationData.createdBy = req.user!.id;
+    notificationData.updatedBy = req.user!.id;
 
     const newNotification = new Notification(notificationData);
     const notificationSaved = await newNotification.save();
@@ -147,7 +151,7 @@ export const createNotification = async (req, res, next) => {
   }
 };
 
-export const markAsRead = async (req, res, next) => {
+export const markAsRead: Handler<Record<string, string>, unknown, unknown> = async (req, res, next) => {
   try {
     const notification = await Notification.findById(req.params.id);
 
@@ -156,15 +160,15 @@ export const markAsRead = async (req, res, next) => {
     }
 
     // Verificar que el usuario es el destinatario
-    if (notification.userId.toString() !== req.user.id) {
+    if (notification.userId.toString() !== req.user!.id) {
       throw new AppError(403, 'FORBIDDEN', "Not authorized to mark this notification as read");
     }
 
     await notification.markAsRead();
 
-    const unreadCount = await Notification.countDocuments({ 
-      userId: req.user.id, 
-      read: false 
+    const unreadCount = await Notification.countDocuments({
+      userId: req.user!.id,
+      read: false
     });
 
     res.json({
@@ -177,23 +181,23 @@ export const markAsRead = async (req, res, next) => {
   }
 };
 
-export const markAllAsRead = async (req, res, next) => {
+export const markAllAsRead: Handler<Record<string, string>, unknown, unknown> = async (req, res, next) => {
   try {
     const { type } = req.query;
-    
-    const filter = { userId: req.user.id, read: false };
-    
+
+    const filter: FilterQuery<NotificationRecord> = { userId: req.user!.id, read: false };
+
     // Si se especifica un tipo, filtrar por ese tipo
     if (type) {
       filter.type = type;
     }
-    
+
     const result = await Notification.updateMany(
       filter,
-      { 
-        $set: { 
+      {
+        $set: {
           read: true,
-          updatedBy: req.user.id 
+          updatedBy: req.user!.id
         },
         $push: {
           interactionLog: {
@@ -206,8 +210,8 @@ export const markAllAsRead = async (req, res, next) => {
 
     res.json({
       success: true,
-      message: type 
-        ? `All ${type} notifications marked as read` 
+      message: type
+        ? `All ${type} notifications marked as read`
         : "All notifications marked as read",
       updated: result.modifiedCount
     });
@@ -216,7 +220,7 @@ export const markAllAsRead = async (req, res, next) => {
   }
 };
 
-export const recordClick = async (req, res, next) => {
+export const recordClick: Handler<Record<string, string>, unknown, unknown> = async (req, res, next) => {
   try {
     const notification = await Notification.findById(req.params.id);
 
@@ -225,7 +229,7 @@ export const recordClick = async (req, res, next) => {
     }
 
     // Verificar que el usuario es el destinatario
-    if (notification.userId.toString() !== req.user.id) {
+    if (notification.userId.toString() !== req.user!.id) {
       throw new AppError(403, 'FORBIDDEN', "Not authorized to interact with this notification");
     }
 
@@ -240,7 +244,7 @@ export const recordClick = async (req, res, next) => {
   }
 };
 
-export const respondToNotification = async (req, res, next) => {
+export const respondToNotification: Handler<Record<string, string>, unknown, BodyOf<typeof schemas.responseToNotificationSchema> & { createdBy?: string; updatedBy?: string }> = async (req, res, next) => {
   try {
     const { response, data } = req.body;
     const notification = await Notification.findById(req.params.id);
@@ -250,7 +254,7 @@ export const respondToNotification = async (req, res, next) => {
     }
 
     // Verificar que el usuario es el destinatario
-    if (notification.userId.toString() !== req.user.id) {
+    if (notification.userId.toString() !== req.user!.id) {
       throw new AppError(403, 'FORBIDDEN', "Not authorized to respond to this notification");
     }
 
@@ -260,7 +264,7 @@ export const respondToNotification = async (req, res, next) => {
     }
 
     // Verificar que la respuesta es válida
-    if (notification.responseOptions.length > 0 && 
+    if (notification.responseOptions.length > 0 &&
         !notification.responseOptions.includes(response)) {
       throw new AppError(400, 'BAD_REQUEST', "Invalid response. Available options: " + notification.responseOptions.join(', '));
     }
@@ -279,12 +283,12 @@ export const respondToNotification = async (req, res, next) => {
   }
 };
 
-export const createBulkNotifications = async (req, res, next) => {
+export const createBulkNotifications: Handler<Record<string, string>, unknown, BodyOf<typeof schemas.createBulkNotificationsSchema> & { createdBy?: string; updatedBy?: string }> = async (req, res, next) => {
   try {
     const { users, title, message, type, priority, category, deliveryMethod, batchId } = req.body;
 
     // Solo administración puede enviar notificaciones masivas
-    if (req.user.role !== 'admin') {
+    if (req.user!.role !== 'admin') {
       throw new AppError(403, 'FORBIDDEN', "Only admins can create bulk notifications");
     }
 
@@ -304,8 +308,8 @@ export const createBulkNotifications = async (req, res, next) => {
       category,
       deliveryMethod,
       batchId: batchId || `bulk_${Date.now()}`,
-      createdBy: req.user.id,
-      updatedBy: req.user.id
+      createdBy: req.user!.id,
+      updatedBy: req.user!.id
     }));
 
     const createdNotifications = await Notification.insertMany(notifications);
@@ -313,7 +317,7 @@ export const createBulkNotifications = async (req, res, next) => {
     // Simular envío (en producción esto sería asíncrono)
     for (const notification of createdNotifications) {
       const notif = await Notification.findById(notification._id);
-      await notif.recordDelivery('in_app', 'sent');
+      await notif!.recordDelivery('in_app', 'sent');
     }
 
     res.status(201).json({
@@ -329,11 +333,11 @@ export const createBulkNotifications = async (req, res, next) => {
   }
 };
 
-export const getUnreadCount = async (req, res, next) => {
+export const getUnreadCount: Handler<Record<string, string>, unknown, unknown> = async (req, res, next) => {
   try {
-    const unreadCount = await Notification.countDocuments({ 
-      userId: req.user.id, 
-      read: false 
+    const unreadCount = await Notification.countDocuments({
+      userId: req.user!.id,
+      read: false
     });
 
     res.json({
@@ -345,7 +349,7 @@ export const getUnreadCount = async (req, res, next) => {
   }
 };
 
-export const deleteNotification = async (req, res, next) => {
+export const deleteNotification: Handler<Record<string, string>, unknown, unknown> = async (req, res, next) => {
   try {
     const notification = await Notification.findById(req.params.id);
 
@@ -354,15 +358,15 @@ export const deleteNotification = async (req, res, next) => {
     }
 
     // Verificar que el usuario es el destinatario o admin
-    if (notification.userId.toString() !== req.user.id && req.user.role !== 'admin') {
+    if (notification.userId.toString() !== req.user!.id && req.user!.role !== 'admin') {
       throw new AppError(403, 'FORBIDDEN', "Not authorized to delete this notification");
     }
 
     await Notification.findByIdAndDelete(req.params.id);
 
-    const unreadCount = await Notification.countDocuments({ 
-      userId: req.user.id, 
-      read: false 
+    const unreadCount = await Notification.countDocuments({
+      userId: req.user!.id,
+      read: false
     });
 
     res.json({
@@ -375,10 +379,10 @@ export const deleteNotification = async (req, res, next) => {
   }
 };
 
-export const getNotificationStats = async (req, res, next) => {
+export const getNotificationStats: Handler<Record<string, string>, unknown, unknown> = async (req, res, next) => {
   try {
     const stats = await Notification.aggregate([
-      { $match: { userId: req.user.id } },
+      { $match: { userId: req.user!.id } },
       {
         $group: {
           _id: '$type',
@@ -390,7 +394,7 @@ export const getNotificationStats = async (req, res, next) => {
     ]);
 
     const deliveryStats = await Notification.aggregate([
-      { $match: { userId: req.user.id } },
+      { $match: { userId: req.user!.id } },
       {
         $group: {
           _id: '$priority',

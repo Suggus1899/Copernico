@@ -1,3 +1,7 @@
+import type { AuthenticatedUser } from '../types/auth.js';
+import type { Types } from 'mongoose';
+import type { BodyOf } from '../types/http.js';
+import type { createMessageSchema } from '../schemas/message.schema.js';
 import Message from '../models/Message.js';
 import User from '../models/User.js';
 import Notification from '../models/Notification.js';
@@ -9,14 +13,14 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 const MAX_PAGE_SIZE = 100;
 
 /** Solo hay mensajería entre un estudiante y un tutor. */
-const canUsersChat = (roleA, roleB) =>
+const canUsersChat = (roleA: string, roleB: string) =>
   (roleA === 'student' && roleB === 'tutor') || (roleA === 'tutor' && roleB === 'student');
 
 /**
  * Relación que habilita la mensajería: un curso donde el tutor enseña al estudiante
  * o una cita confirmada/completada entre ambos. Es simétrica, así que sirve en ambos sentidos.
  */
-const hasMessagingRelationship = async (userId, otherUserId) => {
+const hasMessagingRelationship = async (userId: string | Types.ObjectId, otherUserId: string | Types.ObjectId) => {
   const [course, appointment] = await Promise.all([
     Course.exists({
       $or: [
@@ -36,7 +40,7 @@ const hasMessagingRelationship = async (userId, otherUserId) => {
 };
 
 /** Carga al otro participante y comprueba que la conversación esté permitida. */
-const loadChatPartner = async (user, otherUserId) => {
+const loadChatPartner = async (user: AuthenticatedUser, otherUserId: string) => {
   const otherUser = await User.findById(otherUserId).select('personalInfo role');
   if (!otherUser) {
     throw new AppError(404, 'USER_NOT_FOUND', 'Usuario no encontrado.');
@@ -54,8 +58,8 @@ const loadChatPartner = async (user, otherUserId) => {
   return otherUser;
 };
 
-export const createMessage = asyncHandler(async (req, res) => {
-  const sender = req.user;
+export const createMessage = asyncHandler<Record<string, string>, unknown, BodyOf<typeof createMessageSchema>>(async (req, res) => {
+  const sender = req.user!;
   const { to, text } = req.body;
 
   if (sender.id === to) {
@@ -91,7 +95,7 @@ export const createMessage = asyncHandler(async (req, res) => {
     });
   } catch (notifyError) {
     // Una notificación fallida no debe impedir que el mensaje se entregue.
-    console.error('No se pudo crear la notificación de mensaje:', notifyError.message);
+    console.error('No se pudo crear la notificación de mensaje:', notifyError instanceof Error ? notifyError.message : String(notifyError));
   }
 
   const populated = await Message.findById(message._id)
@@ -102,7 +106,7 @@ export const createMessage = asyncHandler(async (req, res) => {
 });
 
 export const getConversations = asyncHandler(async (req, res) => {
-  const user = req.user;
+  const user = req.user!;
   const userId = user._id;
 
   const [appointments, courses] = await Promise.all([
@@ -116,7 +120,7 @@ export const getConversations = asyncHandler(async (req, res) => {
   ]);
 
   // Participantes con los que hay relación vigente (cita confirmada o curso compartido).
-  const relatedIds = new Set();
+  const relatedIds = new Set<string>();
   appointments.forEach((apt) => {
     const otherId = String(apt.studentId) === String(userId) ? apt.tutorId : apt.studentId;
     relatedIds.add(String(otherId));
@@ -129,7 +133,7 @@ export const getConversations = asyncHandler(async (req, res) => {
     }
   });
 
-  const summaries = await Message.aggregate([
+  const summaries = await Message.aggregate<{ _id: Types.ObjectId; lastMessageAt: Date; lastMessage: string; lastSender: Types.ObjectId; unreadCount: number }>([
     { $match: { $or: [{ sender: userId }, { receiver: userId }] } },
     {
       $addFields: {
@@ -173,18 +177,18 @@ export const getConversations = asyncHandler(async (req, res) => {
     .sort((a, b) => {
       if (!a.lastMessageAt) return 1;
       if (!b.lastMessageAt) return -1;
-      return new Date(b.lastMessageAt) - new Date(a.lastMessageAt);
+      return new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime();
     });
 
   res.json({ success: true, data: conversations });
 });
 
 export const getConversationWithUser = asyncHandler(async (req, res) => {
-  const userId = req.user._id;
-  const otherUser = await loadChatPartner(req.user, req.params.otherUserId);
+  const userId = req.user!._id;
+  const otherUser = await loadChatPartner(req.user!, req.params.otherUserId);
 
-  const pageNum = Math.max(parseInt(req.query.page, 10) || 1, 1);
-  const limitNum = Math.min(Math.max(parseInt(req.query.limit, 10) || 50, 1), MAX_PAGE_SIZE);
+  const pageNum = Math.max(parseInt(String(req.query.page), 10) || 1, 1);
+  const limitNum = Math.min(Math.max(parseInt(String(req.query.limit), 10) || 50, 1), MAX_PAGE_SIZE);
 
   const filter = {
     $or: [
@@ -216,8 +220,8 @@ export const getConversationWithUser = asyncHandler(async (req, res) => {
 });
 
 export const markConversationAsRead = asyncHandler(async (req, res) => {
-  const userId = req.user._id;
-  const otherUser = await loadChatPartner(req.user, req.params.otherUserId);
+  const userId = req.user!._id;
+  const otherUser = await loadChatPartner(req.user!, req.params.otherUserId);
 
   const result = await Message.updateMany(
     { sender: otherUser._id, receiver: userId, read: false },

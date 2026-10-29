@@ -34,7 +34,7 @@ export const createNotificationSchema = z.object({
     deliveryMethod: z.array(z.enum(['in_app', 'email', 'push', 'sms'])).default(['in_app']),
     scheduledFor: z.string().datetime().optional(),
     expiresAt: z.string().datetime().optional(),
-    metadata: z.any().optional(),
+    metadata: z.unknown().optional(),
     templateId: z.string().optional(),
     variables: z.record(z.string()).optional(),
     category: z.enum([
@@ -115,6 +115,6 @@ export const createBulkNotificationsSchema = z.object({
 export const responseToNotificationSchema = z.object({
   body: z.object({
     response: z.string().min(1, 'Response is required'),
-    data: z.any().optional()
+    data: z.unknown().optional()
   })
 });
