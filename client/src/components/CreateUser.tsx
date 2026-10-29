@@ -3,19 +3,20 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import apiClient from '../utils/axiosConfig';
 import { getApiErrorMessage } from '../utils/apiError';
+import './AuthPages.css';
 // Misma política mínima que la API; el servidor valida también el límite de 72 bytes.
 const PASSWORD_RULE = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
 
 const ACCOUNT_TYPES: { role: SignupRequest['role']; icon: string; title: string; description: string }[] = [
   {
     role: 'student',
-    icon: '🎓',
+    icon: 'E',
     title: 'Estudiante',
     description: 'Acceso a cursos, tutores y materiales educativos',
   },
   {
     role: 'tutor',
-    icon: '👨‍🏫',
+    icon: 'T',
     title: 'Tutor',
     description: 'Ofrece tutorías, comparte conocimientos y proporciona asesorías especializadas',
   },
@@ -93,7 +94,7 @@ function CreateUser() {
       <div className="signup-card">
         <div className="signup-header">
           <h2>Crear Cuenta</h2>
-          <p>Únete a S.I Copernico Academy</p>
+          <p>Únete a Copérnico y aprende en comunidad.</p>
         </div>
 
         {error && (

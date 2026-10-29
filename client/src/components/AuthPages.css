@@ -1,0 +1,82 @@
+.login-container,
+.signup-container {
+  align-items: center;
+  background: radial-gradient(ellipse at 80% 20%, rgb(196 154 60 / 10%), transparent 35%), var(--paper);
+  display: flex;
+  justify-content: center;
+  min-height: calc(100dvh - 72px);
+  padding: clamp(18px, 4vw, 40px);
+}
+
+.login-container .login-box,
+.signup-container .signup-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: var(--shadow-card);
+  color: var(--ink);
+  overflow: hidden;
+  text-align: left;
+  width: 100%;
+}
+
+.login-container .login-box { max-width: 440px; padding: clamp(24px, 5vw, 38px); }
+.login-container .login-box h2,
+.signup-container .signup-header h2 { color: var(--ink); font-family: Georgia, "Times New Roman", serif; font-size: clamp(1.8rem, 4vw, 2.25rem); font-weight: 500; letter-spacing: -0.025em; margin: 0 0 8px; }
+.login-container .login-box > p { color: var(--ink-muted); font-size: 0.95rem; margin: 0 0 24px; }
+.login-container .input-group,
+.signup-container .input-group { margin-bottom: 18px; text-align: left; }
+.login-container .input-group label,
+.signup-container .input-group label { color: var(--ink); display: block; font-size: 0.88rem; font-weight: 650; margin-bottom: 7px; }
+.login-container .input-group input,
+.signup-container .input-group input { background: var(--surface); border: 1px solid var(--line-strong); border-radius: 8px; box-sizing: border-box; color: var(--ink); font: inherit; min-height: 46px; padding: 10px 12px; width: 100%; }
+.login-container .input-group input:disabled,
+.signup-container .input-group input:disabled { background: var(--surface-muted); cursor: wait; }
+.login-container .sign-in-btn,
+.signup-container .signup-btn { align-items: center; border-radius: 8px; display: flex; font-size: 0.96rem; justify-content: center; min-height: 48px; width: 100%; }
+.login-container .signup-link { color: var(--ink-muted); font-size: 0.9rem; margin: 22px 0 0; text-align: center; }
+.login-container .signup-link a,
+.signup-container .signup-footer a { color: var(--gold-dark); font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+.login-container .alert { font-size: 0.9rem; margin: 0 0 18px; text-align: left; }
+
+.signup-container { align-items: flex-start; }
+.signup-container .signup-card { max-width: 760px; padding: clamp(22px, 4vw, 38px); }
+.signup-container .signup-card::before { background: var(--gold); height: 4px; }
+.signup-container .signup-header { margin-bottom: 25px; text-align: left; }
+.signup-container .signup-header p { color: var(--ink-muted); font-size: 0.92rem; margin: 0; }
+.signup-container .alert { margin-bottom: 18px; }
+.signup-container .account-type-section { margin-bottom: 26px; }
+.signup-container .account-type-section > h3,
+.signup-container .form-section h3 { color: var(--ink); font-size: 1rem; font-weight: 700; margin: 0 0 14px; text-align: left; }
+.signup-container .account-type-cards { gap: 12px; grid-template-columns: repeat(2, minmax(0, 1fr)); margin: 0; }
+.signup-container .account-type-card { align-items: flex-start; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; gap: 10px; justify-content: flex-start; min-height: 130px; padding: 17px; text-align: left; }
+.signup-container .account-type-card:hover { border-color: var(--gold-dark); box-shadow: none; transform: translateY(-1px); }
+.signup-container .account-type-card.selected { background: var(--gold-pale); border: 2px solid var(--gold-dark); box-shadow: none; padding: 16px; }
+.signup-container .card-icon { align-items: center; background: var(--paper); border: 1px solid var(--line); border-radius: 8px; color: var(--gold-dark); display: flex; font-family: Georgia, "Times New Roman", serif; font-size: 1rem; font-weight: 700; height: 34px; justify-content: center; margin: 0; width: 34px; }
+.signup-container .card-content h4 { color: var(--ink); font-size: 0.95rem; margin: 0 0 4px; }
+.signup-container .card-content p { color: var(--ink-muted); font-size: 0.82rem; line-height: 1.45; margin: 0; }
+.signup-container .card-radio { border-color: var(--line-strong); height: 18px; right: 12px; top: 12px; width: 18px; }
+.signup-container .card-radio.checked { background: var(--gold-dark); border-color: var(--gold-dark); }
+.signup-container .form-section { background: transparent; border: 0; border-top: 1px solid var(--line); border-radius: 0; margin: 0; padding: 22px 0 0; }
+.signup-container .form-section h3 { border: 0; padding: 0; }
+.signup-container .form-grid { gap: 16px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.signup-container .password-requirements { display: grid; gap: 4px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.signup-container .password-requirements .help-text { color: var(--ink-muted); font-size: 0.78rem; margin: 0; }
+.signup-container .req-icon { color: var(--gold-dark); }
+.signup-container .error-message { color: var(--danger); font-size: 0.82rem; }
+.signup-container .form-actions { margin: 22px 0 0; }
+.signup-container .signup-btn { margin: 0 auto; max-width: 340px; }
+.signup-container .signup-footer { border-top: 1px solid var(--line); margin-top: 22px; padding-top: 18px; text-align: center; }
+.signup-container .signup-footer p { color: var(--ink-muted); font-size: 0.9rem; margin: 0; }
+
+.login-container :where(button, a, input):focus-visible,
+.signup-container :where(button, a, input, [role="radio"]):focus-visible { outline: 3px solid var(--gold-dark); outline-offset: 3px; }
+
+@media (max-width: 560px) {
+  .login-container,
+  .signup-container { min-height: calc(100dvh - 64px); padding: 14px; }
+  .signup-container .form-grid,
+  .signup-container .account-type-cards { grid-template-columns: 1fr; }
+  .signup-container .account-type-card { min-height: 0; }
+  .signup-container .password-requirements { grid-template-columns: 1fr; }
+}

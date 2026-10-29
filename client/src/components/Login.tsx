@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import apiClient from '../utils/axiosConfig';
 import { getApiErrorMessage } from '../utils/apiError';
+import './AuthPages.css';
 function Login() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
