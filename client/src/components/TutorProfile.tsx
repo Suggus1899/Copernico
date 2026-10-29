@@ -1,3 +1,6 @@
+import type { Appointment } from '../types/appointments';
+import type { User, PersonalInfo } from '../types/auth';
+import type { ApiResponse } from '../types/api';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import TutorSidebarMenu from './TutorSidebarMenu';
@@ -8,16 +11,15 @@ import DeactivateAccount from './DeactivateAccount';
 import { getApiErrorMessage } from '../utils/apiError';
 import './UserProfile.css';
 import './Dashboard.css';
-
 const TutorProfile = () => {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
   const [editMode, setEditMode] = useState(false);
-  const [editForm, setEditForm] = useState({});
+  const [editForm, setEditForm] = useState<PersonalInfo>({});
   const [saving, setSaving] = useState(false);
   const [showAvatarModal, setShowAvatarModal] = useState(false);
-  const [stats, setStats] = useState(null);
+  const [stats, setStats] = useState<{ totalSessions: number; completedSessions: number; upcomingSessions: number; totalStudents: number; subjects: string[] } | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -27,8 +29,8 @@ const TutorProfile = () => {
 
   const fetchUserProfile = async () => {
     try {
-      const response = await apiClient.get('/auth/profile');
-      const userData = response.data.data || response.data;
+      const response = await apiClient.get<ApiResponse<User>>('/auth/profile');
+      const userData = response.data.data;
       setUser(userData);
       setEditForm({
         firstName: userData.personalInfo?.firstName || '',
@@ -51,7 +53,7 @@ const TutorProfile = () => {
 
   const fetchUserStats = async () => {
     try {
-      const appointmentsResponse = await apiClient.get('/appointments');
+      const appointmentsResponse = await apiClient.get<ApiResponse<Appointment[]>>('/appointments');
       const appointments = appointmentsResponse.data.data || [];
       
       const confirmedAppointments = appointments.filter(apt => 
@@ -70,7 +72,7 @@ const TutorProfile = () => {
         }
       });
       
-      const uniqueSubjects = new Set();
+      const uniqueSubjects = new Set<string>();
       confirmedAppointments.forEach(apt => {
         if (apt.courseId?.title) {
           uniqueSubjects.add(apt.courseId.title);
@@ -89,15 +91,15 @@ const TutorProfile = () => {
     }
   };
 
-  const handleEditSubmit = async (e) => {
+  const handleEditSubmit = async (e: React.FormEvent<HTMLFormElement> | React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     setSaving(true);
     try {
-      const response = await apiClient.patch('/auth/profile', {
+      const response = await apiClient.patch<ApiResponse<User>>('/auth/profile', {
         personalInfo: editForm
       });
       
-      const updatedUser = response.data.data || response.data;
+      const updatedUser = response.data.data;
       setUser(updatedUser);
       setEditMode(false);
       alert('Perfil actualizado exitosamente');
@@ -109,7 +111,7 @@ const TutorProfile = () => {
     }
   };
 
-  const handleFormChange = (e) => {
+  const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setEditForm(prev => ({
       ...prev,
@@ -117,18 +119,18 @@ const TutorProfile = () => {
     }));
   };
 
-  const handleAvatarUpdate = (newAvatarUrl) => {
-    setUser(prev => ({
+  const handleAvatarUpdate = (newAvatarUrl: string | null) => {
+    setUser(prev => prev ? ({
       ...prev,
       personalInfo: {
         ...prev.personalInfo,
         avatar: newAvatarUrl
       }
-    }));
+    }) : prev);
     setShowAvatarModal(false);
   };
 
-  const getInitials = (user) => {
+  const getInitials = (user: User | null) => {
     if (!user) return 'U';
     const firstName = user.personalInfo?.firstName || '';
     const lastName = user.personalInfo?.lastName || '';
@@ -144,42 +146,42 @@ const TutorProfile = () => {
     return 'U';
   };
 
-  const getRoleLabel = (role) => {
-    const map = {
+  const getRoleLabel = (role: string | undefined) => {
+    const map: Record<string, string> = {
       student: 'Estudiante',
       tutor: 'Tutor',
       advisor: 'Asesor',
       admin: 'Administrador'
     };
-    return map[role] || role;
+    return map[role || ''] || role;
   };
 
-  const getFullName = (user) => {
-    if (user.personalInfo?.firstName && user.personalInfo?.lastName) {
+  const getFullName = (user: User | null) => {
+    if (user?.personalInfo?.firstName && user.personalInfo?.lastName) {
       return `${user.personalInfo.firstName} ${user.personalInfo.lastName}`;
     }
-    return user.email || 'Usuario';
+    return user?.email || 'Usuario';
   };
 
-  const getRoleIcon = (role) => {
-    const icons = {
+  const getRoleIcon = (role: string | undefined) => {
+    const icons: Record<string, string> = {
       student: '🎓',
       tutor: '👨‍🏫',
       advisor: '🎯',
       admin: '👑'
     };
-    return icons[role] || '👤';
+    return icons[role || ''] || '👤';
   };
 
-  const getRoleDescription = (role) => {
-    const descriptions = {
+  const getRoleDescription = (role: string | undefined) => {
+    const descriptions: Record<string, string> = {
       tutor: 'Especialista en enseñanza personalizada y apoyo académico',
       advisor: 'Especialista en orientación académica y desarrollo estudiantil'
     };
-    return descriptions[role] || 'Miembro de la plataforma educativa';
+    return descriptions[role || ''] || 'Miembro de la plataforma educativa';
   };
 
-  const isAdvisor = user?.role === 'advisor';
+  const isAdvisor = String(user?.role) === 'advisor';
 
   if (loading) {
     return (
@@ -216,7 +218,7 @@ const TutorProfile = () => {
   if (!user) {
     return (
       <div className="dashboard-container">
-        <TutorSidebarMenu userRole={user?.role} />
+        <TutorSidebarMenu />
         <div className="dashboard-content">
           <div className="error-container">
             <div className="error-icon">👤</div>
@@ -469,7 +471,7 @@ const TutorProfile = () => {
                         value={editForm.degrees}
                         onChange={handleFormChange}
                         placeholder="Títulos académicos obtenidos"
-                        rows="3"
+                        rows={3}
                         className="profile-input"
                       />
                     </div>
@@ -481,7 +483,7 @@ const TutorProfile = () => {
                         value={editForm.experience}
                         onChange={handleFormChange}
                         placeholder="Descripción de tu experiencia como tutor"
-                        rows="3"
+                        rows={3}
                         className="profile-input"
                       />
                     </div>
@@ -505,7 +507,7 @@ const TutorProfile = () => {
                         value={editForm.bio}
                         onChange={handleFormChange}
                         placeholder="Cuéntanos sobre tu formación y pasión por la enseñanza"
-                        rows="4"
+                        rows={4}
                         className="profile-input"
                       />
                     </div>

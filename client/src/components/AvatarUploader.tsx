@@ -1,23 +1,26 @@
+import type { AvatarData } from '../types/files';
+import type { ApiResponse } from '../types/api';
 import React, { useEffect, useState } from 'react';
 import apiClient from '../utils/axiosConfig';
 import { getApiErrorMessage } from '../utils/apiError';
-
 // Mismo límite que la API (2 MB).
 const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
 
-const AvatarUploader = ({ onAvatarUpdate, currentAvatar }) => {
+interface AvatarUploaderProps { onAvatarUpdate?: (avatar: string | null) => void; currentAvatar?: string | null }
+
+const AvatarUploader = ({ onAvatarUpdate, currentAvatar }: AvatarUploaderProps) => {
   const [avatarUrl, setAvatarUrl] = useState(currentAvatar || '');
-  const [file, setFile] = useState(null);
+  const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [preview, setPreview] = useState(null);
+  const [preview, setPreview] = useState<string | null>(null);
 
   useEffect(() => {
     setAvatarUrl(currentAvatar || '');
   }, [currentAvatar]);
 
-  const onFileChange = (e) => {
+  const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0] || null;
     if (selectedFile && selectedFile.size > MAX_AVATAR_BYTES) {
       e.target.value = '';
@@ -34,7 +37,7 @@ const AvatarUploader = ({ onAvatarUpdate, currentAvatar }) => {
     if (selectedFile) {
       const reader = new FileReader();
       reader.onload = (e) => {
-        setPreview(e.target.result);
+        setPreview(typeof e.target?.result === 'string' ? e.target.result : null);
       };
       reader.readAsDataURL(selectedFile);
     } else {
@@ -56,7 +59,7 @@ const AvatarUploader = ({ onAvatarUpdate, currentAvatar }) => {
       const formData = new FormData();
       formData.append('avatar', file);
       
-      const res = await apiClient.post('/users/profile/avatar', formData);
+      const res = await apiClient.post<ApiResponse<AvatarData>>('/users/profile/avatar', formData);
       
       const newAvatarUrl = res.data?.data?.avatar;
       if (newAvatarUrl) {
@@ -71,7 +74,7 @@ const AvatarUploader = ({ onAvatarUpdate, currentAvatar }) => {
         }
         
         // Limpiar el input file
-        const fileInput = document.querySelector('input[type="file"]');
+        const fileInput = document.querySelector<HTMLInputElement>('input[type="file"]');
         if (fileInput) fileInput.value = '';
       }
     } catch (err) {

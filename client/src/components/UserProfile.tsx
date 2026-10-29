@@ -1,3 +1,5 @@
+import type { User, PersonalInfo } from '../types/auth';
+import type { ApiResponse } from '../types/api';
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import apiClient from '../utils/axiosConfig';
@@ -6,13 +8,12 @@ import DocumentManager from './DocumentManager';
 import DeactivateAccount from './DeactivateAccount';
 import { getApiErrorMessage } from '../utils/apiError';
 import './UserProfile.css';
-
 const UserProfile = () => {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
   const [editMode, setEditMode] = useState(false);
-  const [editForm, setEditForm] = useState({});
+  const [editForm, setEditForm] = useState<PersonalInfo>({});
   const [saving, setSaving] = useState(false);
   const [showAvatarModal, setShowAvatarModal] = useState(false);
   const navigate = useNavigate();
@@ -23,8 +24,8 @@ const UserProfile = () => {
 
   const fetchUserProfile = async () => {
     try {
-      const response = await apiClient.get('/auth/profile');
-      const userData = response.data.data || response.data;
+      const response = await apiClient.get<ApiResponse<User>>('/auth/profile');
+      const userData = response.data.data;
       setUser(userData);
       setEditForm({
         firstName: userData.personalInfo?.firstName || '',
@@ -45,15 +46,15 @@ const UserProfile = () => {
     }
   };
 
-  const handleEditSubmit = async (e) => {
+  const handleEditSubmit = async (e: React.FormEvent<HTMLFormElement> | React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     setSaving(true);
     try {
-      const response = await apiClient.patch('/auth/profile', {
+      const response = await apiClient.patch<ApiResponse<User>>('/auth/profile', {
         personalInfo: editForm
       });
       
-      const updatedUser = response.data.data || response.data;
+      const updatedUser = response.data.data;
       setUser(updatedUser);
       setEditMode(false);
       alert('Perfil actualizado exitosamente');
@@ -65,7 +66,7 @@ const UserProfile = () => {
     }
   };
 
-  const handleFormChange = (e) => {
+  const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setEditForm(prev => ({
       ...prev,
@@ -73,18 +74,18 @@ const UserProfile = () => {
     }));
   };
 
-  const handleAvatarUpdate = (newAvatarUrl) => {
-    setUser(prev => ({
+  const handleAvatarUpdate = (newAvatarUrl: string | null) => {
+    setUser(prev => prev ? ({
       ...prev,
       personalInfo: {
         ...prev.personalInfo,
         avatar: newAvatarUrl
       }
-    }));
+    }) : prev);
     setShowAvatarModal(false);
   };
 
-  const getInitials = (user) => {
+  const getInitials = (user: User | null) => {
     if (!user) return 'U';
     const firstName = user.personalInfo?.firstName || '';
     const lastName = user.personalInfo?.lastName || '';
@@ -100,31 +101,31 @@ const UserProfile = () => {
     return 'U';
   };
 
-  const getRoleLabel = (role) => {
-    const map = {
+  const getRoleLabel = (role: string | undefined) => {
+    const map: Record<string, string> = {
       student: 'Estudiante',
       tutor: 'Tutor',
       advisor: 'Asesor',
       admin: 'Administrador'
     };
-    return map[role] || role;
+    return map[role || ''] || role;
   };
 
-  const getFullName = (user) => {
-    if (user.personalInfo?.firstName && user.personalInfo?.lastName) {
+  const getFullName = (user: User | null) => {
+    if (user?.personalInfo?.firstName && user.personalInfo?.lastName) {
       return `${user.personalInfo.firstName} ${user.personalInfo.lastName}`;
     }
-    return user.email || 'Usuario';
+    return user?.email || 'Usuario';
   };
 
-  const getRoleIcon = (role) => {
-    const icons = {
+  const getRoleIcon = (role: string | undefined) => {
+    const icons: Record<string, string> = {
       student: '🎓',
       tutor: '👨‍🏫',
       advisor: '🎯',
       admin: '👑'
     };
-    return icons[role] || '👤';
+    return icons[role || ''] || '👤';
   };
 
   if (loading) {

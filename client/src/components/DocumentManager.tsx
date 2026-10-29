@@ -1,32 +1,33 @@
+import type { UserDocument, DocumentsData } from '../types/files';
+import type { ApiResponse } from '../types/api';
 import React, { useEffect, useState } from 'react';
 import apiClient from '../utils/axiosConfig';
 import { getApiErrorMessage } from '../utils/apiError';
-
 const MAX_FILES_PER_UPLOAD = 5;
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
 const ACCEPTED_EXTENSIONS = '.pdf,.txt,.docx,.xlsx,.pptx,.jpg,.jpeg,.png,.webp';
 
-const formatSize = (bytes) => {
+const formatSize = (bytes: number) => {
   if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   return `${Math.max(1, Math.round(bytes / 1024))} KB`;
 };
 
-const canPreview = (mimeType) => mimeType === 'application/pdf' || Boolean(mimeType?.startsWith('image/'));
+const canPreview = (mimeType: string | undefined) => mimeType === 'application/pdf' || Boolean(mimeType?.startsWith('image/'));
 
 const DocumentManager = () => {
-  const [docs, setDocs] = useState([]);
-  const [files, setFiles] = useState([]);
+  const [docs, setDocs] = useState<UserDocument[]>([]);
+  const [files, setFiles] = useState<File[]>([]);
   const [inputKey, setInputKey] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [preview, setPreview] = useState(null);
+  const [preview, setPreview] = useState<UserDocument | null>(null);
 
-  const fileUrl = (docId) => `${apiClient.defaults.baseURL}/users/profile/documents/${docId}/download`;
+  const fileUrl = (docId: string) => `${apiClient.defaults.baseURL}/users/profile/documents/${docId}/download`;
 
   const loadDocuments = async () => {
     try {
-      const res = await apiClient.get('/users/profile/documents');
+      const res = await apiClient.get<ApiResponse<DocumentsData>>('/users/profile/documents');
       setDocs(res.data.data.documents);
     } catch (err) {
       setError(getApiErrorMessage(err, 'No se pudieron cargar los documentos'));
@@ -39,7 +40,7 @@ const DocumentManager = () => {
 
   useEffect(() => {
     if (!preview) return undefined;
-    const onKeyDown = (e) => {
+    const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setPreview(null);
     };
     window.addEventListener('keydown', onKeyDown);
@@ -51,7 +52,7 @@ const DocumentManager = () => {
     setInputKey((key) => key + 1);
   };
 
-  const onFileChange = (e) => {
+  const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = Array.from(e.target.files || []);
     const oversized = selected.find((file) => file.size > MAX_FILE_BYTES);
     setError('');
@@ -74,7 +75,7 @@ const DocumentManager = () => {
     try {
       const form = new FormData();
       files.forEach((file) => form.append('documents', file));
-      const res = await apiClient.post('/users/profile/documents', form);
+      const res = await apiClient.post<ApiResponse<DocumentsData>>('/users/profile/documents', form);
       setDocs(res.data.data.documents);
       resetFileInput();
       setSuccess('Documentos subidos correctamente');
@@ -85,13 +86,13 @@ const DocumentManager = () => {
     }
   };
 
-  const onDelete = async (doc) => {
+  const onDelete = async (doc: UserDocument) => {
     if (!window.confirm(`¿Eliminar "${doc.name}"?`)) return;
     setLoading(true);
     setError('');
     setSuccess('');
     try {
-      const res = await apiClient.delete(`/users/profile/documents/${doc._id}`);
+      const res = await apiClient.delete<ApiResponse<DocumentsData>>(`/users/profile/documents/${doc._id}`);
       setDocs(res.data.data.documents);
       setSuccess('Documento eliminado');
     } catch (err) {
@@ -101,11 +102,11 @@ const DocumentManager = () => {
     }
   };
 
-  const updateDocument = async (doc, changes, successMessage) => {
+  const updateDocument = async (doc: UserDocument, changes: { name?: string; tags?: string[] }, successMessage: string) => {
     setError('');
     setSuccess('');
     try {
-      const res = await apiClient.patch(`/users/profile/documents/${doc._id}`, changes);
+      const res = await apiClient.patch<ApiResponse<DocumentsData>>(`/users/profile/documents/${doc._id}`, changes);
       setDocs(res.data.data.documents);
       setSuccess(successMessage);
     } catch (err) {
@@ -137,7 +138,7 @@ const DocumentManager = () => {
 
       <div className="docs-list" style={{ marginTop: 16 }}>
         {docs.length === 0 && <p>No tienes documentos cargados.</p>}
-        {docs.map((doc) => (
+        {docs.map((doc: UserDocument) => (
           <div key={doc._id} className="doc-item" style={{ padding: '10px 0', borderBottom: '1px solid #eee' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
               <div style={{ flex: 1, minWidth: 0 }}>
