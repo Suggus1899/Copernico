@@ -1,0 +1,122 @@
+:root {
+  color-scheme: light;
+  --paper: #f8f6f0;
+  --surface: #fffefa;
+  --surface-muted: #f1eee6;
+  --ink: #24221d;
+  --ink-muted: #625d54;
+  --ink-soft: #817a6e;
+  --line: #e4dfd4;
+  --line-strong: #cfc5b0;
+  --gold: #c49a3c;
+  --gold-dark: #765719;
+  --gold-pale: #f1e7cd;
+  --sidebar: #1c1b18;
+  --sidebar-muted: #c6c0b4;
+  --danger: #9e332b;
+  --danger-pale: #f8e5e2;
+  --success: #765719;
+  --success-pale: #f1e7cd;
+  --shadow-card: 0 12px 32px rgb(36 34 29 / 6%);
+  --focus-ring: 0 0 0 3px rgb(196 154 60 / 38%);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--paper) !important;
+  background-image: none !important;
+  color: var(--ink);
+  font-family: Inter, "Segoe UI", Arial, sans-serif;
+  line-height: 1.55;
+}
+
+button,
+input,
+select,
+textarea {
+  color: var(--ink);
+  font: inherit;
+}
+
+button,
+.btn,
+input,
+select,
+textarea {
+  border-radius: 8px;
+}
+
+a {
+  color: var(--gold-dark);
+  text-underline-offset: 0.18em;
+}
+
+a:hover {
+  color: var(--ink);
+}
+
+:focus-visible {
+  outline: 3px solid var(--gold-dark) !important;
+  outline-offset: 3px;
+  box-shadow: var(--focus-ring) !important;
+}
+
+.btn-primary,
+.btn-nav-signup,
+.sign-in-btn,
+.signup-btn {
+  background: var(--gold) !important;
+  border-color: var(--gold) !important;
+  color: var(--sidebar) !important;
+  font-weight: 650;
+  box-shadow: none;
+}
+
+.btn-primary:hover:not(:disabled),
+.btn-nav-signup:hover,
+.sign-in-btn:hover:not(:disabled),
+.signup-btn:hover:not(:disabled) {
+  background: #d1aa50 !important;
+  border-color: #d1aa50 !important;
+  color: var(--sidebar) !important;
+}
+
+input,
+select,
+textarea {
+  background-color: var(--surface);
+  border-color: var(--line-strong);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--gold-dark) !important;
+  box-shadow: var(--focus-ring) !important;
+}
+
+.alert-success {
+  background: var(--success-pale) !important;
+  border-color: var(--gold) !important;
+  color: var(--ink) !important;
+}
+
+.alert-danger,
+.error-message,
+.input-error {
+  color: var(--danger);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
