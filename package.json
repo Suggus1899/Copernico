@@ -10,13 +10,14 @@
   },
   "scripts": {
     "start": "node dist/src/index.js",
-    "dev": "tsx watch src/index.js",
+    "dev": "tsx watch src/index.ts",
     "test": "node --import=tsx --test --test-reporter=spec \"test/**/*.test.*\"",
+    "test:compiled": "node --import=tsx --test --test-reporter=spec test/compiled.smoke.ts",
     "migrate:advisors": "node dist/scripts/migrate_advisors_to_tutors.js",
     "migrate:courses": "node dist/scripts/create_courses_from_appointments.js",
     "typecheck": "tsc -p tsconfig.json",
     "build": "tsc -p tsconfig.build.json",
-    "db:init": "tsx scripts/init-replica-set.js"
+    "db:init": "tsx scripts/init-replica-set.ts"
   },
   "license": "ISC",
   "dependencies": {

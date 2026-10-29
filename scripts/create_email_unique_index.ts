@@ -11,14 +11,14 @@ const run = async () => {
   }
 
   await mongoose.connect(uri);
-  const db = mongoose.connection.db;
+  const db = mongoose.connection.db!;
 
   console.log('Connected. Creating unique index on users.email ...');
   try {
     await db.collection('users').createIndex({ email: 1 }, { unique: true, background: true });
     console.log('Unique index on users.email created successfully');
   } catch (err) {
-    console.error('Error creating index:', err.message);
+    console.error('Error creating index:', (err as Error).message);
   }
 
   await mongoose.disconnect();

@@ -18,8 +18,9 @@ const run = async () => {
   let count = 0;
   for await (const user of cursor) {
     if (!user.personalInfo) user.personalInfo = {};
-    if (!user.personalInfo.contactEmail && user.email) {
-      user.personalInfo.contactEmail = user.email;
+    const personalInfo = user.personalInfo as NonNullable<typeof user.personalInfo> & { contactEmail?: string | null };
+    if (!personalInfo.contactEmail && user.email) {
+      personalInfo.contactEmail = user.email;
       await user.save();
       count++;
     }

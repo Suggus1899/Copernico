@@ -1,3 +1,4 @@
+import type { Server } from 'node:http';
 import app from './app.js';
 import { config, configWarnings } from './config.js';
 import { connectDatabase, disconnectDatabase } from './database.js';
@@ -5,10 +6,10 @@ import { connectDatabase, disconnectDatabase } from './database.js';
 // Tiempo máximo para cerrar conexiones antes de forzar la salida.
 const SHUTDOWN_TIMEOUT_MS = 10_000;
 
-let server;
+let server: Server | undefined;
 let shuttingDown = false;
 
-async function shutdown(reason, exitCode = 0) {
+async function shutdown(reason: string, exitCode = 0) {
   if (shuttingDown) return;
   shuttingDown = true;
   console.log(`[server] Cerrando (${reason})...`);
@@ -33,7 +34,7 @@ async function shutdown(reason, exitCode = 0) {
 
 process.on('SIGTERM', () => shutdown('SIGTERM'));
 process.on('SIGINT', () => shutdown('SIGINT'));
-process.on('unhandledRejection', (reason) => {
+process.on('unhandledRejection', (reason: unknown) => {
   console.error('[server] Promesa no gestionada:', reason);
   shutdown('unhandledRejection', 1);
 });

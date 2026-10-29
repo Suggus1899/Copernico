@@ -3,7 +3,7 @@ import { config, redactUri } from "./config.js";
 
 // Las transacciones (reservas de citas) requieren un replica set; Atlas lo es por defecto.
 async function describeTopology() {
-  const hello = await mongoose.connection.db.admin().command({ hello: 1 });
+  const hello = await mongoose.connection.db!.admin().command({ hello: 1 });
   return { replicaSet: Boolean(hello.setName), setName: hello.setName };
 }
 
@@ -25,8 +25,9 @@ export async function connectDatabase(uri = config.MONGODB_URI) {
       socketTimeoutMS: 45000,
     });
   } catch (error) {
-    error.message = `No se pudo conectar a MongoDB (${redactUri(uri)}): ${error.message}`;
-    throw error;
+    const connectionError = error as Error;
+    connectionError.message = `No se pudo conectar a MongoDB (${redactUri(uri)}): ${connectionError.message}`;
+    throw connectionError;
   }
 
   // Espera a que existan los índices (p. ej. email único) antes de aceptar peticiones.
@@ -49,5 +50,5 @@ export function databaseReadiness() {
 }
 
 export async function pingDatabase() {
-  await mongoose.connection.db.admin().ping();
+  await mongoose.connection.db!.admin().ping();
 }

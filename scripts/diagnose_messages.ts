@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import type { Types } from 'mongoose';
 import dotenv from 'dotenv';
 import Appointment from '../src/models/Appointment.js';
 import Course from '../src/models/Course.js';
@@ -7,6 +8,11 @@ import Message from '../src/models/Message.js';
 
 dotenv.config();
 
+type PopulatedUser = { _id: Types.ObjectId; email: string; role?: string; personalInfo?: { firstName?: string | null; lastName?: string | null } | null };
+type DiagnosticAppointment = { status: string; subject?: string | null; studentId?: PopulatedUser | null; professionalId?: PopulatedUser | null };
+type DiagnosticCourse = { title: string; instructor?: PopulatedUser | null; enrolledStudents: Array<{ student?: PopulatedUser | null }> };
+type DiagnosticMessage = { sender?: PopulatedUser | null; receiver?: PopulatedUser | null; text: string };
+
 const diagnoseMessages = async () => {
   try {
     console.log('🔄 Conectando a MongoDB...');
@@ -14,7 +20,7 @@ const diagnoseMessages = async () => {
     console.log('✅ Conectado a MongoDB\n');
 
     // Obtener todos los usuarios
-    const users = await User.find().select('_id email role personalInfo');
+    const users = await User.find().select('_id email role personalInfo') as unknown as PopulatedUser[];
     console.log('👥 USUARIOS EN EL SISTEMA:');
     users.forEach(user => {
       const name = user.personalInfo?.firstName 
@@ -26,12 +32,12 @@ const diagnoseMessages = async () => {
     // Obtener todas las citas
     const appointments = await Appointment.find()
       .populate('studentId', 'email personalInfo')
-      .populate('professionalId', 'email personalInfo');
+      .populate('professionalId', 'email personalInfo') as unknown as DiagnosticAppointment[];
     
     console.log('\n📅 CITAS EN EL SISTEMA:');
     console.log(`   Total: ${appointments.length}`);
     
-    const appointmentsByStatus = {};
+    const appointmentsByStatus: Record<string, number> = {};
     appointments.forEach(apt => {
       appointmentsByStatus[apt.status] = (appointmentsByStatus[apt.status] || 0) + 1;
       
@@ -54,7 +60,7 @@ const diagnoseMessages = async () => {
     // Obtener todos los cursos
     const courses = await Course.find()
       .populate('instructor', 'email personalInfo')
-      .populate('enrolledStudents.student', 'email personalInfo');
+      .populate('enrolledStudents.student', 'email personalInfo') as unknown as DiagnosticCourse[];
     
     console.log('\n📚 CURSOS EN EL SISTEMA:');
     console.log(`   Total: ${courses.length}`);
@@ -79,7 +85,7 @@ const diagnoseMessages = async () => {
     // Obtener todos los mensajes
     const messages = await Message.find()
       .populate('sender', 'email personalInfo')
-      .populate('receiver', 'email personalInfo');
+      .populate('receiver', 'email personalInfo') as unknown as DiagnosticMessage[];
     
     console.log('\n💬 MENSAJES EN EL SISTEMA:');
     console.log(`   Total: ${messages.length}`);
@@ -133,7 +139,7 @@ const diagnoseMessages = async () => {
         });
         
         // Puede enviar mensajes a
-        const canMessageIds = new Set();
+        const canMessageIds = new Set<string>();
         studentAppointments.forEach(apt => {
           if (apt.professionalId?._id) {
             canMessageIds.add(String(apt.professionalId._id));

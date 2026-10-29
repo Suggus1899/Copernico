@@ -1,10 +1,15 @@
 import mongoose from 'mongoose';
+import type { Types } from 'mongoose';
 import dotenv from 'dotenv';
 import Appointment from '../src/models/Appointment.js';
 import Course from '../src/models/Course.js';
 import User from '../src/models/User.js';
 
 dotenv.config();
+
+type LegacyPopulatedUser = { _id: Types.ObjectId; email: string; personalInfo?: { firstName?: string | null; lastName?: string | null } | null };
+type LegacyAppointment = { _id: Types.ObjectId; professionalId?: LegacyPopulatedUser | null; studentId?: LegacyPopulatedUser | null; subject?: string | null };
+type CourseSeed = { instructor: Types.ObjectId; subject: string; students: Set<string> };
 
 const createCoursesFromAppointments = async () => {
   try {
@@ -15,12 +20,12 @@ const createCoursesFromAppointments = async () => {
     // Obtener todas las citas confirmadas o completadas
     const appointments = await Appointment.find({
       status: { $in: ['confirmed', 'completed'] }
-    }).populate('studentId professionalId');
+    }).populate('studentId professionalId') as unknown as LegacyAppointment[];
 
     console.log(`📋 Encontradas ${appointments.length} citas confirmadas/completadas`);
 
     // Agrupar por tutor y materia
-    const courseMap = new Map();
+    const courseMap = new Map<string, CourseSeed>();
 
     appointments.forEach(appointment => {
       if (!appointment.professionalId || !appointment.studentId || !appointment.subject) {
@@ -38,7 +43,7 @@ const createCoursesFromAppointments = async () => {
         });
       }
 
-      courseMap.get(key).students.add(appointment.studentId._id.toString());
+      courseMap.get(key)!.students.add(appointment.studentId._id.toString());
     });
 
     console.log(`📚 Se crearán/actualizarán ${courseMap.size} cursos`);
@@ -78,7 +83,7 @@ const createCoursesFromAppointments = async () => {
           let studentsAdded = 0;
           for (const studentId of data.students) {
             const isEnrolled = course.enrolledStudents.some(
-              enrollment => enrollment.student.toString() === studentId
+              enrollment => enrollment.student!.toString() === studentId
             );
 
             if (!isEnrolled) {
@@ -110,7 +115,7 @@ const createCoursesFromAppointments = async () => {
 
       } catch (error) {
         errors++;
-        console.error(`❌ Error procesando curso ${data.subject}:`, error.message);
+        console.error(`❌ Error procesando curso ${data.subject}:`, (error as Error).message);
       }
     }
 

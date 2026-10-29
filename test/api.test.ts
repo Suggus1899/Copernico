@@ -1,10 +1,11 @@
 import { after, before, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import request from 'supertest';
+import type { IntegrationEnv } from './helpers/integration.js';
 import { startIntegrationEnv } from './helpers/integration.js';
 
 describe('contrato general de la API', () => {
-  let env;
+  let env!: IntegrationEnv;
 
   before(async () => {
     env = await startIntegrationEnv();

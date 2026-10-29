@@ -1,9 +1,30 @@
 import mongoose from 'mongoose';
+import type { Types, UpdateQuery } from 'mongoose';
+import type { UserRecord } from '../src/models/User.js';
 import User from '../src/models/User.js';
 import dotenv from 'dotenv';
 
 // Cargar variables de entorno
 dotenv.config();
+
+type AdvisorProfile = {
+  specializationAreas?: string[];
+  appointmentDuration?: number;
+  available?: boolean;
+  rating?: number;
+  specialties?: string[];
+  teachingMethods?: string[];
+  maxStudents?: number;
+  hourlyRate?: number;
+  totalSessions?: number;
+};
+type LegacyAdvisor = {
+  _id: Types.ObjectId;
+  email: string;
+  personalInfo?: { firstName?: string | null; lastName?: string | null } | null;
+  advisorProfile?: AdvisorProfile | null;
+  tutorProfile?: AdvisorProfile | null;
+};
 
 const migrateAdvisorsToTutors = async () => {
   try {
@@ -12,7 +33,7 @@ const migrateAdvisorsToTutors = async () => {
     console.log('✅ Conectado a MongoDB');
 
     // Buscar todos los usuarios con rol 'advisor'
-    const advisors = await User.find({ role: 'advisor' });
+    const advisors = await User.find({ role: 'advisor' }) as unknown as LegacyAdvisor[];
     console.log(`📊 Encontrados ${advisors.length} usuarios con rol 'advisor'`);
 
     if (advisors.length === 0) {
@@ -25,7 +46,7 @@ const migrateAdvisorsToTutors = async () => {
       console.log(`🔄 Migrando usuario: ${advisor.personalInfo?.firstName} ${advisor.personalInfo?.lastName} (${advisor.email})`);
       
       // Preparar datos de migración
-      const updateData = {
+      const updateData: Record<string, unknown> = {
         role: 'tutor',
         updatedBy: advisor._id, // Auto-actualización
         updatedAt: new Date()
@@ -52,7 +73,7 @@ const migrateAdvisorsToTutors = async () => {
       }
 
       // Actualizar el usuario
-      await User.findByIdAndUpdate(advisor._id, updateData);
+      await User.findByIdAndUpdate(advisor._id, updateData as UpdateQuery<UserRecord>);
       console.log(`✅ Usuario migrado exitosamente`);
     }
 
