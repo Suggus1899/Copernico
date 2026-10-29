@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import apiClient from '../utils/axiosConfig';
 import { getApiErrorMessage } from '../utils/apiError';
 import './Account.css';
@@ -39,8 +40,9 @@ const ChangeEmail = () => {
   };
 
   return (
-    <div className="change-email-container">
-      <h2>Cambiar dirección de correo electrónico</h2>
+    <main className="change-email-container">
+      <Link className="account-back" to="/dashboard">Volver al panel</Link>
+      <h1>Cambiar dirección de correo electrónico</h1>
       {error && <div className="alert alert-danger" role="alert">{error}</div>}
       {success && <div className="alert alert-success" role="status">{success}</div>}
       <form onSubmit={onSubmit}>
@@ -84,7 +86,7 @@ const ChangeEmail = () => {
           {loading ? 'Actualizando...' : 'Actualizar correo'}
         </button>
       </form>
-    </div>
+    </main>
   );
 };
 

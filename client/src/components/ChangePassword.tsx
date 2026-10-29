@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import apiClient from '../utils/axiosConfig';
 import { getApiErrorMessage } from '../utils/apiError';
 import './Account.css';
@@ -51,8 +52,9 @@ const ChangePassword = () => {
   };
 
   return (
-    <div className="change-password-container">
-      <h2>Cambiar contraseña</h2>
+    <main className="change-password-container">
+      <Link className="account-back" to="/dashboard">Volver al panel</Link>
+      <h1>Cambiar contraseña</h1>
       {error && <div className="alert alert-danger" role="alert">{error}</div>}
       {success && <div className="alert alert-success" role="status">{success}</div>}
       <form onSubmit={onSubmit}>
@@ -97,7 +99,7 @@ const ChangePassword = () => {
           {loading ? 'Actualizando...' : 'Actualizar contraseña'}
         </button>
       </form>
-    </div>
+    </main>
   );
 };
 

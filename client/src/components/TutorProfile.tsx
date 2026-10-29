@@ -1,7 +1,7 @@
 import type { Appointment } from '../types/appointments';
 import type { User, PersonalInfo } from '../types/auth';
 import type { ApiResponse } from '../types/api';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import apiClient from '../utils/axiosConfig';
 import AvatarUploader from './AvatarUploader';
@@ -9,6 +9,7 @@ import DocumentManager from './DocumentManager';
 import DeactivateAccount from './DeactivateAccount';
 import { getApiErrorMessage } from '../utils/apiError';
 import './UserProfile.css';
+import './ProfileRefresh.css';
 import './Dashboard.css';
 const TutorProfile = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -17,7 +18,9 @@ const TutorProfile = () => {
   const [editMode, setEditMode] = useState(false);
   const [editForm, setEditForm] = useState<PersonalInfo>({});
   const [saving, setSaving] = useState(false);
+  const [feedback, setFeedback] = useState<{ kind: 'success' | 'error'; text: string } | null>(null);
   const [showAvatarModal, setShowAvatarModal] = useState(false);
+  const avatarDialog = useRef<HTMLDialogElement>(null);
   const [stats, setStats] = useState<{ totalSessions: number; completedSessions: number; upcomingSessions: number; totalStudents: number; subjects: string[] } | null>(null);
   const navigate = useNavigate();
 
@@ -26,7 +29,11 @@ const TutorProfile = () => {
     fetchUserStats();
   }, []);
 
+  useEffect(() => { if (showAvatarModal) avatarDialog.current?.showModal(); }, [showAvatarModal]);
+
   const fetchUserProfile = async () => {
+    setLoading(true);
+    setError(null);
     try {
       const response = await apiClient.get<ApiResponse<User>>('/auth/profile');
       const userData = response.data.data;
@@ -93,6 +100,7 @@ const TutorProfile = () => {
   const handleEditSubmit = async (e: React.FormEvent<HTMLFormElement> | React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     setSaving(true);
+    setFeedback(null);
     try {
       const response = await apiClient.patch<ApiResponse<User>>('/auth/profile', {
         personalInfo: editForm
@@ -101,10 +109,10 @@ const TutorProfile = () => {
       const updatedUser = response.data.data;
       setUser(updatedUser);
       setEditMode(false);
-      alert('Perfil actualizado exitosamente');
+      setFeedback({ kind: 'success', text: 'Perfil actualizado correctamente.' });
     } catch (error) {
       console.error('Error updating profile:', error);
-      alert(getApiErrorMessage(error, 'Error al actualizar el perfil'));
+      setFeedback({ kind: 'error', text: getApiErrorMessage(error, 'No se pudo actualizar el perfil.') });
     } finally {
       setSaving(false);
     }
@@ -162,16 +170,6 @@ const TutorProfile = () => {
     return user?.email || 'Usuario';
   };
 
-  const getRoleIcon = (role: string | undefined) => {
-    const icons: Record<string, string> = {
-      student: '🎓',
-      tutor: '👨‍🏫',
-      advisor: '🎯',
-      admin: '👑'
-    };
-    return icons[role || ''] || '👤';
-  };
-
   const getRoleDescription = (role: string | undefined) => {
     const descriptions: Record<string, string> = {
       tutor: 'Especialista en enseñanza personalizada y apoyo académico',
@@ -179,8 +177,6 @@ const TutorProfile = () => {
     };
     return descriptions[role || ''] || 'Miembro de la plataforma educativa';
   };
-
-  const isAdvisor = String(user?.role) === 'advisor';
 
   if (loading) {
     return (
@@ -194,7 +190,6 @@ const TutorProfile = () => {
   if (error) {
     return (
       <div className="error-container">
-        <div className="error-icon">❌</div>
         <h3>Error al cargar el perfil</h3>
         <p>{error}</p>
         <button className="profile-btn profile-btn-primary" onClick={fetchUserProfile}>
@@ -207,7 +202,6 @@ const TutorProfile = () => {
   if (!user) {
     return (
       <div className="error-container">
-        <div className="error-icon">👤</div>
         <h3>No se pudo cargar la información del usuario</h3>
         <button className="profile-btn profile-btn-primary" onClick={fetchUserProfile}>
           🔄 Reintentar
@@ -235,24 +229,26 @@ const TutorProfile = () => {
                     </div>
                   )}
                   <button 
+                    type="button"
                     className="profile-avatar-edit-btn"
                     onClick={() => setShowAvatarModal(true)}
                     title="Cambiar foto de perfil"
+                    aria-label="Cambiar foto de perfil"
                   >
-                    �
+                    +
                   </button>
                 </div>
               </div>
 
               <div className="profile-header-info">
                 <h1 className="profile-name">{getFullName(user)}</h1>
-                <p className="profile-email">📧 {user.email}</p>
+                <p className="profile-email">{user.email}</p>
                 <div className="profile-badges">
                   <span className={`profile-role-badge profile-role-${user.role}`}>
-                    {getRoleIcon(user.role)} {getRoleLabel(user.role)}
+                    {getRoleLabel(user.role)}
                   </span>
                   <span className="profile-member-badge">
-                    📅 Miembro desde {user.createdAt ? new Date(user.createdAt).toLocaleDateString('es-ES', {
+                    Miembro desde {user.createdAt ? new Date(user.createdAt).toLocaleDateString('es-ES', {
                       year: 'numeric',
                       month: 'long'
                     }) : 'Fecha no disponible'}
@@ -270,13 +266,19 @@ const TutorProfile = () => {
                       className="profile-btn profile-btn-primary"
                       onClick={() => setEditMode(true)}
                     >
-                      ✏️ Editar Perfil
+                      Editar perfil
+                    </button>
+                    <button
+                      className="profile-btn profile-btn-outline"
+                      onClick={() => navigate('/account/change-email')}
+                    >
+                      Cambiar correo
                     </button>
                     <button 
                       className="profile-btn profile-btn-outline"
                       onClick={() => navigate('/account/change-password')}
                     >
-                      🔒 Cambiar Contraseña
+                      Cambiar contraseña
                     </button>
                   </>
                 ) : (
@@ -286,7 +288,7 @@ const TutorProfile = () => {
                       onClick={handleEditSubmit}
                       disabled={saving}
                     >
-                      {saving ? '💾 Guardando...' : '💾 Guardar Cambios'}
+                      {saving ? 'Guardando…' : 'Guardar cambios'}
                     </button>
                     <button 
                       className="profile-btn profile-btn-secondary"
@@ -305,7 +307,7 @@ const TutorProfile = () => {
                         });
                       }}
                     >
-                      ❌ Cancelar
+                      Cancelar
                     </button>
                   </>
                 )}
@@ -313,36 +315,38 @@ const TutorProfile = () => {
             </div>
           </div>
 
+          {feedback && <p className={`profile-feedback profile-feedback--${feedback.kind}`} role={feedback.kind === 'error' ? 'alert' : 'status'}>{feedback.text}</p>}
+
           {/* Estadísticas del tutor/asesor */}
           {stats && !editMode && (
             <div className="profile-stats-card">
               <div className="profile-card-header">
-                <h3>📊 Estadísticas de Tutorías</h3>
+                <h3>Estadísticas de tutorías</h3>
               </div>
               <div className="profile-stats-grid">
                 <div className="profile-stat-item">
-                  <div className="profile-stat-icon">{isAdvisor ? '🎯' : '📚'}</div>
+                  <div className="profile-stat-icon">01</div>
                   <div className="profile-stat-content">
                     <span className="profile-stat-number">{stats.totalSessions}</span>
                     <span className="profile-stat-label">Total Tutorías</span>
                   </div>
                 </div>
                 <div className="profile-stat-item">
-                  <div className="profile-stat-icon">✅</div>
+                  <div className="profile-stat-icon">02</div>
                   <div className="profile-stat-content">
                     <span className="profile-stat-number">{stats.completedSessions}</span>
                     <span className="profile-stat-label">Sesiones Completadas</span>
                   </div>
                 </div>
                 <div className="profile-stat-item">
-                  <div className="profile-stat-icon">📅</div>
+                  <div className="profile-stat-icon">03</div>
                   <div className="profile-stat-content">
                     <span className="profile-stat-number">{stats.upcomingSessions}</span>
                     <span className="profile-stat-label">Sesiones Programadas</span>
                   </div>
                 </div>
                 <div className="profile-stat-item">
-                  <div className="profile-stat-icon">👨‍🎓</div>
+                  <div className="profile-stat-icon">04</div>
                   <div className="profile-stat-content">
                     <span className="profile-stat-number">{stats.totalStudents}</span>
                     <span className="profile-stat-label">Estudiantes Atendidos</span>
@@ -352,7 +356,7 @@ const TutorProfile = () => {
               
               {stats.subjects.length > 0 && (
                 <div className="profile-subjects-section">
-                  <h4>📚 Materias Impartidas</h4>
+                  <h4>Materias impartidas</h4>
                   <div className="profile-subjects-list">
                     {stats.subjects.map((subject, index) => (
                       <span key={index} className="profile-subject-tag">
@@ -372,13 +376,14 @@ const TutorProfile = () => {
                 {/* Información Personal */}
                 <div className="profile-card">
                   <div className="profile-card-header">
-                    <h3>👤 Información Personal</h3>
+                    <h3>Información personal</h3>
                   </div>
                   <div className="profile-card-body">
                     <div className="profile-form-row">
                       <div className="profile-form-group">
-                        <label>Nombre</label>
+                        <label htmlFor="profile-first-name">Nombre</label>
                         <input
+                          id="profile-first-name"
                           type="text"
                           name="firstName"
                           value={editForm.firstName}
@@ -388,8 +393,9 @@ const TutorProfile = () => {
                         />
                       </div>
                       <div className="profile-form-group">
-                        <label>Apellido</label>
+                        <label htmlFor="profile-last-name">Apellido</label>
                         <input
+                          id="profile-last-name"
                           type="text"
                           name="lastName"
                           value={editForm.lastName}
@@ -402,8 +408,9 @@ const TutorProfile = () => {
                     
                     <div className="profile-form-row">
                       <div className="profile-form-group">
-                        <label>Nombre de usuario</label>
+                        <label htmlFor="profile-username">Nombre de usuario</label>
                         <input
+                          id="profile-username"
                           type="text"
                           name="username"
                           value={editForm.username}
@@ -413,8 +420,9 @@ const TutorProfile = () => {
                         />
                       </div>
                       <div className="profile-form-group">
-                        <label>Teléfono</label>
+                        <label htmlFor="profile-phone">Teléfono</label>
                         <input
+                          id="profile-phone"
                           type="tel"
                           name="phone"
                           value={editForm.phone}
@@ -430,12 +438,13 @@ const TutorProfile = () => {
                 {/* Información Académica */}
                 <div className="profile-card">
                   <div className="profile-card-header">
-                    <h3>🎓 Información Académica</h3>
+                    <h3>Información académica</h3>
                   </div>
                   <div className="profile-card-body">
                     <div className="profile-form-group">
-                      <label>Especialización</label>
+                      <label htmlFor="profile-specialty">Especialización</label>
                       <input
+                        id="profile-specialty"
                         type="text"
                         name="specialty"
                         value={editForm.specialty}
@@ -446,8 +455,9 @@ const TutorProfile = () => {
                     </div>
                     
                     <div className="profile-form-group">
-                      <label>Títulos y Grados</label>
+                      <label htmlFor="profile-degrees">Títulos y grados</label>
                       <textarea
+                        id="profile-degrees"
                         name="degrees"
                         value={editForm.degrees}
                         onChange={handleFormChange}
@@ -458,8 +468,9 @@ const TutorProfile = () => {
                     </div>
                     
                     <div className="profile-form-group">
-                      <label>Experiencia Docente</label>
+                      <label htmlFor="profile-experience">Experiencia docente</label>
                       <textarea
+                        id="profile-experience"
                         name="experience"
                         value={editForm.experience}
                         onChange={handleFormChange}
@@ -470,8 +481,9 @@ const TutorProfile = () => {
                     </div>
                     
                     <div className="profile-form-group">
-                      <label>Certificaciones</label>
+                      <label htmlFor="profile-certifications">Certificaciones</label>
                       <input
+                        id="profile-certifications"
                         type="text"
                         name="certifications"
                         value={editForm.certifications}
@@ -482,8 +494,9 @@ const TutorProfile = () => {
                     </div>
                     
                     <div className="profile-form-group">
-                      <label>Biografía Académica</label>
+                      <label htmlFor="profile-bio">Biografía académica</label>
                       <textarea
+                        id="profile-bio"
                         name="bio"
                         value={editForm.bio}
                         onChange={handleFormChange}
@@ -500,7 +513,7 @@ const TutorProfile = () => {
                 {/* Información Personal */}
                 <div className="profile-card">
                   <div className="profile-card-header">
-                    <h3>👤 Información Personal</h3>
+                    <h3>Información personal</h3>
                   </div>
                   <div className="profile-card-body">
                     <div className="profile-detail-item">
@@ -525,7 +538,7 @@ const TutorProfile = () => {
                 {/* Información Académica */}
                 <div className="profile-card">
                   <div className="profile-card-header">
-                    <h3>🎓 Información Académica</h3>
+                    <h3>Información académica</h3>
                   </div>
                   <div className="profile-card-body">
                     <div className="profile-detail-item">
@@ -554,7 +567,7 @@ const TutorProfile = () => {
                 {/* Información de Cuenta */}
                 <div className="profile-card">
                   <div className="profile-card-header">
-                    <h3>🔐 Información de Cuenta</h3>
+                    <h3>Información de cuenta</h3>
                   </div>
                   <div className="profile-card-body">
                     <div className="profile-detail-item">
@@ -565,14 +578,14 @@ const TutorProfile = () => {
                       <span className="profile-detail-label">Rol:</span>
                       <span className="profile-detail-value">
                         <span className={`profile-role-badge profile-role-${user.role}`}>
-                          {getRoleIcon(user.role)} {getRoleLabel(user.role)}
+                          {getRoleLabel(user.role)}
                         </span>
                       </span>
                     </div>
                     <div className="profile-detail-item">
                       <span className="profile-detail-label">Estado:</span>
                       <span className="profile-detail-value">
-                        <span className="profile-status-badge profile-status-active">✅ Activa</span>
+                        <span className="profile-status-badge profile-status-active">Activa</span>
                       </span>
                     </div>
                     <div className="profile-detail-item">
@@ -609,13 +622,15 @@ const TutorProfile = () => {
 
           {/* Modal para cambiar avatar */}
           {showAvatarModal && (
-            <div className="profile-modal-overlay" onClick={() => setShowAvatarModal(false)}>
-              <div className="profile-modal-content" onClick={(e) => e.stopPropagation()}>
+          <dialog ref={avatarDialog} className="profile-modal-content" aria-labelledby="avatar-dialog-title" onCancel={() => setShowAvatarModal(false)} onClick={(event) => { if (event.target === event.currentTarget) setShowAvatarModal(false); }}>
                 <div className="profile-modal-header">
-                  <h3>📷 Cambiar Foto de Perfil</h3>
+                <h3 id="avatar-dialog-title">Cambiar foto de perfil</h3>
                   <button 
+                  type="button"
                     className="profile-modal-close-btn"
                     onClick={() => setShowAvatarModal(false)}
+                  aria-label="Cerrar"
+                  autoFocus
                   >
                     ✕
                   </button>
@@ -626,8 +641,7 @@ const TutorProfile = () => {
                     currentAvatar={user.personalInfo?.avatar}
                   />
                 </div>
-              </div>
-            </div>
+          </dialog>
           )}
     </div>
   );

@@ -1,6 +1,6 @@
 import type { AvatarData } from '../types/files';
 import type { ApiResponse } from '../types/api';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import apiClient from '../utils/axiosConfig';
 import { getApiErrorMessage } from '../utils/apiError';
 // Mismo límite que la API (2 MB).
@@ -15,6 +15,8 @@ const AvatarUploader = ({ onAvatarUpdate, currentAvatar }: AvatarUploaderProps) 
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [preview, setPreview] = useState<string | null>(null);
+  const [confirmRemove, setConfirmRemove] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setAvatarUrl(currentAvatar || '');
@@ -74,8 +76,7 @@ const AvatarUploader = ({ onAvatarUpdate, currentAvatar }: AvatarUploaderProps) 
         }
         
         // Limpiar el input file
-        const fileInput = document.querySelector<HTMLInputElement>('input[type="file"]');
-        if (fileInput) fileInput.value = '';
+        if (fileInputRef.current) fileInputRef.current.value = '';
       }
     } catch (err) {
       console.error('Error uploading avatar:', err);
@@ -87,11 +88,6 @@ const AvatarUploader = ({ onAvatarUpdate, currentAvatar }: AvatarUploaderProps) 
 
   const onRemoveAvatar = async () => {
     if (!avatarUrl) return;
-    
-    if (!window.confirm('¿Estás seguro de que deseas eliminar tu foto de perfil?')) {
-      return;
-    }
-    
     setLoading(true);
     setError('');
     setSuccess('');
@@ -99,6 +95,7 @@ const AvatarUploader = ({ onAvatarUpdate, currentAvatar }: AvatarUploaderProps) 
     try {
       await apiClient.delete('/users/profile/avatar');
       setAvatarUrl('');
+      setConfirmRemove(false);
       setSuccess('Avatar eliminado exitosamente');
       
       // Notificar al componente padre
@@ -117,11 +114,11 @@ const AvatarUploader = ({ onAvatarUpdate, currentAvatar }: AvatarUploaderProps) 
     <div className="avatar-uploader">
       <div className="avatar-preview-section">
         <div className="avatar-preview">
-          <img 
-            src={preview || avatarUrl || 'https://via.placeholder.com/150x150/e5e7eb/6b7280?text=Sin+Foto'} 
-            alt="Avatar preview" 
-            className="avatar-preview-image"
-          />
+          {preview || avatarUrl ? (
+            <img src={preview || avatarUrl} alt="Vista previa de la foto de perfil" className="avatar-preview-image" />
+          ) : (
+            <div className="avatar-preview-placeholder">Sin foto</div>
+          )}
         </div>
         <div className="avatar-info">
           <h4>Foto de perfil</h4>
@@ -136,47 +133,58 @@ const AvatarUploader = ({ onAvatarUpdate, currentAvatar }: AvatarUploaderProps) 
       <div className="avatar-controls">
         <div className="file-input-wrapper">
           <input 
+            ref={fileInputRef}
             type="file" 
-            accept="image/*" 
+            accept=".jpg,.jpeg,.png,.gif,.webp"
             onChange={onFileChange}
             className="file-input"
             id="avatar-file-input"
           />
           <label htmlFor="avatar-file-input" className="file-input-label">
-            📁 Seleccionar imagen
+            Seleccionar imagen
           </label>
         </div>
         
         <div className="avatar-actions">
           <button 
+            type="button"
             className="btn btn-primary" 
             onClick={onUpload} 
             disabled={!file || loading}
           >
-            {loading ? '⏳ Subiendo...' : '📤 Subir imagen'}
+            {loading ? 'Subiendo…' : 'Subir imagen'}
           </button>
           
-          {avatarUrl && (
+          {avatarUrl && !confirmRemove && (
             <button 
+              type="button"
               className="btn btn-danger" 
-              onClick={onRemoveAvatar}
+              onClick={() => setConfirmRemove(true)}
               disabled={loading}
             >
-              🗑️ Eliminar
+              Eliminar foto
             </button>
           )}
         </div>
       </div>
 
+      {confirmRemove && (
+        <div className="avatar-remove-confirm" role="group" aria-label="Confirmar eliminación de foto">
+          <span>¿Eliminar tu foto de perfil?</span>
+          <button type="button" className="btn btn-danger" onClick={onRemoveAvatar} disabled={loading}>{loading ? 'Eliminando…' : 'Confirmar'}</button>
+          <button type="button" className="btn btn-outline-secondary" onClick={() => setConfirmRemove(false)} disabled={loading}>Cancelar</button>
+        </div>
+      )}
+
       {error && (
-        <div className="alert alert-danger">
-          ❌ {error}
+        <div className="alert alert-danger" role="alert">
+          {error}
         </div>
       )}
       
       {success && (
-        <div className="alert alert-success">
-          ✅ {success}
+        <div className="alert alert-success" role="status">
+          {success}
         </div>
       )}
     </div>

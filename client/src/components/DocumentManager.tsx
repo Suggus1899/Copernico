@@ -19,18 +19,25 @@ const DocumentManager = () => {
   const [files, setFiles] = useState<File[]>([]);
   const [inputKey, setInputKey] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [loadingDocuments, setLoadingDocuments] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [preview, setPreview] = useState<UserDocument | null>(null);
+  const [deleteCandidate, setDeleteCandidate] = useState<UserDocument | null>(null);
 
   const fileUrl = (docId: string) => `${apiClient.defaults.baseURL}/users/profile/documents/${docId}/download`;
 
   const loadDocuments = async () => {
+    setLoadingDocuments(true);
+    setLoadError('');
     try {
       const res = await apiClient.get<ApiResponse<DocumentsData>>('/users/profile/documents');
       setDocs(res.data.data.documents);
     } catch (err) {
-      setError(getApiErrorMessage(err, 'No se pudieron cargar los documentos'));
+      setLoadError(getApiErrorMessage(err, 'No se pudieron cargar los documentos'));
+    } finally {
+      setLoadingDocuments(false);
     }
   };
 
@@ -86,14 +93,19 @@ const DocumentManager = () => {
     }
   };
 
-  const onDelete = async (doc: UserDocument) => {
-    if (!window.confirm(`¿Eliminar "${doc.name}"?`)) return;
+  const onDelete = (doc: UserDocument) => {
+    setDeleteCandidate(doc);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteCandidate) return;
     setLoading(true);
     setError('');
     setSuccess('');
     try {
-      const res = await apiClient.delete<ApiResponse<DocumentsData>>(`/users/profile/documents/${doc._id}`);
+      const res = await apiClient.delete<ApiResponse<DocumentsData>>(`/users/profile/documents/${deleteCandidate._id}`);
       setDocs(res.data.data.documents);
+      setDeleteCandidate(null);
       setSuccess('Documento eliminado');
     } catch (err) {
       setError(getApiErrorMessage(err, 'No se pudo eliminar el documento'));
@@ -115,12 +127,12 @@ const DocumentManager = () => {
   };
 
   return (
-    <section className="document-manager" style={{ marginTop: 24 }} aria-labelledby="document-manager-title">
+    <section className="document-manager" aria-labelledby="document-manager-title">
       <h3 id="document-manager-title">Mis documentos</h3>
       <p className="help-text">
         Formatos: PDF, TXT, DOCX, XLSX, PPTX, JPG, PNG, WEBP. Máximo 10 MB por archivo y 20 documentos en total.
       </p>
-      <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+      <div className="documents-toolbar">
         <input
           key={inputKey}
           type="file"
@@ -129,36 +141,47 @@ const DocumentManager = () => {
           aria-label="Seleccionar documentos"
           onChange={onFileChange}
         />
-        <button type="button" className="btn btn-primary" onClick={onUpload} disabled={!files.length || loading}>
+        <button type="button" className="btn btn-primary" onClick={onUpload} disabled={!files.length || loading || loadingDocuments || Boolean(loadError)}>
           {loading ? 'Procesando...' : 'Subir'}
         </button>
       </div>
-      {error && <div role="alert" className="alert alert-danger" style={{ marginTop: 8 }}>{error}</div>}
-      {success && <div role="status" className="alert alert-success" style={{ marginTop: 8 }}>{success}</div>}
+      {files.length > 0 && <p className="documents-selection" role="status">{files.length} {files.length === 1 ? 'archivo seleccionado' : 'archivos seleccionados'}</p>}
+      {error && <div role="alert" className="alert alert-danger">{error}</div>}
+      {success && <div role="status" className="alert alert-success">{success}</div>}
 
-      <div className="docs-list" style={{ marginTop: 16 }}>
-        {docs.length === 0 && <p>No tienes documentos cargados.</p>}
-        {docs.map((doc: UserDocument) => (
-          <div key={doc._id} className="doc-item" style={{ padding: '10px 0', borderBottom: '1px solid #eee' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{doc.name}</div>
-                <div style={{ color: '#666', fontSize: 12 }}>{formatSize(doc.size)}</div>
+      <div className="docs-list">
+        {loadingDocuments ? <p role="status">Cargando documentos…</p> : loadError ? (
+          <div className="alert alert-danger" role="alert">{loadError} <button type="button" onClick={loadDocuments}>Reintentar</button></div>
+        ) : docs.length === 0 ? <p>No tienes documentos cargados.</p> : docs.map((doc: UserDocument) => (
+          <article key={doc._id} className="doc-item">
+            <div className="doc-item__top">
+              <div className="doc-item__main">
+                <h4>{doc.name}</h4>
+                <span>{formatSize(doc.size)}</span>
               </div>
-              <div style={{ display: 'flex', gap: 8 }}>
+              <div className="doc-item__actions">
                 {canPreview(doc.mimeType) && (
                   <button type="button" className="btn btn-secondary" onClick={() => setPreview(doc)}>Ver</button>
                 )}
                 <a className="btn btn-outline" href={fileUrl(doc._id)}>Descargar</a>
-                <button type="button" className="btn btn-danger" onClick={() => onDelete(doc)} disabled={loading}>Eliminar</button>
+                {deleteCandidate?._id === doc._id ? (
+                  <div className="doc-delete-confirm" role="group" aria-label={`Confirmar eliminación de ${doc.name}`}>
+                    <span>¿Eliminar este documento?</span>
+                    <button type="button" className="btn btn-danger" onClick={confirmDelete} disabled={loading}>{loading ? 'Eliminando…' : 'Confirmar'}</button>
+                    <button type="button" className="btn btn-outline-secondary" onClick={() => setDeleteCandidate(null)} disabled={loading}>Cancelar</button>
+                  </div>
+                ) : (
+                  <button type="button" className="btn btn-danger" onClick={() => onDelete(doc)} disabled={loading}>Eliminar</button>
+                )}
               </div>
             </div>
-            <div style={{ marginTop: 8, display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ fontSize: 12, color: '#444' }}>Nombre</span>
+            <div className="doc-item__fields">
+              <label className="doc-item__field">
+                <span>Nombre</span>
                 <input
                   defaultValue={doc.name}
                   maxLength={120}
+                  aria-label={`Nombre de ${doc.name}`}
                   onBlur={(e) => {
                     const name = e.target.value.trim();
                     if (name && name !== doc.name) {
@@ -169,12 +192,12 @@ const DocumentManager = () => {
                   }}
                 />
               </label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ fontSize: 12, color: '#444' }}>Etiquetas</span>
+              <label className="doc-item__field">
+                <span>Etiquetas</span>
                 <input
                   defaultValue={doc.tags.join(', ')}
                   placeholder="ej: CV, Título"
-                  style={{ minWidth: 260 }}
+                  aria-label={`Etiquetas de ${doc.name}`}
                   onBlur={(e) => {
                     const tags = e.target.value.split(',').map((tag) => tag.trim()).filter(Boolean);
                     if (JSON.stringify(tags) !== JSON.stringify(doc.tags)) {
@@ -184,32 +207,30 @@ const DocumentManager = () => {
                 />
               </label>
             </div>
-          </div>
+          </article>
         ))}
       </div>
 
       {preview && (
         <div
-          className="modal-overlay"
           onClick={() => setPreview(null)}
-          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}
+          className="document-preview-overlay"
         >
           <div
             role="dialog"
             aria-modal="true"
             aria-label={`Vista previa de ${preview.name}`}
-            className="modal-content"
+            className="document-preview"
             onClick={(e) => e.stopPropagation()}
-            style={{ background: '#fff', padding: 16, borderRadius: 8, maxWidth: '90vw', maxHeight: '90vh' }}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, gap: 12 }}>
+            <div className="document-preview__header">
               <strong>{preview.name}</strong>
               <button type="button" onClick={() => setPreview(null)} className="btn btn-outline">Cerrar</button>
             </div>
             {preview.mimeType === 'application/pdf' ? (
-              <iframe title={preview.name} src={fileUrl(preview._id)} style={{ width: '80vw', height: '75vh', border: 'none' }} />
+              <iframe title={preview.name} src={fileUrl(preview._id)} className="document-preview__frame" />
             ) : (
-              <img src={fileUrl(preview._id)} alt={preview.name} style={{ maxWidth: '80vw', maxHeight: '75vh', objectFit: 'contain' }} />
+              <img src={fileUrl(preview._id)} alt={preview.name} className="document-preview__image" />
             )}
           </div>
         </div>
