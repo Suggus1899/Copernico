@@ -268,7 +268,7 @@ assignmentSchema.methods.submitAssignment = function(this: AssignmentDocument, s
 };
 
 // Método para calificar tarea
-assignmentSchema.methods.gradeAssignment = function(this: AssignmentDocument, graderId: mongoose.Types.ObjectId, gradeData: Partial<NonNullable<AssignmentRecord['grading']>>): Promise<AssignmentDocument> {
+assignmentSchema.methods.gradeAssignment = function(this: AssignmentDocument, graderId: string | mongoose.Types.ObjectId, gradeData: Partial<NonNullable<AssignmentRecord['grading']>>): Promise<AssignmentDocument> {
   this.grading = {
     ...gradeData,
     gradedBy: graderId,
@@ -280,7 +280,7 @@ assignmentSchema.methods.gradeAssignment = function(this: AssignmentDocument, gr
 };
 
 // Método para agregar comentario
-assignmentSchema.methods.addComment = function(this: AssignmentDocument, authorId: mongoose.Types.ObjectId, comment: string, isPrivate: boolean = false): Promise<AssignmentDocument> {
+assignmentSchema.methods.addComment = function(this: AssignmentDocument, authorId: string | mongoose.Types.ObjectId, comment: string, isPrivate: boolean = false): Promise<AssignmentDocument> {
   this.comments.push({
     authorId,
     comment,
@@ -291,7 +291,7 @@ assignmentSchema.methods.addComment = function(this: AssignmentDocument, authorI
 };
 
 // Método para solicitar extensión
-assignmentSchema.methods.requestExtension = function(this: AssignmentDocument, userId: mongoose.Types.ObjectId, reason: string, newDueDate: Date): Promise<AssignmentDocument> {
+assignmentSchema.methods.requestExtension = function(this: AssignmentDocument, userId: string | mongoose.Types.ObjectId, reason: string, newDueDate: Date): Promise<AssignmentDocument> {
   this.extensions.push({
     requestedBy: userId,
     reason,
@@ -317,8 +317,11 @@ export type AssignmentRecord = mongoose.InferSchemaType<typeof assignmentSchema>
 export type AssignmentDocument = mongoose.HydratedDocument<AssignmentRecord, AssignmentMethods>;
 export interface AssignmentMethods {
   submitAssignment(submissionData: Partial<NonNullable<AssignmentRecord['submission']>>): Promise<AssignmentDocument>;
-  gradeAssignment(graderId: mongoose.Types.ObjectId, gradeData: Partial<NonNullable<AssignmentRecord['grading']>>): Promise<AssignmentDocument>;
-  addComment(authorId: mongoose.Types.ObjectId, comment: string, isPrivate?: boolean): Promise<AssignmentDocument>;
-  requestExtension(userId: mongoose.Types.ObjectId, reason: string, newDueDate: Date): Promise<AssignmentDocument>;
+  gradeAssignment(graderId: string | mongoose.Types.ObjectId, gradeData: Partial<NonNullable<AssignmentRecord['grading']>>): Promise<AssignmentDocument>;
+  addComment(authorId: string | mongoose.Types.ObjectId, comment: string, isPrivate?: boolean): Promise<AssignmentDocument>;
+  requestExtension(userId: string | mongoose.Types.ObjectId, reason: string, newDueDate: Date): Promise<AssignmentDocument>;
 }
-export default mongoose.model<AssignmentRecord, mongoose.Model<AssignmentRecord, {}, AssignmentMethods>>('Assignment', assignmentSchema);
+export interface AssignmentModel extends mongoose.Model<AssignmentRecord, {}, AssignmentMethods> {
+  getPendingAssignments(studentId: string | mongoose.Types.ObjectId): mongoose.Query<AssignmentDocument[], AssignmentDocument>;
+}
+export default mongoose.model<AssignmentRecord, AssignmentModel>('Assignment', assignmentSchema);

@@ -59,12 +59,12 @@ classVideoSchema.pre('save', function(next) {
 });
 
 /** Alterna el like del usuario. `likes` siempre refleja `likedBy`. */
-classVideoSchema.methods.toggleLike = function(this: ClassVideoDocument, userId: mongoose.Types.ObjectId): Promise<ClassVideoDocument> {
+classVideoSchema.methods.toggleLike = function(this: ClassVideoDocument, userId: string | mongoose.Types.ObjectId): Promise<ClassVideoDocument> {
   const key = String(userId);
   const index = this.likedBy.findIndex((id) => String(id) === key);
 
   if (index > -1) this.likedBy.splice(index, 1);
-  else this.likedBy.push(userId);
+  else this.likedBy.push(userId as mongoose.Types.ObjectId); // Mongoose casts string IDs on array writes.
 
   this.likes = this.likedBy.length;
   return this.save();
@@ -92,7 +92,7 @@ classVideoSchema.methods.canAccess = function(this: ClassVideoDocument, user: { 
 export type ClassVideoRecord = mongoose.InferSchemaType<typeof classVideoSchema>;
 export type ClassVideoDocument = mongoose.HydratedDocument<ClassVideoRecord, ClassVideoMethods>;
 export interface ClassVideoMethods {
-  toggleLike(userId: mongoose.Types.ObjectId): Promise<ClassVideoDocument>;
+  toggleLike(userId: string | mongoose.Types.ObjectId): Promise<ClassVideoDocument>;
   canAccess(user: { id: string; role: string } | null): boolean;
 }
 export default mongoose.model<ClassVideoRecord, mongoose.Model<ClassVideoRecord, {}, ClassVideoMethods>>('ClassVideo', classVideoSchema);

@@ -236,4 +236,9 @@ export interface VideoProgressMethods {
   addViewingSession(watchedSeconds: number, lastPosition: number): Promise<VideoProgressDocument>;
   updateProgress(currentTime: number, watchedSeconds?: number): Promise<VideoProgressDocument>;
 }
-export default mongoose.model<VideoProgressRecord, mongoose.Model<VideoProgressRecord, {}, VideoProgressMethods>>('VideoProgress', videoProgressSchema);
+export interface VideoProgressModel extends mongoose.Model<VideoProgressRecord, {}, VideoProgressMethods> {
+  getStudentProgressBySubject(studentId: string | mongoose.Types.ObjectId, subject: string): mongoose.Query<VideoProgressDocument[], VideoProgressDocument>;
+  getStudentVideoStats(studentId: string | mongoose.Types.ObjectId): mongoose.Aggregate<{ subject: string; totalVideos: number; completedVideos: number; completionRate: number; totalWatchTimeHours: number; averageProgress: number; lastWatched: Date }[]>;
+  getMostWatchedVideos(studentId: string | mongoose.Types.ObjectId, limit?: number): mongoose.Query<VideoProgressDocument[], VideoProgressDocument>;
+}
+export default mongoose.model<VideoProgressRecord, VideoProgressModel>('VideoProgress', videoProgressSchema);

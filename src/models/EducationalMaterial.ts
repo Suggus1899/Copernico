@@ -260,7 +260,7 @@ educationalMaterialSchema.methods.incrementDownloads = function(this: Educationa
 };
 
 // Método para calificar material
-educationalMaterialSchema.methods.addRating = function(this: EducationalMaterialDocument, userId: mongoose.Types.ObjectId, rating: number, comment: string = ''): Promise<EducationalMaterialDocument> {
+educationalMaterialSchema.methods.addRating = function(this: EducationalMaterialDocument, userId: string | mongoose.Types.ObjectId, rating: number, comment: string = ''): Promise<EducationalMaterialDocument> {
   // Verificar si el usuario ya calificó
   const existingRatingIndex = this.ratings.findIndex(r => r.userId!.toString() === userId.toString());
   
@@ -320,7 +320,7 @@ export type EducationalMaterialDocument = mongoose.HydratedDocument<EducationalM
 export interface EducationalMaterialMethods {
   incrementViews(): Promise<EducationalMaterialDocument>;
   incrementDownloads(): Promise<EducationalMaterialDocument>;
-  addRating(userId: mongoose.Types.ObjectId, rating: number, comment?: string): Promise<EducationalMaterialDocument>;
+  addRating(userId: string | mongoose.Types.ObjectId, rating: number, comment?: string): Promise<EducationalMaterialDocument>;
   canAccess(user: { _id: unknown; role: string; studentProfile?: { enrolledCourses?: string[] } | null }): boolean;
 }
 export default mongoose.model<EducationalMaterialRecord, mongoose.Model<EducationalMaterialRecord, {}, EducationalMaterialMethods>>('EducationalMaterial', educationalMaterialSchema);

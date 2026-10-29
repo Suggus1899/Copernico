@@ -252,7 +252,7 @@ progressTrackingSchema.pre('save', function(next) {
 });
 
 // Método para agregar entrada al historial
-progressTrackingSchema.methods.addProgressHistory = function(this: ProgressTrackingDocument, metricsSnapshot: unknown, notes: string, recordedBy: mongoose.Types.ObjectId): Promise<ProgressTrackingDocument> {
+progressTrackingSchema.methods.addProgressHistory = function(this: ProgressTrackingDocument, metricsSnapshot: unknown, notes: string, recordedBy: string | mongoose.Types.ObjectId): Promise<ProgressTrackingDocument> {
   this.progressHistory.push({
     date: new Date(),
     metricsSnapshot,
@@ -306,8 +306,11 @@ progressTrackingSchema.statics.getStudentProgress = function(studentId, subject)
 export type ProgressTrackingRecord = mongoose.InferSchemaType<typeof progressTrackingSchema>;
 export type ProgressTrackingDocument = mongoose.HydratedDocument<ProgressTrackingRecord, ProgressTrackingMethods>;
 export interface ProgressTrackingMethods {
-  addProgressHistory(metricsSnapshot: unknown, notes: string, recordedBy: mongoose.Types.ObjectId): Promise<ProgressTrackingDocument>;
+  addProgressHistory(metricsSnapshot: unknown, notes: string, recordedBy: string | mongoose.Types.ObjectId): Promise<ProgressTrackingDocument>;
   updateCompetencyLevel(): Promise<ProgressTrackingDocument>;
   calculateOverallProgress(): number;
 }
-export default mongoose.model<ProgressTrackingRecord, mongoose.Model<ProgressTrackingRecord, {}, ProgressTrackingMethods>>('ProgressTracking', progressTrackingSchema);
+export interface ProgressTrackingModel extends mongoose.Model<ProgressTrackingRecord, {}, ProgressTrackingMethods> {
+  getStudentProgress(studentId: string | mongoose.Types.ObjectId, subject: string): mongoose.Query<ProgressTrackingDocument | null, ProgressTrackingDocument>;
+}
+export default mongoose.model<ProgressTrackingRecord, ProgressTrackingModel>('ProgressTracking', progressTrackingSchema);
