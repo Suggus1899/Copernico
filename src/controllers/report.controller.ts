@@ -1,3 +1,7 @@
+import type { FilterQuery } from 'mongoose';
+import type { BodyOf, Handler } from '../types/http.js';
+import type { ReportDocument, ReportRecord } from '../models/Report.js';
+import type * as schemas from '../schemas/report.schema.js';
 import Report from "../models/Report.js";
 import User from "../models/User.js";
 import ProgressTracking from "../models/ProgressTracking.js";
@@ -5,7 +9,16 @@ import Appointment from "../models/Appointment.js";
 import Assignment from "../models/Assignment.js";
 import EducationalMaterial from "../models/EducationalMaterial.js";
 
-export const getReports = async (req, res, next) => {
+type ReportQuery = { type?: string; status?: string; generatedBy?: string; forUser?: string; dateFrom?: string; dateTo?: string; accessLevel?: string; page?: string; limit?: string };
+type ReportParams = Record<string, string>;
+type CreateReportBody = Omit<BodyOf<typeof schemas.createReportSchema>, 'recurrence'> & {
+  createdBy?: string;
+  generatedBy?: string;
+  updatedBy?: string;
+  recurrence?: NonNullable<BodyOf<typeof schemas.createReportSchema>['recurrence']> & { nextGeneration?: Date };
+};
+
+export const getReports: Handler<ReportParams, unknown, unknown, ReportQuery> = async (req, res, next) => {
   try {
     const { 
       type, 
@@ -19,7 +32,7 @@ export const getReports = async (req, res, next) => {
       limit = 20 
     } = req.query;
     
-    const filter = {};
+    const filter: FilterQuery<ReportRecord> = {};
     
     // Filtros básicos
     if (type) filter.type = type;
@@ -36,25 +49,25 @@ export const getReports = async (req, res, next) => {
     }
 
     // Filtrar por acceso del usuario
-    if (req.user.role !== 'admin') {
+    if (req.user!.role !== 'admin') {
       filter.$or = [
-        { generatedBy: req.user.id },
-        { forUser: req.user.id },
+        { generatedBy: req.user!.id },
+        { forUser: req.user!.id },
         { 
           accessLevel: 'public',
-          forRole: { $in: [req.user.role, 'all'] }
+          forRole: { $in: [req.user!.role, 'all'] }
         },
         { 
           accessLevel: 'restricted',
-          allowedUsers: req.user.id
+          allowedUsers: req.user!.id
         }
       ];
     }
 
     const options = {
-      page: parseInt(page),
-      limit: parseInt(limit),
-      sort: { createdAt: -1 }
+      page: parseInt(String(page)),
+      limit: parseInt(String(limit)),
+      sort: { createdAt: -1 as const }
     };
 
     const reports = await Report.find(filter)
@@ -85,7 +98,7 @@ export const getReports = async (req, res, next) => {
   }
 };
 
-export const getReportById = async (req, res, next) => {
+export const getReportById: Handler<ReportParams> = async (req, res, next) => {
   try {
     const report = await Report.findById(req.params.id)
       .populate('generatedBy', 'personalInfo email')
@@ -97,23 +110,23 @@ export const getReportById = async (req, res, next) => {
       .populate('filters.users', 'personalInfo email');
 
     if (!report) {
-      const error = new Error("Report not found");
+      const error = new Error("Report not found") as Error & { status: number };
       error.status = 404;
       throw error;
     }
 
     // Verificar permisos de acceso
     const canAccess = 
-      req.user.role === 'admin' ||
-      report.generatedBy._id.toString() === req.user.id ||
-      (report.forUser && report.forUser._id.toString() === req.user.id) ||
+      req.user!.role === 'admin' ||
+      report.generatedBy._id.toString() === req.user!.id ||
+      (report.forUser && report.forUser._id.toString() === req.user!.id) ||
       report.accessLevel === 'public' ||
-      (report.accessLevel === 'restricted' && report.allowedUsers.some(user => user._id.toString() === req.user.id)) ||
+      (report.accessLevel === 'restricted' && report.allowedUsers.some(user => user._id.toString() === req.user!.id)) ||
       report.forRole === 'all' ||
-      report.forRole === req.user.role;
+      report.forRole === req.user!.role;
 
     if (!canAccess) {
-      const error = new Error("Access denied to this report");
+      const error = new Error("Access denied to this report") as Error & { status: number };
       error.status = 403;
       throw error;
     }
@@ -127,7 +140,7 @@ export const getReportById = async (req, res, next) => {
   }
 };
 
-export const createReport = async (req, res, next) => {
+export const createReport: Handler<ReportParams, unknown, CreateReportBody> = async (req, res, next) => {
   try {
     const reportData = req.body;
 
@@ -135,7 +148,7 @@ export const createReport = async (req, res, next) => {
     if (reportData.forUser) {
       const forUser = await User.findById(reportData.forUser);
       if (!forUser) {
-        const error = new Error("Target user not found");
+        const error = new Error("Target user not found") as Error & { status: number };
         error.status = 404;
         throw error;
       }
@@ -145,16 +158,16 @@ export const createReport = async (req, res, next) => {
     if (reportData.allowedUsers && reportData.allowedUsers.length > 0) {
       const allowedUsers = await User.find({ _id: { $in: reportData.allowedUsers } });
       if (allowedUsers.length !== reportData.allowedUsers.length) {
-        const error = new Error("Some allowed users not found");
+        const error = new Error("Some allowed users not found") as Error & { status: number };
         error.status = 404;
         throw error;
       }
     }
 
     // Agregar información de auditoría
-    reportData.generatedBy = req.user.id;
-    reportData.createdBy = req.user.id;
-    reportData.updatedBy = req.user.id;
+    reportData.generatedBy = req.user!.id;
+    reportData.createdBy = req.user!.id;
+    reportData.updatedBy = req.user!.id;
 
     // Configurar próxima generación si es recurrente
     if (reportData.isRecurring && reportData.recurrence) {
@@ -198,20 +211,20 @@ export const createReport = async (req, res, next) => {
   }
 };
 
-export const generateReportData = async (req, res, next) => {
+export const generateReportData: Handler<ReportParams, unknown, BodyOf<typeof schemas.generateReportSchema>> = async (req, res, next) => {
   try {
     const { forceRegenerate } = req.body;
     const report = await Report.findById(req.params.id);
 
     if (!report) {
-      const error = new Error("Report not found");
+      const error = new Error("Report not found") as Error & { status: number };
       error.status = 404;
       throw error;
     }
 
     // Verificar permisos
-    if (report.generatedBy.toString() !== req.user.id && req.user.role !== 'admin') {
-      const error = new Error("Not authorized to generate this report");
+    if (report.generatedBy.toString() !== req.user!.id && req.user!.role !== 'admin') {
+      const error = new Error("Not authorized to generate this report") as Error & { status: number };
       error.status = 403;
       throw error;
     }
@@ -227,7 +240,7 @@ export const generateReportData = async (req, res, next) => {
 
     // Actualizar estado
     report.status = 'generating';
-    report.updatedBy = req.user.id;
+    report.set('updatedBy', req.user!.id);
     await report.save();
 
     try {
@@ -252,7 +265,7 @@ export const generateReportData = async (req, res, next) => {
           reportData = await generateCustomReport(report);
       }
 
-      report.data = reportData;
+      report.set('data', reportData);
       report.status = 'generated';
       await report.addGenerationLog('complete', 'Report data generation completed', 1000);
 
@@ -267,10 +280,10 @@ export const generateReportData = async (req, res, next) => {
 
     } catch (genError) {
       report.status = 'failed';
-      await report.addGenerationLog('error', `Generation failed: ${genError.message}`);
+      await report.addGenerationLog('error', `Generation failed: ${(genError as Error).message}`);
       await report.save();
       
-      const error = new Error(`Report generation failed: ${genError.message}`);
+      const error = new Error(`Report generation failed: ${(genError as Error).message}`) as Error & { status: number };
       error.status = 500;
       throw error;
     }
@@ -281,8 +294,9 @@ export const generateReportData = async (req, res, next) => {
 };
 
 // Funciones auxiliares para generar datos de reportes
-const generateStudentProgressReport = async (report) => {
-  const { period, filters } = report;
+const generateStudentProgressReport = async (report: ReportDocument): Promise<Record<string, unknown>> => {
+  const period = report.period!;
+  const filters = report.filters!;
   
   // Obtener progreso del estudiante
   const progressData = await ProgressTracking.find({
@@ -322,7 +336,7 @@ const generateStudentProgressReport = async (report) => {
   const attendanceRate = totalAppointments > 0 ? (attendedAppointments / totalAppointments) * 100 : 0;
 
   const averageGrade = assignments.filter(a => a.grading?.grade)
-    .reduce((sum, a) => sum + a.grading.grade, 0) / completedAssignments || 0;
+    .reduce((sum, a) => sum + a.grading!.grade!, 0) / completedAssignments || 0;
 
   return {
     academicPerformance: {
@@ -333,9 +347,9 @@ const generateStudentProgressReport = async (report) => {
       attendanceRate: Math.round(attendanceRate * 100) / 100,
       subjects: progressData.map(p => ({
         name: p.subject,
-        grade: p.metrics.assignmentGrades || 0,
-        progress: p.metrics.understandingLevel || 0,
-        assignmentsCompleted: assignments.filter(a => a.materialId?.subject === p.subject).length
+        grade: p.metrics!.assignmentGrades || 0,
+        progress: p.metrics!.understandingLevel || 0,
+        assignmentsCompleted: assignments.filter(a => (a.materialId as unknown as { subject?: string }).subject === p.subject).length
       }))
     },
     activitySummary: {
@@ -346,7 +360,7 @@ const generateStudentProgressReport = async (report) => {
         createdAt: { $gte: period.startDate, $lte: period.endDate }
       }),
       assignmentsSubmitted: assignments.filter(a => a.submission?.submittedAt).length,
-      activeDays: new Set(appointments.map(a => a.scheduledDate.toISOString().split('T')[0])).size
+      activeDays: new Set(appointments.map(a => (a as unknown as { scheduledDate: Date }).scheduledDate.toISOString().split('T')[0])).size
     },
     metrics: {
       totalRecords: progressData.length + assignments.length + appointments.length,
@@ -357,8 +371,9 @@ const generateStudentProgressReport = async (report) => {
   };
 };
 
-const generateTutorPerformanceReport = async (report) => {
-  const { period, filters } = report;
+const generateTutorPerformanceReport = async (report: ReportDocument): Promise<Record<string, unknown>> => {
+  const period = report.period!;
+  const filters = report.filters!;
   
   const tutorId = report.forUser || filters.users?.[0];
   if (!tutorId) throw new Error("Tutor ID required for performance report");
@@ -371,7 +386,7 @@ const generateTutorPerformanceReport = async (report) => {
       $lte: period.endDate
     },
     status: 'completed'
-  }).populate('studentId', 'personalInfo');
+  }).populate<{ studentId: { _id: import('mongoose').Types.ObjectId } }>('studentId', 'personalInfo');
 
   // Obtener estudiantes únicos
   const uniqueStudents = [...new Set(appointments.map(a => a.studentId._id.toString()))];
@@ -387,11 +402,11 @@ const generateTutorPerformanceReport = async (report) => {
   const totalStudents = uniqueStudents.length;
   const sessionsCompleted = appointments.length;
   
-  const ratings = appointments.filter(a => a.studentRating).map(a => a.studentRating);
+  const ratings = appointments.map(a => a.studentRating).filter((rating): rating is number => Boolean(rating));
   const averageRating = ratings.length > 0 ? 
     ratings.reduce((sum, r) => sum + r, 0) / ratings.length : 0;
 
-  const subjectsTaught = [...new Set(appointments.map(a => a.subject))];
+  const subjectsTaught = [...new Set(appointments.map(a => (a as unknown as { subject: string }).subject))];
 
   return {
     tutorPerformance: {
@@ -402,8 +417,8 @@ const generateTutorPerformanceReport = async (report) => {
       subjectsTaught,
       studentProgress: studentProgress.map(sp => ({
         studentId: sp.studentId,
-        improvement: sp.metrics.understandingLevel || 0,
-        completionRate: sp.metrics.completionRate || 0
+        improvement: sp.metrics!.understandingLevel || 0,
+        completionRate: sp.metrics!.completionRate || 0
       }))
     },
     metrics: {
@@ -415,8 +430,8 @@ const generateTutorPerformanceReport = async (report) => {
   };
 };
 
-const generateSystemUsageReport = async (report) => {
-  const { period } = report;
+const generateSystemUsageReport = async (report: ReportDocument): Promise<Record<string, unknown>> => {
+  const period = report.period!;
 
   // Obtener estadísticas del sistema
   const totalUsers = await User.countDocuments();
@@ -441,7 +456,7 @@ const generateSystemUsageReport = async (report) => {
   });
 
   // Obtener materias populares
-  const popularSubjects = await Appointment.aggregate([
+  const popularSubjects = await Appointment.aggregate<{ _id: string; usageCount: number }>([
     {
       $match: {
         createdAt: { $gte: period.startDate, $lte: period.endDate }
@@ -488,18 +503,19 @@ const generateSystemUsageReport = async (report) => {
   };
 };
 
-const generateAssignmentCompletionReport = async (report) => {
-  const { period, filters } = report;
+const generateAssignmentCompletionReport = async (report: ReportDocument): Promise<Record<string, unknown>> => {
+  const period = report.period!;
+  const filters = report.filters!;
 
   const assignments = await Assignment.find({
     dueDate: { $gte: period.startDate, $lte: period.endDate },
     ...(filters.subjects && filters.subjects.length > 0 && { 
       'materialId.subject': { $in: filters.subjects } 
     })
-  }).populate('materialId', 'subject')
+  }).populate<{ materialId: { subject?: string } }>('materialId', 'subject')
     .populate('studentId', 'personalInfo');
 
-  const completionStats = assignments.reduce((stats, assignment) => {
+  const completionStats = assignments.reduce<Record<string, { total: number; completed: number; graded: number; late: number }>>((stats, assignment) => {
     const subject = assignment.materialId?.subject || 'Unknown';
     if (!stats[subject]) {
       stats[subject] = { total: 0, completed: 0, graded: 0, late: 0 };
@@ -545,7 +561,7 @@ const generateAssignmentCompletionReport = async (report) => {
   };
 };
 
-const generateCustomReport = async (report) => {
+const generateCustomReport = async (report: ReportDocument): Promise<Record<string, unknown>> => {
   // Reporte personalizado - estructura básica
   return {
     customData: {
@@ -562,38 +578,38 @@ const generateCustomReport = async (report) => {
   };
 };
 
-export const deliverReport = async (req, res, next) => {
+export const deliverReport: Handler<ReportParams, unknown, BodyOf<typeof schemas.deliverReportSchema>> = async (req, res, next) => {
   try {
     const { method, recipients, message } = req.body;
     const report = await Report.findById(req.params.id);
 
     if (!report) {
-      const error = new Error("Report not found");
+      const error = new Error("Report not found") as Error & { status: number };
       error.status = 404;
       throw error;
     }
 
     // Verificar que el reporte esté generado
     if (report.status !== 'generated') {
-      const error = new Error("Report must be generated before delivery");
+      const error = new Error("Report must be generated before delivery") as Error & { status: number };
       error.status = 400;
       throw error;
     }
 
     // Verificar permisos
-    if (report.generatedBy.toString() !== req.user.id && req.user.role !== 'admin') {
-      const error = new Error("Not authorized to deliver this report");
+    if (report.generatedBy.toString() !== req.user!.id && req.user!.role !== 'admin') {
+      const error = new Error("Not authorized to deliver this report") as Error & { status: number };
       error.status = 403;
       throw error;
     }
 
     // Actualizar información de entrega
-    report.delivery.method = method;
-    report.delivery.recipients = recipients || [];
-    report.delivery.sentAt = new Date();
-    report.delivery.deliveryStatus = 'sent';
+    report.delivery!.method = method;
+    report.set('delivery.recipients', recipients || []);
+    report.delivery!.sentAt = new Date();
+    report.delivery!.deliveryStatus = 'sent';
     report.status = 'delivered';
-    report.updatedBy = req.user.id;
+    report.set('updatedBy', req.user!.id);
 
     await report.save();
 
@@ -610,7 +626,7 @@ export const deliverReport = async (req, res, next) => {
   }
 };
 
-export const getReportTemplates = async (req, res, next) => {
+export const getReportTemplates: Handler = async (req, res, next) => {
   try {
     const templates = {
       student_progress: {
@@ -652,19 +668,19 @@ export const getReportTemplates = async (req, res, next) => {
   }
 };
 
-export const deleteReport = async (req, res, next) => {
+export const deleteReport: Handler<ReportParams> = async (req, res, next) => {
   try {
     const report = await Report.findById(req.params.id);
 
     if (!report) {
-      const error = new Error("Report not found");
+      const error = new Error("Report not found") as Error & { status: number };
       error.status = 404;
       throw error;
     }
 
     // Verificar permisos
-    if (report.generatedBy.toString() !== req.user.id && req.user.role !== 'admin') {
-      const error = new Error("Not authorized to delete this report");
+    if (report.generatedBy.toString() !== req.user!.id && req.user!.role !== 'admin') {
+      const error = new Error("Not authorized to delete this report") as Error & { status: number };
       error.status = 403;
       throw error;
     }

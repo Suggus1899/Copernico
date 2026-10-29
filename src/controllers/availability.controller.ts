@@ -1,7 +1,14 @@
+import type { FilterQuery } from 'mongoose';
+import type { BodyOf, Handler } from '../types/http.js';
+import type { AvailabilitySlotRecord } from '../models/AvailabilitySlot.js';
+import type * as schemas from '../schemas/availability.schema.js';
 import AvailabilitySlot from "../models/AvailabilitySlot.js";
 import User from "../models/User.js";
 
-export const getAvailabilitySlots = async (req, res, next) => {
+type AvailabilityQuery = { userId?: string; userRole?: string; subject?: string; status?: string; scheduleType?: string; date?: string; page?: string; limit?: string };
+type AvailabilityParams = Record<string, string>;
+
+export const getAvailabilitySlots: Handler<AvailabilityParams, unknown, unknown, AvailabilityQuery> = async (req, res, next) => {
   try {
     const { 
       userId, 
@@ -14,7 +21,7 @@ export const getAvailabilitySlots = async (req, res, next) => {
       limit = 20 
     } = req.query;
     
-    const filter = {};
+    const filter: FilterQuery<AvailabilitySlotRecord> = {};
     
     // Filtros
     if (userId) filter.userId = userId;
@@ -39,9 +46,9 @@ export const getAvailabilitySlots = async (req, res, next) => {
     }
 
     const options = {
-      page: parseInt(page),
-      limit: parseInt(limit),
-      sort: { startTime: 1 }
+      page: parseInt(String(page)),
+      limit: parseInt(String(limit)),
+      sort: { startTime: 1 as const }
     };
 
     const slots = await AvailabilitySlot.find(filter)
@@ -67,7 +74,7 @@ export const getAvailabilitySlots = async (req, res, next) => {
   }
 };
 
-export const getAvailabilitySlotById = async (req, res, next) => {
+export const getAvailabilitySlotById: Handler<AvailabilityParams> = async (req, res, next) => {
   try {
     const slot = await AvailabilitySlot.findById(req.params.id)
       .populate('userId', 'personalInfo email role')
@@ -75,7 +82,7 @@ export const getAvailabilitySlotById = async (req, res, next) => {
       .populate('updatedBy', 'personalInfo');
 
     if (!slot) {
-      const error = new Error("Availability slot not found");
+      const error = new Error("Availability slot not found") as Error & { status: number };
       error.status = 404;
       throw error;
     }
@@ -89,27 +96,27 @@ export const getAvailabilitySlotById = async (req, res, next) => {
   }
 };
 
-export const createAvailabilitySlot = async (req, res, next) => {
+export const createAvailabilitySlot: Handler<AvailabilityParams, unknown, BodyOf<typeof schemas.createAvailabilitySchema> & { createdBy?: string; updatedBy?: string }> = async (req, res, next) => {
   try {
     const slotData = req.body;
 
     // Verificar que el usuario existe y tiene el rol correcto
     const user = await User.findById(slotData.userId);
     if (!user) {
-      const error = new Error("User not found");
+      const error = new Error("User not found") as Error & { status: number };
       error.status = 404;
       throw error;
     }
 
     if (!['tutor', 'advisor'].includes(user.role)) {
-      const error = new Error("User must be a tutor or advisor to create availability slots");
+      const error = new Error("User must be a tutor or advisor to create availability slots") as Error & { status: number };
       error.status = 400;
       throw error;
     }
 
     // Verificar que userRole coincide con el rol real del usuario
     if (user.role !== slotData.userRole) {
-      const error = new Error("User role mismatch");
+      const error = new Error("User role mismatch") as Error & { status: number };
       error.status = 400;
       throw error;
     }
@@ -137,15 +144,15 @@ export const createAvailabilitySlot = async (req, res, next) => {
     });
 
     if (overlappingSlot) {
-      const error = new Error("Time slot overlaps with existing availability");
+      const error = new Error("Time slot overlaps with existing availability") as Error & { status: number };
       error.status = 409;
       throw error;
     }
 
     // Agregar información de auditoría
     if (req.user) {
-      slotData.createdBy = req.user.id;
-      slotData.updatedBy = req.user.id;
+      slotData.createdBy = req.user!.id;
+      slotData.updatedBy = req.user!.id;
     }
 
     const newSlot = new AvailabilitySlot(slotData);
@@ -165,13 +172,13 @@ export const createAvailabilitySlot = async (req, res, next) => {
   }
 };
 
-export const updateAvailabilitySlot = async (req, res, next) => {
+export const updateAvailabilitySlot: Handler<AvailabilityParams, unknown, BodyOf<typeof schemas.updateAvailabilitySchema> & { updatedBy?: string }> = async (req, res, next) => {
   try {
     const updateData = { ...req.body };
     
     // Agregar información de auditoría
     if (req.user) {
-      updateData.updatedBy = req.user.id;
+      updateData.updatedBy = req.user!.id;
     }
 
     const slot = await AvailabilitySlot.findByIdAndUpdate(
@@ -181,7 +188,7 @@ export const updateAvailabilitySlot = async (req, res, next) => {
     ).populate('userId', 'personalInfo email role');
 
     if (!slot) {
-      const error = new Error("Availability slot not found");
+      const error = new Error("Availability slot not found") as Error & { status: number };
       error.status = 404;
       throw error;
     }
@@ -196,14 +203,14 @@ export const updateAvailabilitySlot = async (req, res, next) => {
   }
 };
 
-export const deleteAvailabilitySlot = async (req, res, next) => {
+export const deleteAvailabilitySlot: Handler<AvailabilityParams> = async (req, res, next) => {
   try {
     const { id } = req.params;
     
     const slot = await AvailabilitySlot.findByIdAndDelete(id);
 
     if (!slot) {
-      const error = new Error("Availability slot not found");
+      const error = new Error("Availability slot not found") as Error & { status: number };
       error.status = 404;
       throw error;
     }
@@ -217,11 +224,11 @@ export const deleteAvailabilitySlot = async (req, res, next) => {
   }
 };
 
-export const getMyAvailabilitySlots = async (req, res, next) => {
+export const getMyAvailabilitySlots: Handler<AvailabilityParams, unknown, unknown, { status?: string; scheduleType?: string; subject?: string }> = async (req, res, next) => {
   try {
     const { status, scheduleType, subject } = req.query;
     
-    const filter = { userId: req.user.id };
+    const filter: FilterQuery<AvailabilitySlotRecord> = { userId: req.user!.id };
     
     if (status) filter.status = status;
     if (scheduleType) filter.scheduleType = scheduleType;
@@ -239,17 +246,17 @@ export const getMyAvailabilitySlots = async (req, res, next) => {
   }
 };
 
-export const getAvailableSlotsForSubject = async (req, res, next) => {
+export const getAvailableSlotsForSubject: Handler<AvailabilityParams, unknown, unknown, { subject?: string; date?: string; userRole?: string }> = async (req, res, next) => {
   try {
     const { subject, date, userRole = 'tutor' } = req.query;
     
     if (!subject) {
-      const error = new Error("Subject is required");
+      const error = new Error("Subject is required") as Error & { status: number };
       error.status = 400;
       throw error;
     }
 
-    const filter = {
+    const filter: FilterQuery<AvailabilitySlotRecord> = {
       userRole,
       subject: new RegExp(subject, 'i'),
       status: 'available'
@@ -288,18 +295,18 @@ export const getAvailableSlotsForSubject = async (req, res, next) => {
   }
 };
 
-export const bulkUpdateAvailabilityStatus = async (req, res, next) => {
+export const bulkUpdateAvailabilityStatus: Handler<AvailabilityParams, unknown, { slotIds?: string[]; status?: string }> = async (req, res, next) => {
   try {
     const { slotIds, status } = req.body;
 
     if (!Array.isArray(slotIds) || slotIds.length === 0) {
-      const error = new Error("slotIds array is required");
+      const error = new Error("slotIds array is required") as Error & { status: number };
       error.status = 400;
       throw error;
     }
 
-    if (!['available', 'booked', 'cancelled', 'completed'].includes(status)) {
-      const error = new Error("Invalid status");
+    if (!['available', 'booked', 'cancelled', 'completed'].includes(status as string)) {
+      const error = new Error("Invalid status") as Error & { status: number };
       error.status = 400;
       throw error;
     }
@@ -307,7 +314,7 @@ export const bulkUpdateAvailabilityStatus = async (req, res, next) => {
     const result = await AvailabilitySlot.updateMany(
       { _id: { $in: slotIds } },
       { 
-        status,
+        status: status as AvailabilitySlotRecord['status'],
         updatedBy: req.user?.id 
       }
     );

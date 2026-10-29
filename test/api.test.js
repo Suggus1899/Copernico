@@ -43,11 +43,15 @@ describe('contrato general de la API', () => {
     assert.equal(typeof res.body.error.message, 'string');
   });
 
-  it('no expone rutas experimentales de tareas e informes', async () => {
+  it('mantiene fuera de la API pública módulos experimentales y no montados', async () => {
     const assignments = await request(env.app).get('/api/assignments');
     const reports = await request(env.app).get('/api/reports');
+    const courses = await request(env.app).get('/api/courses');
+    const availability = await request(env.app).get('/api/availability');
 
     assert.equal(assignments.status, 404);
     assert.equal(reports.status, 404);
+    assert.equal(courses.status, 404);
+    assert.equal(availability.status, 404);
   });
 });
