@@ -4,6 +4,7 @@ import type { User } from '../types/auth';
 import { useSessionUser } from './ProtectedRoute';
 import SidebarMenu from './SidebarMenu';
 import './Dashboard.css';
+import '../tutor-pages.css';
 
 const getDisplayName = (user: User) => {
   const name = [user.personalInfo?.firstName, user.personalInfo?.lastName].filter(Boolean).join(' ').trim();

@@ -1,8 +1,8 @@
 import { getStudentStatus } from '../utils/appointments';
 import type { PersonalInfo, UserSummary } from '../types/auth';
-import type { User } from '../types/auth';
 import type { ApiResponse } from '../types/api';
 import React, { Component } from 'react';
+import { Link } from 'react-router-dom';
 import apiClient from '../utils/axiosConfig';
 import './Dashboard.css';
 import './TutorStudents.css';
@@ -11,42 +11,29 @@ interface StudentView extends UserSummary {
   stats?: { totalAppointments: number; completedAppointments: number; lastAppointmentDate: string | null; subjects: string[] };
 }
 interface TutorStudentsState {
-  students: StudentView[]; loading: boolean; error: string | null; user: User | null;
-  expandedStudentId: string | null; historyStudentId: string | null;
+  students: StudentView[]; loading: boolean; error: string | null;
 }
 
 class TutorStudents extends Component<Record<string, never>, TutorStudentsState> {
   state: TutorStudentsState = {
     students: [],
     loading: true,
-    error: null,
-    user: null,
-    expandedStudentId: null,
-    historyStudentId: null
+    error: null
   };
 
   componentDidMount() {
-    this.loadUserProfile();
     this.loadStudents();
   }
 
-  loadUserProfile = async () => {
-    try {
-      const response = await apiClient.get<ApiResponse<User>>('/auth/profile');
-      this.setState({ user: response.data.data });
-    } catch (error) {
-      console.error('Error loading user profile:', error);
-    }
-  };
-
   loadStudents = async () => {
     try {
-      this.setState({ loading: true });
+      this.setState({ loading: true, error: null });
       const response = await apiClient.get<ApiResponse<StudentView[]>>('/appointments/my-students');
       
       this.setState({
         students: response.data.data || [],
-        loading: false
+        loading: false,
+        error: null
       });
     } catch (error) {
       console.error('Error loading students:', error);
@@ -77,24 +64,8 @@ class TutorStudents extends Component<Record<string, never>, TutorStudentsState>
 
   getStudentStatus = getStudentStatus;
 
-  handleViewProfile = (studentId: string) => {
-    this.setState(prevState => ({
-      expandedStudentId: prevState.expandedStudentId === studentId ? null : studentId
-    }));
-  };
-
-  handleViewHistory = (studentId: string) => {
-    this.setState(prevState => ({
-      historyStudentId: prevState.historyStudentId === studentId ? null : studentId
-    }));
-  };
-
-  handleSendMessage = (student: StudentView) => {
-    window.location.href = `/dashboard/mensajes?userId=${student._id}`;
-  };
-
   render() {
-    const { user, students, loading, error } = this.state;
+    const { students, loading, error } = this.state;
     const activeCount = students.filter(s => this.getStudentStatus(s) === 'active').length;
     const totalCitas = students.reduce((total, s) => total + (s.stats?.totalAppointments || 0), 0);
 
@@ -107,12 +78,12 @@ class TutorStudents extends Component<Record<string, never>, TutorStudentsState>
 
             {error && (
               <div className="estudiantes-page__alert" role="alert">
-                {error}
+                {error} <button type="button" onClick={this.loadStudents}>Reintentar</button>
               </div>
             )}
 
             {loading ? (
-              <div className="estudiantes-page estudiantes-page--loading">
+              <div className="estudiantes-page estudiantes-page--loading" role="status">
                 <div className="estudiantes-page__spinner" />
                 <p>Cargando estudiantes...</p>
               </div>
@@ -145,7 +116,7 @@ class TutorStudents extends Component<Record<string, never>, TutorStudentsState>
                         <article key={student._id} className="estudiantes-page__card">
                           <div className="estudiantes-page__card-header">
                             <div className="estudiantes-page__card-info">
-                              <h3 className="estudiantes-page__card-name">👨‍🎓 {studentName}</h3>
+                            <h3 className="estudiantes-page__card-name">{studentName}</h3>
                               <p className="estudiantes-page__card-email">{student.email}</p>
                             </div>
                             <span className={`estudiantes-page__card-status estudiantes-page__card-status--${status}`}>
@@ -181,27 +152,25 @@ class TutorStudents extends Component<Record<string, never>, TutorStudentsState>
 
                             {(student.personalInfo?.phoneNumber || student.personalInfo?.phone) && (
                               <div className="estudiantes-page__card-contact">
-                                📞 {student.personalInfo.phoneNumber || student.personalInfo.phone}
+                                {student.personalInfo.phoneNumber || student.personalInfo.phone}
                               </div>
                             )}
 
                             <div className="estudiantes-page__card-actions">
-                              <button
-                                type="button"
+                              <Link
                                 className="estudiantes-page__btn-outline"
-                                onClick={() => this.handleSendMessage(student)}
+                                to={`/dashboard/mensajes?userId=${encodeURIComponent(student._id)}`}
                               >
                                 Enviar mensaje
-                              </button>
+                              </Link>
                             </div>
                           </div>
                         </article>
                       );
                     })}
                   </div>
-                ) : (
+                ) : error ? null : (
                   <div className="estudiantes-page__empty">
-                    <span className="estudiantes-page__empty-icon" aria-hidden>👨‍🎓</span>
                     <h3>No tienes estudiantes aún</h3>
                     <p>Cuando aceptes solicitudes de asesoría, los estudiantes aparecerán aquí.</p>
                     <div className="estudiantes-page__help">

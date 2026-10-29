@@ -31,6 +31,7 @@ body {
   color: var(--ink);
   font-family: Inter, "Segoe UI", Arial, sans-serif;
   line-height: 1.55;
+  letter-spacing: normal;
 }
 
 button,
@@ -58,7 +59,7 @@ a:hover {
   color: var(--ink);
 }
 
-:focus-visible {
+:where(a, button, input, select, textarea, [tabindex="0"]):focus-visible {
   outline: 3px solid var(--gold-dark) !important;
   outline-offset: 3px;
   box-shadow: var(--focus-ring) !important;
@@ -186,15 +187,17 @@ textarea:focus {
   bottom: auto !important;
   display: block !important;
   grid-template-columns: none !important;
-  margin: 0 auto;
+  margin: 0;
   max-width: 1450px;
   min-height: calc(100dvh - 125px);
   padding: clamp(26px, 3.2vw, 48px) 0 32px;
   position: static !important;
+  width: 100%;
 }
 
 .dashboard-main:focus {
-  outline: none;
+  box-shadow: none !important;
+  outline: none !important;
 }
 
 .dashboard-footer {

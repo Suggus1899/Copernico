@@ -1,6 +1,7 @@
 import type { Appointment } from '../types/appointments';
 import type { ApiResponse } from '../types/api';
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import apiClient from '../utils/axiosConfig';
 import './Dashboard.css';
 import './MyCourses.css';
@@ -25,6 +26,7 @@ const TutorCourses = () => {
   const fetchTutorCourses = async () => {
     try {
       setLoading(true);
+      setError('');
       
       // Obtener todas las citas del tutor/asesor
       const appointmentsResponse = await apiClient.get<ApiResponse<Appointment[]>>('/appointments');
@@ -164,7 +166,7 @@ const TutorCourses = () => {
 
   if (loading) {
     return (
-      <div className="loading-container">
+      <div className="loading-container" role="status">
         <div className="loading-spinner"></div>
         <p>Cargando tus cursos...</p>
       </div>
@@ -181,6 +183,7 @@ const TutorCourses = () => {
           {error && (
             <div className="cursos-page__alert" role="alert">
               {error}
+              <button type="button" onClick={fetchTutorCourses}>Reintentar</button>
             </div>
           )}
 
@@ -200,6 +203,7 @@ const TutorCourses = () => {
                     type="button"
                     className={`cursos-page__filter-btn ${filterStatus === 'all' ? 'cursos-page__filter-btn--active' : ''}`}
                     onClick={() => setFilterStatus('all')}
+                    aria-pressed={filterStatus === 'all'}
                   >
                     Todos ({courses.length})
                   </button>
@@ -207,6 +211,7 @@ const TutorCourses = () => {
                     type="button"
                     className={`cursos-page__filter-btn ${filterStatus === 'active' ? 'cursos-page__filter-btn--active' : ''}`}
                     onClick={() => setFilterStatus('active')}
+                    aria-pressed={filterStatus === 'active'}
                   >
                     Activos ({courses.filter(c => c.status === 'active').length})
                   </button>
@@ -214,6 +219,7 @@ const TutorCourses = () => {
                     type="button"
                     className={`cursos-page__filter-btn ${filterStatus === 'completed' ? 'cursos-page__filter-btn--active' : ''}`}
                     onClick={() => setFilterStatus('completed')}
+                    aria-pressed={filterStatus === 'completed'}
                   >
                     Completados ({courses.filter(c => c.status === 'completed').length})
                   </button>
@@ -240,7 +246,7 @@ const TutorCourses = () => {
             </div>
           )}
 
-          {filteredCourses.length === 0 ? (
+          {filteredCourses.length === 0 ? error ? null : (
             <div className="cursos-page__empty">
               <span className="cursos-page__empty-icon" aria-hidden>📚</span>
               <h3>
@@ -277,7 +283,6 @@ const TutorCourses = () => {
                       </span>
                     </div>
                     <div className="cursos-page__card-tutor">
-                      <span>👨‍🎓</span>
                       <span>{course.studentName}</span>
                       {course.studentEmail && (
                         <span className="cursos-page__card-email">({course.studentEmail})</span>
@@ -336,13 +341,12 @@ const TutorCourses = () => {
                     </dl>
 
                     <div className="cursos-page__card-actions">
-                      <button
-                        type="button"
+                      <Link
                         className="cursos-page__btn-outline"
-                        onClick={() => window.location.href = `/dashboard/mensajes?userId=${course.studentId}`}
+                        to={`/dashboard/mensajes?userId=${encodeURIComponent(course.studentId || '')}`}
                       >
                         Enviar mensaje
-                      </button>
+                      </Link>
                     </div>
                   </article>
                 );

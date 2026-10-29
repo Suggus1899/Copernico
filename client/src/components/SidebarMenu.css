@@ -125,16 +125,17 @@
 }
 
 .menu-icon-img {
-  filter: grayscale(1) brightness(0) invert(0.78);
+  filter: invert(1);
   flex: 0 0 18px;
   height: 18px;
   object-fit: contain;
   opacity: 0.95;
+  mix-blend-mode: screen;
   width: 18px;
 }
 
 .menu-link.active .menu-icon-img {
-  filter: grayscale(1) brightness(0) invert(0.82) sepia(0.5) saturate(1.4);
+  filter: invert(0.72) sepia(0.68) saturate(2.5) hue-rotate(4deg);
 }
 
 .notification-badge {

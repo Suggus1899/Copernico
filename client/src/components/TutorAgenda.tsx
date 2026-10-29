@@ -5,11 +5,14 @@ import React, { useEffect, useState } from 'react';
 import apiClient from '../utils/axiosConfig';
 import './Dashboard.css';
 import './TutorAgenda.css';
+const toLocalDateInputValue = (date: Date) =>
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+
 const TutorAgenda = () => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [selectedDate, setSelectedDate] = useState(toLocalDateInputValue(new Date()));
 
   useEffect(() => {
     fetchAppointments();
@@ -18,6 +21,7 @@ const TutorAgenda = () => {
   const fetchAppointments = async () => {
     try {
       setLoading(true);
+      setError('');
       const response = await apiClient.get<ApiResponse<Appointment[]>>('/appointments');
       const appointments = response.data.data || [];
       
@@ -38,7 +42,7 @@ const TutorAgenda = () => {
 
   const getAppointmentsForDate = (date: string) => {
     return appointments.filter(apt => {
-      const appointmentDate = new Date(apt.startsAt).toISOString().split('T')[0];
+      const appointmentDate = toLocalDateInputValue(new Date(apt.startsAt));
       return appointmentDate === date;
     });
   };
@@ -109,7 +113,7 @@ const TutorAgenda = () => {
 
           {error && (
             <div className="agenda-page__alert" role="alert">
-              {error}
+              {error} <button type="button" onClick={fetchAppointments}>Reintentar</button>
             </div>
           )}
 
@@ -136,7 +140,7 @@ const TutorAgenda = () => {
             </div>
           </div>
 
-          <section className="agenda-page__schedule">
+          {!error && <section className="agenda-page__schedule">
             <h2 className="agenda-page__schedule-title">
               Citas del {formatDate(selectedDate)}
             </h2>
@@ -161,7 +165,7 @@ const TutorAgenda = () => {
                           <p className="agenda-page__item-topic">Tema: {appointment.topic}</p>
                         )}
                         <p className="agenda-page__item-student">
-                          👨‍🎓 {getStudentName(appointment.studentId)}
+                          {getStudentName(appointment.studentId)}
                         </p>
                         <div className="agenda-page__item-badges">
                           <span className={`agenda-page__item-type agenda-page__item-type--${appointment.appointmentType || 'tutoring'}`}>
@@ -177,7 +181,6 @@ const TutorAgenda = () => {
               </ul>
             ) : (
               <div className="agenda-page__empty">
-                <span className="agenda-page__empty-icon" aria-hidden>📅</span>
                 <h3>No hay citas para esta fecha</h3>
                 <p>Las citas aparecerán aquí cuando aceptes solicitudes de asesoría de los estudiantes.</p>
                 <div className="agenda-page__help">
@@ -191,7 +194,7 @@ const TutorAgenda = () => {
                 </div>
               </div>
             )}
-          </section>
+          </section>}
     </div>
   );
 };
