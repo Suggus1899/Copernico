@@ -18,7 +18,7 @@ const Messages = () => {
   const [activeConversation, setActiveConversation] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
-  const [loadingConversations, setLoadingConversations] = useState(false);
+  const [loadingConversations, setLoadingConversations] = useState(true);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [sending, setSending] = useState(false);
   const [markingAsRead, setMarkingAsRead] = useState(false);
@@ -53,11 +53,11 @@ const Messages = () => {
 
   useEffect(() => {
     // Si viene un userId por la URL y aún no hay conversación activa, intentar abrirla
-    if (initialUserId && conversations.length > 0 && !activeConversation) {
+    if (initialUserId && !loadingConversations && !conversationsError && !activeConversation) {
       openConversationByUserId(initialUserId);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialUserId, conversations]);
+  }, [initialUserId, conversations, loadingConversations, conversationsError]);
 
   useEffect(() => {
     if (!search) {
