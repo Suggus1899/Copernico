@@ -4,18 +4,19 @@
   "private": true,
   "description": "API de Cop\u00c3\u00a9rnico Academy (Express + MongoDB)",
   "type": "module",
-  "main": "src/index.js",
+  "main": "dist/src/index.js",
   "engines": {
     "node": ">=24"
   },
   "scripts": {
-    "start": "node src/index.js",
-    "dev": "node --watch src/index.js",
-    "test": "node --test --test-reporter=spec \"test/**/*.test.js\"",
-    "migrate:advisors": "node scripts/migrate_advisors_to_tutors.js",
-    "migrate:courses": "node scripts/create_courses_from_appointments.js",
+    "start": "node dist/src/index.js",
+    "dev": "tsx watch src/index.js",
+    "test": "node --import=tsx --test --test-reporter=spec \"test/**/*.test.*\"",
+    "migrate:advisors": "node dist/scripts/migrate_advisors_to_tutors.js",
+    "migrate:courses": "node dist/scripts/create_courses_from_appointments.js",
     "typecheck": "tsc -p tsconfig.json",
-    "build": "tsc -p tsconfig.build.json"
+    "build": "tsc -p tsconfig.build.json",
+    "db:init": "tsx scripts/init-replica-set.js"
   },
   "license": "ISC",
   "dependencies": {

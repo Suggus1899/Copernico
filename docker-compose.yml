@@ -28,7 +28,7 @@ services:
   db-init:
     <<: *api-build
     container_name: copernico-db-init
-    command: ["node", "scripts/init-replica-set.js"]
+    command: ["npm", "run", "db:init"]
     environment:
       - MONGODB_URI=mongodb://db:27017/?directConnection=true
       - RS_MEMBER_HOST=db:27017

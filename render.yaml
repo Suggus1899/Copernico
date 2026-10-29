@@ -8,7 +8,7 @@ services:
     name: copernico-api
     region: oregon
     plan: free
-    buildCommand: npm ci --omit=dev
+    buildCommand: npm ci --include=dev && npm run build && npm prune --omit=dev
     startCommand: npm start
     healthCheckPath: /api/health/ready
     envVars:

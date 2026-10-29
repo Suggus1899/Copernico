@@ -19,6 +19,8 @@ jobs:
           cache: npm
       - run: npm ci
       # Los tests levantan MongoDB en memoria (replica set) y descargan el binario en la primera ejecución.
+      - run: npm run typecheck
+      - run: npm run build
       - run: npm test
 
   client:
