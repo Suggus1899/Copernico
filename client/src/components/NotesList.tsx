@@ -1,11 +1,12 @@
+import type { Note } from '../types/communication';
+import type { ApiResponse } from '../types/api';
 import { useEffect, useState } from "react";
 import apiClient from "../utils/axiosConfig";
 import { getApiErrorMessage } from "../utils/apiError";
 import { Link } from "react-router-dom";
 import "./Notes.css";
-
 function NotesList() {
-  const [notes, setNotes] = useState([]);
+  const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
@@ -25,9 +26,9 @@ function NotesList() {
   const getNotes = async () => {
     try {
       setLoading(true);
-      const res = await apiClient.get("/notes");
+      const res = await apiClient.get<ApiResponse<Note[]>>("/notes");
       console.log(res);
-      setNotes(res.data?.data || res.data || []);
+      setNotes(res.data.data || []);
     } catch (error) {
       console.error("Error fetching notes:", error);
       setError('Error al cargar los apuntes');
@@ -36,7 +37,7 @@ function NotesList() {
     }
   };
 
-  const deleteNote = async (noteId) => {
+  const deleteNote = async (noteId: string) => {
     if (window.confirm('¿Estás seguro de que deseas eliminar este apunte?')) {
       try {
         const res = await apiClient.delete("/notes/" + noteId);
@@ -50,7 +51,7 @@ function NotesList() {
     }
   };
 
-  const handleCreateNote = async (e) => {
+  const handleCreateNote = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     try {
       const noteData = {
@@ -58,8 +59,8 @@ function NotesList() {
         tags: newNote.tags.split(',').map(tag => tag.trim()).filter(tag => tag)
       };
       
-      const res = await apiClient.post('/notes', noteData);
-      const createdNote = res.data?.data || res.data;
+      const res = await apiClient.post<ApiResponse<Note>>('/notes', noteData);
+      const createdNote = res.data.data;
       setNotes([createdNote, ...notes]);
       setNewNote({ title: '', content: '', subject: '', tags: '' });
       setShowCreateForm(false);
@@ -70,7 +71,7 @@ function NotesList() {
     }
   };
 
-  const handleFormChange = (e) => {
+  const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setNewNote(prev => ({
       ...prev,
@@ -93,7 +94,7 @@ function NotesList() {
 
     // Filtrar por categoría
     if (filterBy === 'recent') {
-      filtered = filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 10);
+      filtered = filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 10);
     } else if (filterBy === 'favorites') {
       filtered = filtered.filter(note => note.isFavorite);
     }
@@ -101,7 +102,7 @@ function NotesList() {
     return filtered;
   };
 
-  const formatDate = (dateString) => {
+  const formatDate = (dateString: string | null | undefined) => {
     if (!dateString) return 'Fecha no disponible';
     return new Date(dateString).toLocaleDateString('es-ES', {
       year: 'numeric',
@@ -184,7 +185,7 @@ function NotesList() {
                 value={newNote.content}
                 onChange={handleFormChange}
                 placeholder="Escribe el contenido de tu apunte aquí..."
-                rows="8"
+                rows={8}
                 required
               />
             </div>

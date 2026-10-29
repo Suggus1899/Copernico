@@ -1,17 +1,20 @@
+import type { Conversation, Message } from '../types/communication';
+import type { Appointment } from '../types/appointments';
+import type { UserSummary } from '../types/auth';
+import type { ApiResponse } from '../types/api';
 import React, { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import apiClient from '../utils/axiosConfig';
 import './Messages.css';
-
 const Messages = () => {
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
   const initialUserId = searchParams.get('userId');
-  const [conversations, setConversations] = useState([]);
-  const [filteredConversations, setFilteredConversations] = useState([]);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [filteredConversations, setFilteredConversations] = useState<Conversation[]>([]);
   const [search, setSearch] = useState('');
-  const [activeConversation, setActiveConversation] = useState(null);
-  const [messages, setMessages] = useState([]);
+  const [activeConversation, setActiveConversation] = useState<Conversation | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [loadingConversations, setLoadingConversations] = useState(false);
   const [loadingMessages, setLoadingMessages] = useState(false);
@@ -28,7 +31,7 @@ const Messages = () => {
       setMarkingAsRead(true);
       
       // Marcar todas las notificaciones de mensajes como leídas de una vez
-      const response = await apiClient.patch('/notifications/read-all?type=message_received');
+      const response = await apiClient.patch<{ success: boolean; updated: number }>('/notifications/read-all?type=message_received');
 
       if (response.data?.updated > 0) {
         console.log(`✅ ${response.data.updated} notificaciones de mensajes marcadas como leídas`);
@@ -70,7 +73,7 @@ const Messages = () => {
   const loadConversations = async () => {
     try {
       setLoadingConversations(true);
-      const res = await apiClient.get('/messages/conversations');
+      const res = await apiClient.get<ApiResponse<Conversation[]>>('/messages/conversations');
       setConversations(res.data?.data || []);
       setFilteredConversations(res.data?.data || []);
     } catch (error) {
@@ -80,7 +83,7 @@ const Messages = () => {
     }
   };
 
-  const openConversationByUserId = async (otherUserId) => {
+  const openConversationByUserId = async (otherUserId: string) => {
     // Intentar usar una conversación existente
     const existing = conversations.find(
       (c) => c.otherUser?._id === otherUserId
@@ -92,7 +95,7 @@ const Messages = () => {
 
     // Sin conversación previa: abrir un chat vacío con quien comparte una cita contigo.
     try {
-      const res = await apiClient.get('/appointments');
+      const res = await apiClient.get<ApiResponse<Appointment[]>>('/appointments');
       const appointments = res.data?.data || [];
       const match = appointments.find(
         (a) => a.tutorId?._id === otherUserId || a.studentId?._id === otherUserId
@@ -113,11 +116,11 @@ const Messages = () => {
     }
   };
 
-  const loadMessages = async (otherUserId, conversationMeta) => {
+  const loadMessages = async (otherUserId: string, conversationMeta: Conversation) => {
     try {
       setLoadingMessages(true);
       setActiveConversation(conversationMeta);
-      const res = await apiClient.get(`/messages/${otherUserId}`);
+      const res = await apiClient.get<ApiResponse<Message[]>>(`/messages/${otherUserId}`);
       setMessages(res.data?.data || []);
 
       // marcar como leídos en backend
@@ -134,12 +137,12 @@ const Messages = () => {
     }
   };
 
-  const handleSend = async (e) => {
+  const handleSend = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!activeConversation || !newMessage.trim()) return;
     try {
       setSending(true);
-      const res = await apiClient.post('/messages', {
+      const res = await apiClient.post<ApiResponse<Message>>('/messages', {
         to: activeConversation.otherUser?._id,
         text: newMessage.trim()
       });
@@ -157,7 +160,7 @@ const Messages = () => {
     }
   };
 
-  const getUserName = (user) => {
+  const getUserName = (user: UserSummary | null) => {
     if (!user) return 'Usuario';
     const first = user.personalInfo?.firstName || '';
     const last = user.personalInfo?.lastName || '';
@@ -165,7 +168,7 @@ const Messages = () => {
     return full || user.email || 'Usuario';
   };
 
-  const getUserInitials = (user) => {
+  const getUserInitials = (user: UserSummary | null) => {
     if (!user) return '?';
     const first = user.personalInfo?.firstName?.[0] || '';
     const last = user.personalInfo?.lastName?.[0] || '';
@@ -173,13 +176,13 @@ const Messages = () => {
     return initials || (user.email?.[0]?.toUpperCase() || '?');
   };
 
-  const formatTime = (dateString) => {
+  const formatTime = (dateString: string | null | undefined) => {
     if (!dateString) return '';
     const d = new Date(dateString);
     return d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
   };
 
-  const formatRoleLabel = (role) => {
+  const formatRoleLabel = (role: string | undefined) => {
     if (role === 'tutor') return 'Tutor';
     if (role === 'advisor') return 'Asesor';
     if (role === 'student') return 'Estudiante';
@@ -253,7 +256,7 @@ const Messages = () => {
                       ? 'conversation-item--active'
                       : '')
                   }
-                  onClick={() => loadMessages(conv.otherUser._id, conv)}
+                  onClick={() => { if (conv.otherUser) loadMessages(conv.otherUser._id, conv); }}
                 >
                   <div className="conversation-avatar">
                     {getUserInitials(conv.otherUser)}
@@ -312,7 +315,6 @@ const Messages = () => {
                   </div>
                 ) : (
                   messages.map((msg) => {
-                    const isMe = msg.sender?._id === activeConversation.meId;
                     // Como no estamos guardando meId, asumimos que sender distinto a otherUser es "yo"
                     const isMine = msg.sender?._id !== activeConversation.otherUser?._id;
                     return (

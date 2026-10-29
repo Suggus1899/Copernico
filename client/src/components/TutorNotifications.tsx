@@ -1,17 +1,23 @@
+import axios from 'axios';
+import type { ApiResponse } from '../types/api';
+import type { Notification } from '../types/communication';
 import React, { Component } from 'react';
 import TutorSidebarMenu from './TutorSidebarMenu';
 import apiClient from '../utils/axiosConfig';
 import { getApiErrorMessage } from '../utils/apiError';
 import './Dashboard.css';
 import './TutorNotifications.css';
+interface TutorNotificationsState { notifications: Notification[]; loading: boolean; error: string | null; filter: string }
 
-class TutorNotifications extends Component {
-  state = {
+class TutorNotifications extends Component<Record<string, never>, TutorNotificationsState> {
+  state: TutorNotificationsState = {
     notifications: [],
     loading: true,
     error: null,
     filter: 'all'
   };
+
+  notificationInterval: ReturnType<typeof setInterval> | undefined;
 
   componentDidMount() {
     this.fetchNotifications();
@@ -34,7 +40,7 @@ class TutorNotifications extends Component {
       this.setState({ loading: true, error: null });
       console.log('Obteniendo notificaciones...');
       
-      const response = await apiClient.get('/notifications');
+      const response = await apiClient.get<ApiResponse<Notification[]>>('/notifications');
       console.log('Notificaciones obtenidas:', response.data.data?.length || 0);
       console.log('Datos de notificaciones:', response.data.data);
       
@@ -44,7 +50,7 @@ class TutorNotifications extends Component {
       });
     } catch (error) {
       console.error('Error fetching notifications:', error);
-      console.error('Error response:', error.response?.data);
+      console.error('Error response:', axios.isAxiosError(error) ? error.response?.data : undefined);
       
       this.setState({
         error: 'Error al cargar las notificaciones',
@@ -53,7 +59,7 @@ class TutorNotifications extends Component {
     }
   };
 
-  markAsRead = async (id) => {
+  markAsRead = async (id: string) => {
     try {
       await apiClient.patch(`/notifications/${id}/read`);
       this.setState(prevState => ({
@@ -84,8 +90,8 @@ class TutorNotifications extends Component {
     return notifications.filter(n => n.type === filter);
   };
 
-  getNotificationIcon = (type) => {
-    const icons = {
+  getNotificationIcon = (type: string) => {
+    const icons: Record<string, string> = {
       'appointment_reminder': '📅',
       'assignment_due': '📝',
       'new_material': '📚',
@@ -104,7 +110,7 @@ class TutorNotifications extends Component {
     return icons[type] || 'ℹ️';
   };
 
-  respondToNotification = async (notificationId, response) => {
+  respondToNotification = async (notificationId: string, response: string) => {
     try {
       await apiClient.post(`/notifications/${notificationId}/respond`, {
         response: response
@@ -114,7 +120,7 @@ class TutorNotifications extends Component {
       this.setState(prevState => ({
         notifications: prevState.notifications.map(notif =>
           notif._id === notificationId 
-            ? { ...notif, userResponse: response, respondedAt: new Date() }
+            ? { ...notif, userResponse: response, respondedAt: new Date().toISOString() }
             : notif
         )
       }));
@@ -136,13 +142,13 @@ class TutorNotifications extends Component {
 
   // Registra la elección en la notificación. La cita ya cambió de estado en /appointments,
   // así que un fallo aquí no se trata como fallo de la acción.
-  recordNotificationChoice = async (notificationId, choice) => {
+  recordNotificationChoice = async (notificationId: string, choice: string) => {
     try {
       await apiClient.post(`/notifications/${notificationId}/respond`, { response: choice });
       this.setState(prevState => ({
         notifications: prevState.notifications.map(notif =>
           notif._id === notificationId
-            ? { ...notif, userResponse: choice, respondedAt: new Date() }
+            ? { ...notif, userResponse: choice, respondedAt: new Date().toISOString() }
             : notif
         )
       }));
@@ -151,7 +157,9 @@ class TutorNotifications extends Component {
     }
   };
 
-  confirmAppointment = async (appointmentId, notificationId) => {
+  confirmAppointment = async (appointment: Notification['relatedAppointment'], notificationId: string) => {
+    const appointmentId = typeof appointment === 'string' ? appointment : appointment?._id;
+    if (!appointmentId) return;
     try {
       await apiClient.post(`/appointments/${appointmentId}/confirm`, {});
     } catch (error) {
@@ -164,7 +172,9 @@ class TutorNotifications extends Component {
     this.fetchNotifications();
   };
 
-  declineAppointment = async (appointmentId, notificationId) => {
+  declineAppointment = async (appointment: Notification['relatedAppointment'], notificationId: string) => {
+    const appointmentId = typeof appointment === 'string' ? appointment : appointment?._id;
+    if (!appointmentId) return;
     const reason = prompt('¿Por qué rechazas esta solicitud? (opcional)');
     if (reason === null) return;
 
@@ -184,10 +194,10 @@ class TutorNotifications extends Component {
     this.fetchNotifications();
   };
 
-  formatDate = (dateString) => {
+  formatDate = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
-    const diffInHours = (now - date) / (1000 * 60 * 60);
+    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
     
     if (diffInHours < 1) {
       return 'Hace unos minutos';
@@ -311,7 +321,7 @@ class TutorNotifications extends Component {
                                 type="button"
                                 className="notificaciones-page__btn notificaciones-page__btn--success"
                                 onClick={() => this.confirmAppointment(
-                                  notification.relatedAppointment._id || notification.relatedAppointment,
+                                  notification.relatedAppointment,
                                   notification._id
                                 )}
                               >
@@ -321,7 +331,7 @@ class TutorNotifications extends Component {
                                 type="button"
                                 className="notificaciones-page__btn notificaciones-page__btn--danger"
                                 onClick={() => this.declineAppointment(
-                                  notification.relatedAppointment._id || notification.relatedAppointment,
+                                  notification.relatedAppointment,
                                   notification._id
                                 )}
                               >
@@ -343,7 +353,7 @@ class TutorNotifications extends Component {
                               className="notificaciones-page__btn notificaciones-page__btn--outline"
                               onClick={() => {
                                 this.markAsRead(notification._id);
-                                window.location.href = notification.actionUrl;
+                                if (notification.actionUrl) window.location.href = notification.actionUrl;
                               }}
                             >
                               {notification.type === 'message_received' 
