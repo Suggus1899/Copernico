@@ -12,7 +12,7 @@ interface TutorHomeState {
   loading: boolean; error: string | null;
 }
 
-class TutorHome extends Component<Record<string, never>, TutorHomeState> {
+class TutorHome extends Component<{ user: User }, TutorHomeState> {
   state: TutorHomeState = {
     user: null,
     stats: {
@@ -34,12 +34,8 @@ class TutorHome extends Component<Record<string, never>, TutorHomeState> {
 
   loadDashboardData = async () => {
     try {
-      const [profileRes, appointmentsRes] = await Promise.all([
-        apiClient.get<ApiResponse<User>>('/auth/profile'),
-        apiClient.get<ApiResponse<Appointment[]>>('/appointments')
-      ]);
-
-      const user = profileRes.data.data;
+      const appointmentsRes = await apiClient.get<ApiResponse<Appointment[]>>('/appointments');
+      const user = this.props.user;
       const appointments = appointmentsRes.data.data || [];
       
       // Filtrar citas confirmadas y programadas

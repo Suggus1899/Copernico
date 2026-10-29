@@ -3,7 +3,6 @@ import type { Appointment } from '../types/appointments';
 import type { User } from '../types/auth';
 import type { ApiResponse } from '../types/api';
 import React, { useEffect, useState } from 'react';
-import TutorSidebarMenu from './TutorSidebarMenu';
 import apiClient from '../utils/axiosConfig';
 import './Dashboard.css';
 import './VideoProgress.css';
@@ -207,23 +206,15 @@ const TutorProgress = () => {
 
   if (loading) {
     return (
-      <div className="dashboard-container">
-        <TutorSidebarMenu userRole={userRole} />
-        <div className="dashboard-content">
-          <div className="progreso-page progreso-page--loading">
-            <div className="progreso-page__spinner" />
-            <p>Cargando progreso...</p>
-          </div>
-        </div>
+      <div className="progreso-page progreso-page--loading">
+        <div className="progreso-page__spinner" />
+        <p>Cargando progreso...</p>
       </div>
     );
   }
 
   return (
-    <div className="dashboard-container">
-      <TutorSidebarMenu userRole={userRole} />
-      <div className="dashboard-content">
-        <div className="progreso-page">
+    <div className="progreso-page">
           <header className="progreso-page__header">
             <h1 className="progreso-page__title">Progreso</h1>
             <p className="progreso-page__subtitle">Rendimiento y progreso de tus estudiantes</p>
@@ -390,8 +381,6 @@ const TutorProgress = () => {
               ))}
             </div>
           )}
-        </div>
-      </div>
     </div>
   );
 };

@@ -2,7 +2,6 @@ import type { UserSummary } from '../types/auth';
 import type { Appointment } from '../types/appointments';
 import type { ApiResponse } from '../types/api';
 import React, { useEffect, useState } from 'react';
-import TutorSidebarMenu from './TutorSidebarMenu';
 import apiClient from '../utils/axiosConfig';
 import './Dashboard.css';
 import './TutorAgenda.css';
@@ -94,23 +93,15 @@ const TutorAgenda = () => {
 
   if (loading) {
     return (
-      <div className="dashboard-container">
-        <TutorSidebarMenu />
-        <div className="dashboard-content">
-          <div className="agenda-page agenda-page--loading">
-            <div className="agenda-page__spinner" />
-            <p>Cargando agenda...</p>
-          </div>
-        </div>
+      <div className="agenda-page agenda-page--loading">
+        <div className="agenda-page__spinner" />
+        <p>Cargando agenda...</p>
       </div>
     );
   }
 
   return (
-    <div className="dashboard-container">
-      <TutorSidebarMenu />
-      <div className="dashboard-content">
-        <div className="agenda-page">
+    <div className="agenda-page">
           <header className="agenda-page__header">
             <h1 className="agenda-page__title">Agenda de Clases</h1>
             <p className="agenda-page__subtitle">Gestiona tus clases y asesorías programadas</p>
@@ -201,8 +192,6 @@ const TutorAgenda = () => {
               </div>
             )}
           </section>
-        </div>
-      </div>
     </div>
   );
 };

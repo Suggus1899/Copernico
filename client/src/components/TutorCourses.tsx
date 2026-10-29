@@ -1,7 +1,6 @@
 import type { Appointment } from '../types/appointments';
 import type { ApiResponse } from '../types/api';
 import React, { useEffect, useState } from 'react';
-import TutorSidebarMenu from './TutorSidebarMenu';
 import apiClient from '../utils/axiosConfig';
 import './Dashboard.css';
 import './MyCourses.css';
@@ -165,23 +164,15 @@ const TutorCourses = () => {
 
   if (loading) {
     return (
-      <div className="dashboard-container">
-        <TutorSidebarMenu />
-        <div className="dashboard-content">
-          <div className="loading-container">
-            <div className="loading-spinner"></div>
-            <p>Cargando tus cursos...</p>
-          </div>
-        </div>
+      <div className="loading-container">
+        <div className="loading-spinner"></div>
+        <p>Cargando tus cursos...</p>
       </div>
     );
   }
 
   return (
-    <div className="dashboard-container">
-      <TutorSidebarMenu />
-      <div className="dashboard-content">
-        <div className="cursos-page">
+    <div className="cursos-page">
           <header className="cursos-page__header">
             <h1 className="cursos-page__title">Mis Cursos</h1>
             <p className="cursos-page__subtitle">Cursos en progreso con tus estudiantes</p>
@@ -358,8 +349,6 @@ const TutorCourses = () => {
               })}
             </div>
           )}
-        </div>
-      </div>
     </div>
   );
 }

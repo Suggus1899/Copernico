@@ -3,7 +3,6 @@ import type { User, PersonalInfo } from '../types/auth';
 import type { ApiResponse } from '../types/api';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import TutorSidebarMenu from './TutorSidebarMenu';
 import apiClient from '../utils/axiosConfig';
 import AvatarUploader from './AvatarUploader';
 import DocumentManager from './DocumentManager';
@@ -185,58 +184,40 @@ const TutorProfile = () => {
 
   if (loading) {
     return (
-      <div className="dashboard-container">
-        <TutorSidebarMenu userRole={user?.role} />
-        <div className="dashboard-content">
-          <div className="loading-container">
-            <div className="loading-spinner"></div>
-            <p>Cargando perfil...</p>
-          </div>
-        </div>
+      <div className="loading-container">
+        <div className="loading-spinner"></div>
+        <p>Cargando perfil...</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="dashboard-container">
-        <TutorSidebarMenu userRole={user?.role} />
-        <div className="dashboard-content">
-          <div className="error-container">
-            <div className="error-icon">❌</div>
-            <h3>Error al cargar el perfil</h3>
-            <p>{error}</p>
-            <button className="profile-btn profile-btn-primary" onClick={fetchUserProfile}>
-              🔄 Reintentar
-            </button>
-          </div>
-        </div>
+      <div className="error-container">
+        <div className="error-icon">❌</div>
+        <h3>Error al cargar el perfil</h3>
+        <p>{error}</p>
+        <button className="profile-btn profile-btn-primary" onClick={fetchUserProfile}>
+          🔄 Reintentar
+        </button>
       </div>
     );
   }
 
   if (!user) {
     return (
-      <div className="dashboard-container">
-        <TutorSidebarMenu />
-        <div className="dashboard-content">
-          <div className="error-container">
-            <div className="error-icon">👤</div>
-            <h3>No se pudo cargar la información del usuario</h3>
-            <button className="profile-btn profile-btn-primary" onClick={fetchUserProfile}>
-              🔄 Reintentar
-            </button>
-          </div>
-        </div>
+      <div className="error-container">
+        <div className="error-icon">👤</div>
+        <h3>No se pudo cargar la información del usuario</h3>
+        <button className="profile-btn profile-btn-primary" onClick={fetchUserProfile}>
+          🔄 Reintentar
+        </button>
       </div>
     );
   }
 
   return (
-    <div className="dashboard-container">
-      <TutorSidebarMenu userRole={user.role} />
-      <div className="dashboard-content">
-        <div className="profile-page">
+    <div className="profile-page">
           {/* Header con información básica */}
           <div className="profile-header-card">
             <div className="profile-header-content">
@@ -648,8 +629,6 @@ const TutorProfile = () => {
               </div>
             </div>
           )}
-        </div>
-      </div>
     </div>
   );
 };

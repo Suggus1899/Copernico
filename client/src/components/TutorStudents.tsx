@@ -4,7 +4,6 @@ import type { User } from '../types/auth';
 import type { ApiResponse } from '../types/api';
 import React, { Component } from 'react';
 import apiClient from '../utils/axiosConfig';
-import TutorSidebarMenu from './TutorSidebarMenu';
 import './Dashboard.css';
 import './TutorStudents.css';
 interface StudentView extends UserSummary {
@@ -100,10 +99,7 @@ class TutorStudents extends Component<Record<string, never>, TutorStudentsState>
     const totalCitas = students.reduce((total, s) => total + (s.stats?.totalAppointments || 0), 0);
 
     return (
-      <div className="dashboard-container">
-        <TutorSidebarMenu userRole={user?.role} />
-        <div className="dashboard-content">
-          <div className="estudiantes-page">
+      <div className="estudiantes-page">
             <header className="estudiantes-page__header">
               <h1 className="estudiantes-page__title">Mis Estudiantes</h1>
               <p className="estudiantes-page__subtitle">Estudiantes con citas confirmadas o completadas</p>
@@ -221,8 +217,6 @@ class TutorStudents extends Component<Record<string, never>, TutorStudentsState>
                 )}
               </>
             )}
-          </div>
-        </div>
       </div>
     );
   }

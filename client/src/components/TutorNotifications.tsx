@@ -2,7 +2,6 @@ import axios from 'axios';
 import type { ApiResponse } from '../types/api';
 import type { Notification } from '../types/communication';
 import React, { Component } from 'react';
-import TutorSidebarMenu from './TutorSidebarMenu';
 import apiClient from '../utils/axiosConfig';
 import { getApiErrorMessage } from '../utils/apiError';
 import './Dashboard.css';
@@ -219,10 +218,7 @@ class TutorNotifications extends Component<Record<string, never>, TutorNotificat
     const unreadCount = this.state.notifications.filter(n => !n.read).length;
 
     return (
-      <div className="dashboard-container">
-        <TutorSidebarMenu />
-        <div className="dashboard-content">
-          <div className={loading ? 'notificaciones-page notificaciones-page--loading' : 'notificaciones-page'}>
+      <div className={loading ? 'notificaciones-page notificaciones-page--loading' : 'notificaciones-page'}>
             <header className="notificaciones-page__header">
               <h1 className="notificaciones-page__title">Notificaciones</h1>
               <p className="notificaciones-page__subtitle">Mantente al día con todas tus actividades y actualizaciones</p>
@@ -374,8 +370,6 @@ class TutorNotifications extends Component<Record<string, never>, TutorNotificat
                 </div>
               </>
             )}
-          </div>
-        </div>
       </div>
     );
   }

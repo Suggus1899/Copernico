@@ -4,7 +4,6 @@ import type { UserSummary } from '../types/auth';
 import React, { Component } from 'react';
 import apiClient from '../utils/axiosConfig';
 import { getApiErrorMessage } from '../utils/apiError';
-import TutorSidebarMenu from './TutorSidebarMenu';
 import './Dashboard.css';
 
 interface TutorVideosState {
@@ -186,10 +185,7 @@ class TutorVideos extends Component<Record<string, never>, TutorVideosState> {
     const { videos, loading, uploading, showForm, formData, editMode } = this.state;
 
     return (
-      <div className="dashboard-container">
-        <TutorSidebarMenu />
-        <div className="dashboard-content">
-          <div className="tutor-videos">
+      <div className="tutor-videos">
             <header className="videos-header">
               <div>
                 <h2>🎥 Videos de Clases</h2>
@@ -419,8 +415,6 @@ class TutorVideos extends Component<Record<string, never>, TutorVideosState> {
                 </div>
               )}
             </section>
-          </div>
-        </div>
       </div>
     );
   }
