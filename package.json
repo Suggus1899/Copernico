@@ -2,7 +2,7 @@
   "name": "copernico-api",
   "version": "1.0.0",
   "private": true,
-  "description": "API de Cop\u00c3\u00a9rnico Academy (Express + MongoDB)",
+  "description": "API de Copérnico Academy (Express + MongoDB)",
   "type": "module",
   "main": "dist/src/index.js",
   "engines": {
