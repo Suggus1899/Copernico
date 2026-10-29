@@ -406,7 +406,8 @@ const generateTutorPerformanceReport = async (report: ReportDocument): Promise<R
   const averageRating = ratings.length > 0 ? 
     ratings.reduce((sum, r) => sum + r, 0) / ratings.length : 0;
 
-  const subjectsTaught = [...new Set(appointments.map(a => (a as unknown as { subject: string }).subject))];
+  // El informe no publicado aún lee `subject` de citas del esquema histórico.
+  const subjectsTaught = [...new Set(appointments.map(a => (a as unknown as { subject?: string }).subject))];
 
   return {
     tutorPerformance: {
