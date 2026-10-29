@@ -22,7 +22,8 @@ flowchart LR
 
 ## Antes de empezar
 
-- El historial de git anterior contiene credenciales antiguas. **Rota** las de MongoDB, `JWT_SECRET` y Supabase antes de publicar; no reutilices valores de un `.env` local.
+- El historial público de git contiene URI de MongoDB Atlas y un `JWT_SECRET` en archivos `.env`; algunos JWT de ejemplos HTTP no tienen vencimiento detectable. Trátalos como expuestos: rota el usuario/contraseña de Atlas y `JWT_SECRET` antes de publicar. Si una clave de Supabase se reutilizó en esos entornos, rótala también. No reutilices valores de un `.env` antiguo.
+- Después de limpiar el historial remoto, vuelve a clonar el repositorio: no empujes ramas desde clones que aún contengan los commits anteriores.
 - Mantén este entorno separado de cualquier dato real. Los planes gratuitos descritos aquí son para pruebas, no para producción.
 - El repositorio debe estar en GitHub: Render y Vercel despliegan desde ahí.
 - Despliega desde `main` solo después de rotar las credenciales expuestas y completar las comprobaciones de seguridad.
