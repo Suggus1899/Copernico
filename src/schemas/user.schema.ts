@@ -1,9 +1,9 @@
 import { z } from 'zod';
 import { createUserBody } from './auth.schema.js';
 
-const text = (max) => z.string().trim().max(max);
-const optionalText = (max) => text(max).optional();
-const textList = (maxItems, maxLength) => z.array(z.string().trim().min(1).max(maxLength)).max(maxItems);
+const text = (max: number) => z.string().trim().max(max);
+const optionalText = (max: number) => text(max).optional();
+const textList = (maxItems: number, maxLength: number) => z.array(z.string().trim().min(1).max(maxLength)).max(maxItems);
 
 // Solo se aceptan los campos editables por el propio usuario. Zod descarta el resto, de modo que
 // rol, estado, correo, contraseña, avatar, documentos y relaciones nunca llegan a la base de datos.

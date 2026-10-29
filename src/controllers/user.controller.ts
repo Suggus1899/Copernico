@@ -1,3 +1,8 @@
+import type { Handler, BodyOf } from '../types/http.js';
+import type { createUserSchema, updateProfileSchema } from '../schemas/user.schema.js';
+import type { FilterQuery } from 'mongoose';
+import type { UserRecord } from '../models/User.js';
+import type { ParsedQs } from 'qs';
 import { AppError } from '../utils/AppError.js';
 import User from "../models/User.js";
 import { validateObjectId } from "../utils/validators.js";
@@ -20,7 +25,7 @@ const TUTOR_DIRECTORY_SELECT = [
   'academicProfile', 'tutorProfile',
 ].join(' ');
 
-const listTutorDirectory = async (query, defaultLimit) => {
+const listTutorDirectory = async (query: ParsedQs, defaultLimit: number) => {
   const { page, limit } = parsePagination(query, defaultLimit, 100);
   const filter = tutorDirectoryFilter();
   const [data, total] = await Promise.all([
@@ -34,17 +39,17 @@ const listTutorDirectory = async (query, defaultLimit) => {
   return { data, pagination: { page, limit, total, pages: Math.ceil(total / limit) } };
 };
 
-export const getUsers = async (req, res, next) => {
+export const getUsers: Handler<Record<string, string>, unknown, BodyOf<typeof updateProfileSchema>> = async (req, res, next) => {
   try {
     // Admin gestiona todos los usuarios; estudiantes y tutores solo consultan el directorio.
-    if (req.user.role !== 'admin') {
+    if (req.user!.role !== 'admin') {
       const result = await listTutorDirectory(req.query, 10);
       return res.json({ success: true, ...result });
     }
 
     const { role, status } = req.query;
     const { page, limit } = parsePagination(req.query, 10, 100);
-    const filter = { status: { $ne: 'deleted' } };
+    const filter: FilterQuery<UserRecord> = { status: { $ne: 'deleted' } };
     if (role) filter.role = role;
     if (status) filter.status = status;
 
@@ -67,7 +72,7 @@ export const getUsers = async (req, res, next) => {
   }
 };
 
-export const getUserById = async (req, res, next) => {
+export const getUserById: Handler<Record<string, string>, unknown, BodyOf<typeof updateProfileSchema>> = async (req, res, next) => {
   try {
     validateObjectId(req.params.id, 'User ID');
 
@@ -86,7 +91,7 @@ export const getUserById = async (req, res, next) => {
   }
 };
 
-export const createUser = async (req, res, next) => {
+export const createUser: Handler<Record<string, string>, unknown, BodyOf<typeof createUserSchema> & { createdBy?: string; updatedBy?: string }> = async (req, res, next) => {
   try {
     const userData = req.body;
 
@@ -102,8 +107,8 @@ export const createUser = async (req, res, next) => {
 
     // Agregar información de auditoría
     if (req.user) {
-      userData.createdBy = req.user.id;
-      userData.updatedBy = req.user.id;
+      userData.createdBy = req.user!.id;
+      userData.updatedBy = req.user!.id;
     }
 
     // Crear nuevo usuario
@@ -112,7 +117,7 @@ export const createUser = async (req, res, next) => {
     
     // Excluir campos sensibles en la respuesta
     const userResponse = userSaved.toObject();
-    delete userResponse.password;
+    Reflect.deleteProperty(userResponse, 'password');
 
     res.status(201).json({
       success: true,
@@ -124,13 +129,13 @@ export const createUser = async (req, res, next) => {
   }
 };
 
-export const updateUser = async (req, res, next) => {
+export const updateUser: Handler<Record<string, string>, unknown, BodyOf<typeof updateProfileSchema>> = async (req, res, next) => {
   try {
     const updateData = buildProfileSet(req.body);
     
     // Agregar información de auditoría
     if (req.user) {
-      updateData.updatedBy = req.user.id;
+      updateData.updatedBy = req.user!.id;
     }
 
     const user = await User.findByIdAndUpdate(
@@ -153,7 +158,7 @@ export const updateUser = async (req, res, next) => {
   }
 };
 
-export const deleteUser = async (req, res, next) => {
+export const deleteUser: Handler<Record<string, string>, unknown, BodyOf<typeof updateProfileSchema>> = async (req, res, next) => {
   try {
     const { id } = req.params;
     
@@ -182,9 +187,9 @@ export const deleteUser = async (req, res, next) => {
   }
 };
 
-export const getUserProfile = async (req, res, next) => {
+export const getUserProfile: Handler<Record<string, string>, unknown, BodyOf<typeof updateProfileSchema>> = async (req, res, next) => {
   try {
-    const user = await User.findById(req.user.id)
+    const user = await User.findById(req.user!.id)
       .select('-password');
     
     if (!user || user.status === 'deleted') {
@@ -200,14 +205,14 @@ export const getUserProfile = async (req, res, next) => {
   }
 };
 
-export const updateUserProfile = async (req, res, next) => {
+export const updateUserProfile: Handler<Record<string, string>, unknown, BodyOf<typeof updateProfileSchema>> = async (req, res, next) => {
   try {
     // Solo secciones editables; $set por rutas puntuales no reemplaza subdocumentos completos.
     const updateData = buildProfileSet(req.body);
-    updateData.updatedBy = req.user.id;
+    updateData.updatedBy = req.user!.id;
 
     const user = await User.findByIdAndUpdate(
-      req.user.id,
+      req.user!.id,
       updateData,
       { new: true, runValidators: true }
     ).select('-password');
@@ -227,7 +232,7 @@ export const updateUserProfile = async (req, res, next) => {
 };
 
 // Directorio de tutores que aceptan citas, para estudiantes (la ruta exige rol student).
-export const getAvailableEducators = async (req, res, next) => {
+export const getAvailableEducators: Handler<Record<string, string>, unknown, BodyOf<typeof updateProfileSchema>> = async (req, res, next) => {
   try {
     const result = await listTutorDirectory(req.query, 50);
     res.json({ success: true, ...result });

@@ -1,3 +1,6 @@
+import type { Response, CookieOptions } from 'express';
+import type { SessionPrincipal } from '../types/auth.js';
+import type { SignOptions, JwtPayload } from 'jsonwebtoken';
 import jwt from "jsonwebtoken";
 import { config } from "../config.js";
 
@@ -5,7 +8,7 @@ export const SESSION_COOKIE = "copernico_session";
 export const JWT_ISSUER = "copernico-api";
 export const JWT_AUDIENCE = "copernico-web";
 
-function cookieOptions() {
+function cookieOptions(): CookieOptions {
   return {
     httpOnly: true,
     secure: config.isProduction,
@@ -18,29 +21,29 @@ function cookieOptions() {
  * Emite la sesión: JWT firmado en cookie HttpOnly. El claim `sv` (sessionVersion)
  * permite invalidar todas las sesiones de un usuario al cambiar credenciales.
  */
-export function issueSession(res, user) {
+export function issueSession(res: Response, user: SessionPrincipal) {
   const token = jwt.sign(
     { sv: user.sessionVersion ?? 0, role: user.role },
     config.JWT_SECRET,
     {
       subject: String(user._id),
-      expiresIn: config.JWT_EXPIRES_IN,
+      expiresIn: config.JWT_EXPIRES_IN as SignOptions['expiresIn'],
       issuer: JWT_ISSUER,
       audience: JWT_AUDIENCE,
       algorithm: "HS256",
     }
   );
-  res.cookie(SESSION_COOKIE, token, { ...cookieOptions(), maxAge: config.SESSION_MAX_AGE_MS });
+  res.cookie(SESSION_COOKIE, token, { ...cookieOptions(), maxAge: config.SESSION_MAX_AGE_MS! });
 }
 
-export function clearSession(res) {
+export function clearSession(res: Response) {
   res.clearCookie(SESSION_COOKIE, cookieOptions());
 }
 
-export function verifySessionToken(token) {
+export function verifySessionToken(token: string) {
   return jwt.verify(token, config.JWT_SECRET, {
     algorithms: ["HS256"],
     issuer: JWT_ISSUER,
     audience: JWT_AUDIENCE,
-  });
+  }) as JwtPayload & { sv: number };
 }

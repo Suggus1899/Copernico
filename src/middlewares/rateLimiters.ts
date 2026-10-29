@@ -1,14 +1,15 @@
+import type { RequestHandler } from 'express';
 import rateLimit from 'express-rate-limit';
 import { AppError } from '../utils/AppError.js';
 
-const limiterHandler = (message) => (req, res, next) =>
+const limiterHandler = (message: string): RequestHandler => (req, res, next) =>
   next(new AppError(429, 'RATE_LIMITED', message));
 
 /**
  * Limitadores en memoria por IP. Son suficientes para una instancia; con
  * varias réplicas deben moverse a un almacén compartido (ver DEPLOY.md).
  */
-const createLimiter = ({ windowMs, limit, message, skipSuccessfulRequests = false }) =>
+const createLimiter = ({ windowMs, limit, message, skipSuccessfulRequests = false }: { windowMs: number; limit: number; message: string; skipSuccessfulRequests?: boolean }) =>
   rateLimit({
     windowMs,
     limit,

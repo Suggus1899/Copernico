@@ -1,3 +1,8 @@
+import type { RequestHandler } from 'express';
+import type { UserDocument } from '../models/User.js';
+import type { BodyOf } from '../types/http.js';
+import type { signupSchema, signinSchema, changePasswordSchema, changeEmailSchema, deactivateSchema } from '../schemas/auth.schema.js';
+import type { updateProfileSchema } from '../schemas/user.schema.js';
 import bcrypt from 'bcryptjs';
 import User from '../models/User.js';
 import { AppError } from '../utils/AppError.js';
@@ -17,29 +22,29 @@ const emailAlreadyRegistered = () =>
   new AppError(409, 'EMAIL_ALREADY_REGISTERED', 'Ya existe una cuenta con ese correo.');
 const accountNotFound = () => new AppError(404, 'NOT_FOUND', 'Usuario no encontrado.');
 
-const isDuplicateKey = (error) => error?.code === 11000;
-const isLocked = (user) => Boolean(user.lockedUntil && user.lockedUntil > new Date());
+const isDuplicateKey = (error: unknown) => !!error && typeof error === 'object' && 'code' in error && error.code === 11000;
+const isLocked = (user: UserDocument) => Boolean(user.lockedUntil && user.lockedUntil > new Date());
 
 // Hash de referencia: iguala el coste de bcrypt cuando el correo no existe o la cuenta está bloqueada.
-let referenceHash;
+let referenceHash: string | undefined;
 const getReferenceHash = () => {
   referenceHash ??= bcrypt.hashSync('copernico-reference-password', BCRYPT_ROUNDS);
   return referenceHash;
 };
 
-const loadUserWithPassword = async (userId) => {
+const loadUserWithPassword = async (userId: unknown) => {
   const user = await User.findById(userId).select('+password');
   if (!user) throw accountNotFound();
   return user;
 };
 
-const assertCurrentPassword = async (user, currentPassword) => {
+const assertCurrentPassword = async (user: UserDocument, currentPassword: string) => {
   if (!(await user.comparePassword(currentPassword))) {
     throw invalidCurrentPassword();
   }
 };
 
-export const signup = asyncHandler(async (req, res) => {
+export const signup = asyncHandler<Record<string, string>, unknown, BodyOf<typeof signupSchema>>(async (req, res) => {
   const { email, password, role, personalInfo, studentProfile, tutorProfile } = req.body;
   const user = new User({
     email,
@@ -61,7 +66,7 @@ export const signup = asyncHandler(async (req, res) => {
   res.status(201).json({ success: true, data: user });
 });
 
-export const signin = asyncHandler(async (req, res) => {
+export const signin = asyncHandler<Record<string, string>, unknown, BodyOf<typeof signinSchema>>(async (req, res) => {
   const { email, password } = req.body;
   const user = await User.findOne({ email }).select('+password');
 
@@ -78,7 +83,7 @@ export const signin = asyncHandler(async (req, res) => {
       { new: true }
     ).select('loginAttempts').lean();
 
-    if (counter?.loginAttempts >= MAX_LOGIN_ATTEMPTS) {
+    if ((counter?.loginAttempts ?? 0) >= MAX_LOGIN_ATTEMPTS) {
       await User.updateOne(
         { _id: user._id },
         { $set: { loginAttempts: 0, lockedUntil: new Date(Date.now() + LOCK_DURATION_MS) } }
@@ -99,30 +104,30 @@ export const signin = asyncHandler(async (req, res) => {
   res.json({ success: true, data: user });
 });
 
-export const signout = (req, res) => {
+export const signout: RequestHandler = (req, res) => {
   clearSession(res);
   res.json({ success: true });
 };
 
 export const profile = asyncHandler(async (req, res) => {
-  const user = await User.findById(req.user._id);
+  const user = await User.findById(req.user!._id);
   if (!user) throw accountNotFound();
   res.json({ success: true, data: user });
 });
 
-export const updateProfile = asyncHandler(async (req, res) => {
+export const updateProfile = asyncHandler<Record<string, string>, unknown, BodyOf<typeof updateProfileSchema>>(async (req, res) => {
   const user = await User.findByIdAndUpdate(
-    req.user._id,
-    { $set: { ...buildProfileSet(req.body), updatedBy: req.user._id } },
+    req.user!._id,
+    { $set: { ...buildProfileSet(req.body), updatedBy: req.user!._id } },
     { new: true, runValidators: true }
   );
   if (!user) throw accountNotFound();
   res.json({ success: true, data: user });
 });
 
-export const changePassword = asyncHandler(async (req, res) => {
+export const changePassword = asyncHandler<Record<string, string>, unknown, BodyOf<typeof changePasswordSchema>>(async (req, res) => {
   const { currentPassword, newPassword } = req.body;
-  const user = await loadUserWithPassword(req.user._id);
+  const user = await loadUserWithPassword(req.user!._id);
   await assertCurrentPassword(user, currentPassword);
 
   if (newPassword === currentPassword) {
@@ -136,9 +141,9 @@ export const changePassword = asyncHandler(async (req, res) => {
   res.json({ success: true, data: user });
 });
 
-export const changeEmail = asyncHandler(async (req, res) => {
+export const changeEmail = asyncHandler<Record<string, string>, unknown, BodyOf<typeof changeEmailSchema>>(async (req, res) => {
   const { currentPassword, newEmail } = req.body;
-  const user = await loadUserWithPassword(req.user._id);
+  const user = await loadUserWithPassword(req.user!._id);
   await assertCurrentPassword(user, currentPassword);
 
   if (newEmail === user.email) {
@@ -160,9 +165,9 @@ export const changeEmail = asyncHandler(async (req, res) => {
   res.json({ success: true, data: user });
 });
 
-export const deactivateAccount = asyncHandler(async (req, res) => {
+export const deactivateAccount = asyncHandler<Record<string, string>, unknown, BodyOf<typeof deactivateSchema>>(async (req, res) => {
   const { currentPassword } = req.body;
-  const user = await loadUserWithPassword(req.user._id);
+  const user = await loadUserWithPassword(req.user!._id);
   await assertCurrentPassword(user, currentPassword);
 
   user.status = 'inactive';

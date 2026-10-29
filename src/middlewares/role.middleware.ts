@@ -1,8 +1,9 @@
+import type { RequestHandler } from 'express';
 import mongoose from 'mongoose';
 import { AppError } from '../utils/AppError.js';
 
 /** Permite el acceso solo a usuarios autenticados cuyo rol esté en `roles`. */
-export const requireRole = (roles = []) => (req, res, next) => {
+export const requireRole = (roles: string[] = []): RequestHandler => (req, res, next) => {
   if (!req.user) return next(new AppError(401, 'UNAUTHENTICATED', 'Debes iniciar sesión'));
   if (!Array.isArray(roles) || roles.length === 0) return next();
   if (!roles.includes(req.user.role)) {
@@ -15,7 +16,7 @@ export const requireRole = (roles = []) => (req, res, next) => {
  * Permite el acceso al propietario del recurso (`ownerField`) o a un admin.
  * Deja el documento en `req.resource`.
  */
-export const requireOwnership = (Model, idParam = 'id', ownerField = 'tutor') => {
+export const requireOwnership = <T>(Model: mongoose.Model<T>, idParam = 'id', ownerField = 'tutor'): RequestHandler => {
   if (!Model || !Model.findById) {
     throw new Error('requireOwnership: provide a valid Mongoose Model as first argument');
   }
@@ -30,7 +31,7 @@ export const requireOwnership = (Model, idParam = 'id', ownerField = 'tutor') =>
       const doc = await Model.findById(resourceId).select(ownerField).lean();
       if (!doc) throw new AppError(404, 'NOT_FOUND', 'Recurso no encontrado');
 
-      const ownerValue = ownerField.split('.').reduce((acc, k) => acc && acc[k], doc);
+      const ownerValue = ownerField.split('.').reduce<unknown>((acc, k) => acc && typeof acc === 'object' ? Reflect.get(acc, k) : acc, doc);
       const isOwner = Boolean(ownerValue) && String(ownerValue) === String(req.user?._id);
       if (!isOwner && req.user?.role !== 'admin') {
         throw new AppError(403, 'FORBIDDEN', 'No tienes permisos para este recurso');

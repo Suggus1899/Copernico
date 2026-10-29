@@ -1,6 +1,7 @@
+import type { Request, RequestHandler } from 'express';
 import ActivityLog from '../models/ActivityLog.js';
 
-export const logActivity = (action, pickMeta = (req) => ({})) => {
+export const logActivity = (action: string, pickMeta: (req: Request) => unknown = () => ({})): RequestHandler => {
   return async (req, res, next) => {
     try {
       // Ejecutar después de la respuesta si es posible

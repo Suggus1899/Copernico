@@ -1,3 +1,4 @@
+import type { Request, Response, NextFunction } from 'express';
 import { AppError } from '../utils/AppError.js';
 import { SESSION_COOKIE, verifySessionToken } from '../utils/session.js';
 import User from '../models/User.js';
@@ -9,7 +10,7 @@ const SESSION_INVALID = () =>
  * Valida la cookie de sesión y carga el usuario actual en req.user.
  * La sesión sigue vigente solo si la versión (sv) coincide con la del usuario.
  */
-export const authenticateToken = async (req, res, next) => {
+export const authenticateToken = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const token = req.cookies?.[SESSION_COOKIE];
     if (!token) {

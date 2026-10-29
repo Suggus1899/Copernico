@@ -1,3 +1,4 @@
+import type { Request, Response, NextFunction } from 'express';
 import { config } from '../config.js';
 import { AppError } from '../utils/AppError.js';
 
@@ -9,7 +10,7 @@ const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
  * y no está en la lista de orígenes permitidos, la petición se rechaza.
  * Las peticiones sin `Origin` (clientes no navegador, tests) no se bloquean aquí.
  */
-export function originCheck(req, res, next) {
+export function originCheck(req: Request, res: Response, next: NextFunction) {
   if (SAFE_METHODS.has(req.method)) return next();
   const origin = req.get('origin');
   if (origin === undefined) return next();

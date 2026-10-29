@@ -17,7 +17,7 @@ export const currentPasswordField = z
   .string({ required_error: 'La contraseña actual es obligatoria' })
   .min(1, 'La contraseña actual es obligatoria');
 
-const nameField = (label) =>
+const nameField = (label: string) =>
   z
     .string({ required_error: `${label} es obligatorio` })
     .trim()
@@ -47,7 +47,7 @@ const accountShape = {
 };
 
 // Cada rol exige sus datos propios; los campos de otros roles se descartan al guardar.
-function requireRoleProfile(data, ctx) {
+function requireRoleProfile(data: { role: string; studentProfile?: { studentId?: string }; tutorProfile?: { specialties?: string[] } }, ctx: z.RefinementCtx) {
   if (data.role === 'student' && !data.studentProfile?.studentId) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,

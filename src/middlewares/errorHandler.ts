@@ -1,13 +1,15 @@
+import type { Request, Response, NextFunction } from 'express';
+type ErrorShape = Error & { type?: string; code?: number | string; errors?: Record<string, { path?: string; message: string }> };
 import multer from "multer";
 import { ZodError } from "zod";
 import { AppError } from "../utils/AppError.js";
 import { config } from "../config.js";
 
-const mongoValidationDetails = (error) =>
+const mongoValidationDetails = (error: ErrorShape) =>
   Object.values(error.errors || {}).map((item) => ({ path: item.path, message: item.message }));
 
 /** Traduce errores conocidos a { status, code, message, details }. */
-function normalizeError(err) {
+function normalizeError(err: ErrorShape) {
   if (err instanceof AppError) {
     return { status: err.status, code: err.code, message: err.message, details: err.details };
   }
@@ -48,19 +50,19 @@ function normalizeError(err) {
   return { status: 500, code: "INTERNAL_ERROR", message: "Error interno del servidor." };
 }
 
-export function notFoundHandler(req, res, next) {
+export function notFoundHandler(req: Request, res: Response, next: NextFunction) {
   next(new AppError(404, "NOT_FOUND", `No existe la ruta ${req.method} ${req.path}.`));
 }
 
 /** Manejador global: una única forma de error para toda la API. */
-export function errorHandler(err, req, res, _next) {
+export function errorHandler(err: ErrorShape, req: Request, res: Response, _next: NextFunction) {
   const normalized = normalizeError(err);
 
   if (normalized.status >= 500) {
     console.error(`[error] ${req.method} ${req.originalUrl}:`, config.isProduction ? err.message : err);
   }
 
-  const body = { code: normalized.code, message: normalized.message };
+  const body: { code: string; message: string; details?: unknown } = { code: normalized.code, message: normalized.message };
   if (normalized.details) body.details = normalized.details;
   res.status(normalized.status).json({ success: false, error: body });
 }

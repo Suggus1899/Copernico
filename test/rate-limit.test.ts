@@ -6,7 +6,7 @@ import { startIntegrationEnv } from './helpers/integration.js';
 const ORIGIN = 'http://localhost:5173';
 
 describe('límites de intentos de inicio de sesión', () => {
-  let env;
+  let env: Awaited<ReturnType<typeof startIntegrationEnv>>;
 
   before(async () => {
     env = await startIntegrationEnv();
@@ -25,6 +25,7 @@ describe('límites de intentos de inicio de sesión', () => {
         .send({ email: 'nadie@example.com', password: 'Incorrecta-2025' });
     }
 
+    assert.ok(last);
     assert.equal(last.status, 429);
     assert.equal(last.body.error.code, 'RATE_LIMITED');
   });

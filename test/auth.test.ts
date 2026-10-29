@@ -9,7 +9,7 @@ const NEW_PASSWORD = 'Otra-Clave-2025';
 const WRONG_PASSWORD = 'Incorrecta-2025';
 const SESSION = 'copernico_session';
 
-const studentBody = (email) => ({
+const studentBody = (email: string) => ({
   email,
   password: PASSWORD,
   role: 'student',
@@ -17,12 +17,15 @@ const studentBody = (email) => ({
   studentProfile: { studentId: 'A001' },
 });
 
-const sessionCookie = (res) =>
-  (res.headers['set-cookie'] ?? []).find((cookie) => cookie.startsWith(`${SESSION}=`));
+const sessionCookie = (res: request.Response) => {
+  const cookie = ([res.headers['set-cookie']].flat().filter((cookie): cookie is string => typeof cookie === 'string')).find((cookie) => cookie.startsWith(`${SESSION}=`));
+  assert.ok(cookie);
+  return cookie;
+};
 
 describe('autenticación y sesiones', () => {
-  let env;
-  let User;
+  let env: Awaited<ReturnType<typeof startIntegrationEnv>>;
+  let User: typeof import('../src/models/User.js').default;
 
   before(async () => {
     env = await startIntegrationEnv();
@@ -33,7 +36,7 @@ describe('autenticación y sesiones', () => {
     await env.stop();
   });
 
-  const post = (path, body, cookie) => {
+  const post = (path: string, body: object, cookie?: string) => {
     const req = request(env.app).post(path).set('Origin', ORIGIN);
     if (cookie) req.set('Cookie', cookie);
     return req.send(body);
@@ -55,6 +58,7 @@ describe('autenticación y sesiones', () => {
   it('guarda la contraseña como hash bcrypt, nunca en texto plano', async () => {
     const user = await User.findOne({ email: 'ana@example.com' }).select('+password');
 
+    assert.ok(user);
     assert.match(user.password, /^\$2[aby]\$/);
     assert.notEqual(user.password, PASSWORD);
   });
