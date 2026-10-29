@@ -2,7 +2,7 @@
   "name": "copernico-api",
   "version": "1.0.0",
   "private": true,
-  "description": "API de Copérnico Academy (Express + MongoDB)",
+  "description": "API de Cop\u00c3\u00a9rnico Academy (Express + MongoDB)",
   "type": "module",
   "main": "src/index.js",
   "engines": {
@@ -13,7 +13,9 @@
     "dev": "node --watch src/index.js",
     "test": "node --test --test-reporter=spec \"test/**/*.test.js\"",
     "migrate:advisors": "node scripts/migrate_advisors_to_tutors.js",
-    "migrate:courses": "node scripts/create_courses_from_appointments.js"
+    "migrate:courses": "node scripts/create_courses_from_appointments.js",
+    "typecheck": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.build.json"
   },
   "license": "ISC",
   "dependencies": {
@@ -33,7 +35,19 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/cookie-parser": "^1.4.10",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^4.17.25",
+    "@types/hpp": "^0.2.7",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/morgan": "^1.9.10",
+    "@types/multer": "^2.3.0",
+    "@types/node": "^24.19.2",
+    "@types/supertest": "^7.2.1",
     "mongodb-memory-server": "^10.1.4",
-    "supertest": "^7.0.0"
+    "supertest": "^7.0.0",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
   }
 }
