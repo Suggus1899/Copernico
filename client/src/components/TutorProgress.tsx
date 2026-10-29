@@ -1,12 +1,27 @@
+import type { StudentVideoStats } from '../types/progress';
+import type { Appointment } from '../types/appointments';
+import type { User } from '../types/auth';
+import type { ApiResponse } from '../types/api';
 import React, { useEffect, useState } from 'react';
 import TutorSidebarMenu from './TutorSidebarMenu';
 import apiClient from '../utils/axiosConfig';
 import './Dashboard.css';
 import './VideoProgress.css';
 import './TutorProgress.css';
+interface SubjectGroup { subject: string; totalSessions: number; completedSessions: number; topics: Set<string>; lastSession: string | null }
+interface StudentGroup {
+  id: string | undefined; name: string; email: string | undefined; subjects: Map<string, SubjectGroup>;
+  totalAppointments: number; completedAppointments: number; lastActivity: string | null; videoProgress: StudentVideoStats | null;
+}
+interface SubjectView extends Omit<SubjectGroup, 'topics'> {
+  topics: string[]; progress: number; videoProgress: StudentVideoStats['bySubject'][number] | null;
+}
+interface StudentProgressView extends Omit<StudentGroup, 'subjects'> {
+  subjects: SubjectView[]; overallProgress: number; attendance: number; lastActivityFormatted: string;
+}
 
 const TutorProgress = () => {
-  const [students, setStudents] = useState([]);
+  const [students, setStudents] = useState<StudentProgressView[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [selectedSubject, setSelectedSubject] = useState('all');
@@ -19,8 +34,8 @@ const TutorProgress = () => {
 
   const fetchUserRole = async () => {
     try {
-      const response = await apiClient.get('/auth/profile');
-      const userData = response.data.data || response.data;
+      const response = await apiClient.get<ApiResponse<User>>('/auth/profile');
+      const userData = response.data.data;
       setUserRole(userData.role);
     } catch (error) {
       console.error('Error fetching user role:', error);
@@ -32,7 +47,7 @@ const TutorProgress = () => {
       setLoading(true);
       
       // Obtener todas las citas del tutor/asesor
-      const appointmentsResponse = await apiClient.get('/appointments');
+      const appointmentsResponse = await apiClient.get<ApiResponse<Appointment[]>>('/appointments');
       const appointments = appointmentsResponse.data.data || [];
       
       // Filtrar solo citas confirmadas y completadas
@@ -41,7 +56,7 @@ const TutorProgress = () => {
       );
       
       // Agrupar por estudiante para calcular progreso
-      const studentsMap = new Map();
+      const studentsMap = new Map<string | undefined, StudentGroup>();
       
       relevantAppointments.forEach(appointment => {
         const studentId = appointment.studentId?._id;
@@ -54,7 +69,7 @@ const TutorProgress = () => {
             id: studentId,
             name: studentName,
             email: appointment.studentId?.email,
-            subjects: new Map(),
+            subjects: new Map<string, SubjectGroup>(),
             totalAppointments: 0,
             completedAppointments: 0,
             lastActivity: null,
@@ -63,6 +78,7 @@ const TutorProgress = () => {
         }
         
         const student = studentsMap.get(studentId);
+        if (!student) return;
         const subject = appointment.courseId?.title || 'Sin curso';
         
         // Inicializar materia si no existe
@@ -71,12 +87,13 @@ const TutorProgress = () => {
             subject: subject,
             totalSessions: 0,
             completedSessions: 0,
-            topics: new Set(),
+            topics: new Set<string>(),
             lastSession: null
           });
         }
         
         const subjectData = student.subjects.get(subject);
+        if (!subjectData) return;
         subjectData.totalSessions++;
         
         if (appointment.status === 'completed') {
@@ -105,7 +122,7 @@ const TutorProgress = () => {
         Array.from(studentsMap.values()).map(async (student) => {
           try {
             // Obtener estadísticas de progreso de videos del estudiante
-            const videoStatsResponse = await apiClient.get(`/video-progress/student-stats?studentId=${student.id}`);
+            const videoStatsResponse = await apiClient.get<ApiResponse<StudentVideoStats>>(`/video-progress/student-stats?studentId=${student.id}`);
             student.videoProgress = videoStatsResponse.data.data;
           } catch (error) {
             console.warn(`Could not load video progress for student ${student.id}:`, error);
@@ -151,10 +168,10 @@ const TutorProgress = () => {
     }
   };
 
-  const formatTimeAgo = (dateString) => {
+  const formatTimeAgo = (dateString: string) => {
     const now = new Date();
     const date = new Date(dateString);
-    const diffInHours = Math.floor((now - date) / (1000 * 60 * 60));
+    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
     
     if (diffInHours < 1) {
       return 'Hace menos de 1 hora';
@@ -176,7 +193,7 @@ const TutorProgress = () => {
   };
 
   const getAllSubjects = () => {
-    const subjects = new Set();
+    const subjects = new Set<string>();
     students.forEach(student => {
       student.subjects.forEach(subject => {
         subjects.add(subject.subject);

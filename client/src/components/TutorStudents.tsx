@@ -1,11 +1,23 @@
+import { getStudentStatus } from '../utils/appointments';
+import type { PersonalInfo, UserSummary } from '../types/auth';
+import type { User } from '../types/auth';
+import type { ApiResponse } from '../types/api';
 import React, { Component } from 'react';
 import apiClient from '../utils/axiosConfig';
 import TutorSidebarMenu from './TutorSidebarMenu';
 import './Dashboard.css';
 import './TutorStudents.css';
+interface StudentView extends UserSummary {
+  personalInfo?: PersonalInfo & { phoneNumber?: string };
+  stats?: { totalAppointments: number; completedAppointments: number; lastAppointmentDate: string | null; subjects: string[] };
+}
+interface TutorStudentsState {
+  students: StudentView[]; loading: boolean; error: string | null; user: User | null;
+  expandedStudentId: string | null; historyStudentId: string | null;
+}
 
-class TutorStudents extends Component {
-  state = {
+class TutorStudents extends Component<Record<string, never>, TutorStudentsState> {
+  state: TutorStudentsState = {
     students: [],
     loading: true,
     error: null,
@@ -21,7 +33,7 @@ class TutorStudents extends Component {
 
   loadUserProfile = async () => {
     try {
-      const response = await apiClient.get('/auth/profile');
+      const response = await apiClient.get<ApiResponse<User>>('/auth/profile');
       this.setState({ user: response.data.data });
     } catch (error) {
       console.error('Error loading user profile:', error);
@@ -31,7 +43,7 @@ class TutorStudents extends Component {
   loadStudents = async () => {
     try {
       this.setState({ loading: true });
-      const response = await apiClient.get('/appointments/my-students');
+      const response = await apiClient.get<ApiResponse<StudentView[]>>('/appointments/my-students');
       
       this.setState({
         students: response.data.data || [],
@@ -46,12 +58,12 @@ class TutorStudents extends Component {
     }
   };
 
-  formatLastActivity = (dateString) => {
+  formatLastActivity = (dateString: string | null | undefined) => {
     if (!dateString) return 'Sin actividad';
     
     const date = new Date(dateString);
     const now = new Date();
-    const diffInHours = (now - date) / (1000 * 60 * 60);
+    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
     
     if (diffInHours < 1) {
       return 'Hace unos minutos';
@@ -64,29 +76,21 @@ class TutorStudents extends Component {
     }
   };
 
-  getStudentStatus = (student) => {
-    if (!student.stats.lastAppointmentDate) return 'inactive';
-    
-    const lastDate = new Date(student.stats.lastAppointmentDate);
-    const now = new Date();
-    const diffInDays = (now - lastDate) / (1000 * 60 * 60 * 24);
-    
-    return diffInDays <= 30 ? 'active' : 'inactive';
-  };
+  getStudentStatus = getStudentStatus;
 
-  handleViewProfile = (studentId) => {
+  handleViewProfile = (studentId: string) => {
     this.setState(prevState => ({
       expandedStudentId: prevState.expandedStudentId === studentId ? null : studentId
     }));
   };
 
-  handleViewHistory = (studentId) => {
+  handleViewHistory = (studentId: string) => {
     this.setState(prevState => ({
       historyStudentId: prevState.historyStudentId === studentId ? null : studentId
     }));
   };
 
-  handleSendMessage = (student) => {
+  handleSendMessage = (student: StudentView) => {
     window.location.href = `/dashboard/mensajes?userId=${student._id}`;
   };
 
@@ -137,7 +141,7 @@ class TutorStudents extends Component {
 
                 {students.length > 0 ? (
                   <div className="estudiantes-page__grid">
-                    {students.map((student) => {
+                    {students.map((student: StudentView) => {
                       const studentName = `${student.personalInfo?.firstName || ''} ${student.personalInfo?.lastName || ''}`.trim() || 'Sin nombre';
                       const status = this.getStudentStatus(student);
                       const stats = student.stats || { totalAppointments: 0, completedAppointments: 0, lastAppointmentDate: null, subjects: [] };

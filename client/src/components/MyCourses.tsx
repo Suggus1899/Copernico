@@ -1,10 +1,19 @@
+import { getAppointmentTutor } from '../utils/appointments';
+import type { Appointment } from '../types/appointments';
+import type { ApiResponse } from '../types/api';
 import React, { useEffect, useState } from 'react';
 import apiClient from '../utils/axiosConfig';
 import './Dashboard.css';
 import './MyCourses.css';
+interface CourseGroup {
+  id: string; subject: string; tutorId: string | undefined; tutorName: string; tutorRole: string;
+  appointments: Appointment[]; totalSessions: number; completedSessions: number; upcomingSessions: number; topics: Set<string>;
+}
+type CourseView = Omit<CourseGroup, 'topics'> & { topics: string[]; progress: number; nextAppointment?: Appointment; lastAppointment?: Appointment; status: string };
+
 
 const MyCourses = () => {
-  const [courses, setCourses] = useState([]);
+  const [courses, setCourses] = useState<CourseView[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
@@ -19,7 +28,7 @@ const MyCourses = () => {
       setLoading(true);
       
       // Obtener todas las citas del estudiante
-      const appointmentsResponse = await apiClient.get('/appointments');
+      const appointmentsResponse = await apiClient.get<ApiResponse<Appointment[]>>('/appointments');
       const appointments = appointmentsResponse.data.data || [];
       
       // Filtrar solo citas confirmadas o completadas
@@ -28,13 +37,12 @@ const MyCourses = () => {
       );
       
       // Agrupar por tutor/asesor y materia para crear "cursos"
-      const coursesMap = new Map();
+      const coursesMap = new Map<string, CourseGroup>();
       
       confirmedAppointments.forEach(appointment => {
-        const tutorId = appointment.professionalId?._id || appointment.tutorId;
-        const tutorName = appointment.professionalId?.personalInfo 
-          ? `${appointment.professionalId.personalInfo.firstName || ''} ${appointment.professionalId.personalInfo.lastName || ''}`.trim()
-          : appointment.professionalId?.email || 'Tutor';
+        const tutor = getAppointmentTutor(appointment);
+        const tutorId = tutor.id;
+        const tutorName = tutor.name;
         
         const subject = appointment.courseId?.title || 'Sin curso';
         const courseKey = `${tutorId}-${subject}`;
@@ -45,16 +53,17 @@ const MyCourses = () => {
             subject: subject,
             tutorId: tutorId,
             tutorName: tutorName,
-            tutorRole: appointment.professionalId?.role || 'tutor',
+            tutorRole: tutor.role,
             appointments: [],
             totalSessions: 0,
             completedSessions: 0,
             upcomingSessions: 0,
-            topics: new Set()
+            topics: new Set<string>()
           });
         }
         
         const course = coursesMap.get(courseKey);
+        if (!course) return;
         course.appointments.push(appointment);
         course.totalSessions++;
         
@@ -77,11 +86,11 @@ const MyCourses = () => {
         
         const nextAppointment = course.appointments
           .filter(apt => apt.status === 'confirmed' && new Date(apt.startsAt) > new Date())
-          .sort((a, b) => new Date(a.startsAt) - new Date(b.startsAt))[0];
+          .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime())[0];
         
         const lastAppointment = course.appointments
           .filter(apt => apt.status === 'completed')
-          .sort((a, b) => new Date(b.startsAt) - new Date(a.startsAt))[0];
+          .sort((a, b) => new Date(b.startsAt).getTime() - new Date(a.startsAt).getTime())[0];
         
         return {
           ...course,
@@ -121,7 +130,7 @@ const MyCourses = () => {
     return filtered;
   };
 
-  const formatDate = (dateString) => {
+  const formatDate = (dateString: string | null | undefined) => {
     if (!dateString) return 'No programada';
     const date = new Date(dateString);
     const now = new Date();
@@ -143,15 +152,15 @@ const MyCourses = () => {
     }
   };
 
-  const getStatusBadge = (status) => {
-    const statusConfig = {
+  const getStatusBadge = (status: string) => {
+    const statusConfig: Record<string, { label: string; class: string; icon: string }> = {
       active: { label: 'Activo', class: 'status-active', icon: '🟢' },
       completed: { label: 'Completado', class: 'status-completed', icon: '✅' }
     };
     return statusConfig[status] || { label: 'Desconocido', class: 'status-unknown', icon: '❓' };
   };
 
-  const getRoleIcon = (role) => {
+  const getRoleIcon = (role: string | undefined) => {
     return role === 'advisor' ? '🎯' : '👨‍🏫';
   };
 

@@ -1,9 +1,19 @@
+import type { Appointment } from '../types/appointments';
+import type { User } from '../types/auth';
+import type { ApiResponse } from '../types/api';
 import React, { Component } from 'react';
 import { Link } from 'react-router-dom';
 import apiClient from '../utils/axiosConfig';
+interface TutorHomeState {
+  user: User | null; stats: { todayClasses: number; upcomingClasses: number; totalStudents: number; pendingMaterials: number };
+  recentActivities: { id: string; type: string; message: string; time: string }[];
+  upcomingClasses: { id: string; subject: string; student: string; time: string; date: string; scheduledDate: string }[];
+  notifications: { id: string; unread: boolean; type: string; title: string; message: string; time: string }[];
+  loading: boolean; error: string | null;
+}
 
-class TutorHome extends Component {
-  state = {
+class TutorHome extends Component<Record<string, never>, TutorHomeState> {
+  state: TutorHomeState = {
     user: null,
     stats: {
       todayClasses: 0,
@@ -25,8 +35,8 @@ class TutorHome extends Component {
   loadDashboardData = async () => {
     try {
       const [profileRes, appointmentsRes] = await Promise.all([
-        apiClient.get('/auth/profile'),
-        apiClient.get('/appointments')
+        apiClient.get<ApiResponse<User>>('/auth/profile'),
+        apiClient.get<ApiResponse<Appointment[]>>('/appointments')
       ]);
 
       const user = profileRes.data.data;
@@ -55,7 +65,7 @@ class TutorHome extends Component {
       // Preparar próximas citas (próximos 3 días)
       const upcomingAppointments = confirmedAppointments
         .filter(apt => new Date(apt.startsAt) > new Date())
-        .sort((a, b) => new Date(a.startsAt) - new Date(b.startsAt))
+        .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime())
         .slice(0, 3)
         .map(apt => {
           const appointmentDate = new Date(apt.startsAt);
@@ -99,7 +109,7 @@ class TutorHome extends Component {
       // Actividades recientes basadas en citas completadas recientes
       const recentCompletedAppointments = appointments
         .filter(apt => apt.status === 'completed')
-        .sort((a, b) => new Date(b.startsAt) - new Date(a.startsAt))
+        .sort((a, b) => new Date(b.startsAt).getTime() - new Date(a.startsAt).getTime())
         .slice(0, 3);
       
       const recentActivities = recentCompletedAppointments.map(apt => {
@@ -128,10 +138,10 @@ class TutorHome extends Component {
     }
   };
 
-  getTimeAgo = (dateString) => {
+  getTimeAgo = (dateString: string) => {
     const now = new Date();
     const date = new Date(dateString);
-    const diffInHours = Math.floor((now - date) / (1000 * 60 * 60));
+    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
     
     if (diffInHours < 1) {
       return 'Hace menos de 1 hora';
@@ -145,7 +155,7 @@ class TutorHome extends Component {
 
   render() {
     const { user, stats, recentActivities, upcomingClasses, notifications, loading, error } = this.state;
-    const isAdvisor = user?.role === 'advisor';
+    const isAdvisor = String(user?.role) === 'advisor';
 
     if (loading) {
       return <div className="loading-spinner">Cargando dashboard...</div>;

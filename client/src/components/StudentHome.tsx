@@ -1,6 +1,5 @@
 import React from 'react';
 import './StudentHome.css';
-
 const StudentHome = () => {
   const quickLinks = [
     {
@@ -57,7 +56,7 @@ const StudentHome = () => {
               key={index}
               href={link.link}
               className="student-home__card"
-              style={{ '--card-color': link.color }}
+              style={{ '--card-color': link.color } as React.CSSProperties & { '--card-color': string }}
             >
               <div className="student-home__card-icon">{link.icon}</div>
               <h4 className="student-home__card-title">{link.title}</h4>

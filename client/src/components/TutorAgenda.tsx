@@ -1,11 +1,13 @@
+import type { UserSummary } from '../types/auth';
+import type { Appointment } from '../types/appointments';
+import type { ApiResponse } from '../types/api';
 import React, { useEffect, useState } from 'react';
 import TutorSidebarMenu from './TutorSidebarMenu';
 import apiClient from '../utils/axiosConfig';
 import './Dashboard.css';
 import './TutorAgenda.css';
-
 const TutorAgenda = () => {
-  const [appointments, setAppointments] = useState([]);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
@@ -17,7 +19,7 @@ const TutorAgenda = () => {
   const fetchAppointments = async () => {
     try {
       setLoading(true);
-      const response = await apiClient.get('/appointments');
+      const response = await apiClient.get<ApiResponse<Appointment[]>>('/appointments');
       const appointments = response.data.data || [];
       
       // Filtrar solo citas confirmadas y programadas
@@ -35,21 +37,21 @@ const TutorAgenda = () => {
     }
   };
 
-  const getAppointmentsForDate = (date) => {
+  const getAppointmentsForDate = (date: string) => {
     return appointments.filter(apt => {
       const appointmentDate = new Date(apt.startsAt).toISOString().split('T')[0];
       return appointmentDate === date;
     });
   };
 
-  const formatTime = (dateString) => {
+  const formatTime = (dateString: string) => {
     return new Date(dateString).toLocaleTimeString('es-ES', {
       hour: '2-digit',
       minute: '2-digit'
     });
   };
 
-  const formatDate = (dateString) => {
+  const formatDate = (dateString: string) => {
     // YYYY-MM-DD del input se interpreta como UTC y en zonas detrás de UTC muestra el día anterior.
     // Parsear como fecha local para que el día seleccionado coincida con el mostrado.
     if (typeof dateString === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
@@ -69,7 +71,7 @@ const TutorAgenda = () => {
     });
   };
 
-  const getStudentName = (student) => {
+  const getStudentName = (student: UserSummary | null) => {
     if (!student) return 'Estudiante';
     if (student.personalInfo) {
       const firstName = student.personalInfo.firstName || '';
@@ -79,13 +81,13 @@ const TutorAgenda = () => {
     return student.email || 'Estudiante';
   };
 
-  const getAppointmentTypeLabel = (type) => {
-    const types = {
+  const getAppointmentTypeLabel = (type: string | undefined) => {
+    const types: Record<string, string> = {
       'tutoring': 'Tutoría',
       'advising': 'Asesoría',
       'consultation': 'Consulta'
     };
-    return types[type] || 'Sesión';
+    return types[type || ''] || 'Sesión';
   };
 
   const todayAppointments = getAppointmentsForDate(selectedDate);
@@ -151,7 +153,7 @@ const TutorAgenda = () => {
             {todayAppointments.length > 0 ? (
               <ul className="agenda-page__list" role="list">
                 {todayAppointments
-                  .sort((a, b) => new Date(a.startsAt) - new Date(b.startsAt))
+                  .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime())
                   .map((appointment) => (
                     <li key={appointment._id} className="agenda-page__item">
                       <div className="agenda-page__item-time">

@@ -1,9 +1,11 @@
+import type { CourseSummary } from '../types/appointments';
+import type { TutorDirectoryEntry } from '../types/auth';
+import type { ApiResponse } from '../types/api';
 import React, { useEffect, useState } from 'react';
 import apiClient from '../utils/axiosConfig';
 import { getApiErrorMessage } from '../utils/apiError';
 import './Dashboard.css';
 import './Tutors.css';
-
 const EMPTY_REQUEST = {
   tutorId: '',
   courseId: '',
@@ -21,15 +23,15 @@ const localToday = () => {
 };
 
 const Tutors = () => {
-  const [tutors, setTutors] = useState([]);
+  const [tutors, setTutors] = useState<TutorDirectoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [selectedTutor, setSelectedTutor] = useState(null);
+  const [selectedTutor, setSelectedTutor] = useState<TutorDirectoryEntry | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [showRequestModal, setShowRequestModal] = useState(false);
-  const [selectedEducator, setSelectedEducator] = useState(null);
+  const [selectedEducator, setSelectedEducator] = useState<TutorDirectoryEntry | null>(null);
   const [requestForm, setRequestForm] = useState(EMPTY_REQUEST);
-  const [courses, setCourses] = useState([]);
+  const [courses, setCourses] = useState<CourseSummary[]>([]);
   const [coursesError, setCoursesError] = useState('');
 
   useEffect(() => {
@@ -37,15 +39,15 @@ const Tutors = () => {
       try {
         setLoading(true);
         // Usar el nuevo endpoint para obtener solo tutores disponibles (sin citas confirmadas)
-        const tutorsRes = await apiClient.get('/users/available-educators', { 
+        const tutorsRes = await apiClient.get<ApiResponse<TutorDirectoryEntry[]> & { meta?: { excludedEducators: number } }>('/users/available-educators', {
           params: { role: 'tutor', limit: 100 } 
         });
         const tutorsData = tutorsRes.data.data || [];
         
         console.log('✅ Tutores disponibles obtenidos:', tutorsData.length);
         console.log('📊 Metadata:', tutorsRes.data.meta);
-        if (tutorsRes.data.meta?.excludedEducators > 0) {
-          console.log(`🚫 ${tutorsRes.data.meta.excludedEducators} tutores excluidos por tener citas confirmadas`);
+        if ((tutorsRes.data.meta?.excludedEducators || 0) > 0) {
+          console.log(`🚫 ${tutorsRes.data.meta?.excludedEducators} tutores excluidos por tener citas confirmadas`);
         }
         
         setTutors(tutorsData);
@@ -80,25 +82,25 @@ const Tutors = () => {
     return filteredTutors;
   };
 
-  const loadTutorCourses = async (tutorId) => {
+  const loadTutorCourses = async (tutorId: string) => {
     setCourses([]);
     setCoursesError('');
     try {
-      const res = await apiClient.get(`/appointments/tutors/${tutorId}/courses`);
+      const res = await apiClient.get<ApiResponse<CourseSummary[]>>(`/appointments/tutors/${tutorId}/courses`);
       setCourses(res.data.data || []);
     } catch (err) {
       setCoursesError(getApiErrorMessage(err, 'No se pudieron cargar los cursos del tutor'));
     }
   };
 
-  const handleRequestTutoring = (tutor) => {
+  const handleRequestTutoring = (tutor: TutorDirectoryEntry) => {
     setSelectedEducator(tutor);
     setRequestForm({ ...EMPTY_REQUEST, tutorId: tutor._id });
     setShowRequestModal(true);
     loadTutorCourses(tutor._id);
   };
 
-  const handleRequestSubmit = async (e) => {
+  const handleRequestSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     try {
       const startsAt = new Date(`${requestForm.date}T${requestForm.time}`);
@@ -128,7 +130,7 @@ const Tutors = () => {
     }
   };
 
-  const handleFormChange = (e) => {
+  const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setRequestForm(prev => ({
       ...prev,
@@ -136,13 +138,13 @@ const Tutors = () => {
     }));
   };
 
-  const handleSendMessage = (tutor) => {
+  const handleSendMessage = (tutor: TutorDirectoryEntry) => {
     if (!tutor?._id) return;
     // Redirigir a la vista de mensajes con el tutor seleccionado
     window.location.href = `/dashboard/mensajes?userId=${tutor._id}`;
   };
 
-  const handleViewProfile = (tutor) => {
+  const handleViewProfile = (tutor: TutorDirectoryEntry) => {
     setSelectedTutor(selectedTutor?._id === tutor._id ? null : tutor);
   };
 
@@ -206,7 +208,7 @@ const Tutors = () => {
       ) : (
         <>
           <div className="educators-grid">
-            {filteredTutors.map((tutor) => {
+            {filteredTutors.map((tutor: TutorDirectoryEntry) => {
               const profile = tutor.tutorProfile;
               const specialties = profile?.specialties || [];
 
