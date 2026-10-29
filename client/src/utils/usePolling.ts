@@ -2,17 +2,17 @@ import { useEffect, useRef } from 'react';
 
 // Ejecuta `task` al montar y cada `intervalMs`, pero no mientras la pestaña está oculta.
 // Al volver a mostrarla refresca de inmediato. `task` debe capturar sus propios errores.
-export default function usePolling(task, intervalMs) {
+export default function usePolling(task: () => void | Promise<void>, intervalMs: number): void {
   const taskRef = useRef(task);
   taskRef.current = task;
 
   useEffect(() => {
-    let timer = null;
+    let timer: ReturnType<typeof setInterval> | null = null;
     const start = () => {
       if (timer === null) timer = setInterval(() => taskRef.current(), intervalMs);
     };
     const stop = () => {
-      clearInterval(timer);
+      if (timer !== null) clearInterval(timer);
       timer = null;
     };
     const onVisibilityChange = () => {
