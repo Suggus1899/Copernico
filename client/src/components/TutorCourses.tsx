@@ -154,12 +154,12 @@ const TutorCourses = () => {
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    const statusConfig: Record<string, { label: string; class: string; icon: string }> = {
-      active: { label: 'Activo', class: 'status-active', icon: '🟢' },
-      completed: { label: 'Completado', class: 'status-completed', icon: '✅' }
+  const getStatusLabel = (status: string) => {
+    const statusConfig: Record<string, string> = {
+      active: 'Activo',
+      completed: 'Completado'
     };
-    return statusConfig[status] || { label: 'Desconocido', class: 'status-unknown', icon: '❓' };
+    return statusConfig[status] || 'Desconocido';
   };
 
   const filteredCourses = getFilteredCourses();
@@ -248,7 +248,6 @@ const TutorCourses = () => {
 
           {filteredCourses.length === 0 ? error ? null : (
             <div className="cursos-page__empty">
-              <span className="cursos-page__empty-icon" aria-hidden>📚</span>
               <h3>
                 {courses.length === 0
                   ? 'Aún no tienes cursos'
@@ -273,13 +272,13 @@ const TutorCourses = () => {
           ) : (
             <div className="cursos-page__grid">
               {filteredCourses.map((course) => {
-                const statusBadge = getStatusBadge(course.status);
+                const statusLabel = getStatusLabel(course.status);
                 return (
                   <article key={course.id} className="cursos-page__card">
                     <div className="cursos-page__card-header">
                       <h3 className="cursos-page__card-title">{course.subject}</h3>
                       <span className={`cursos-page__card-status cursos-page__card-status--${course.status}`}>
-                        {statusBadge.icon} {statusBadge.label}
+                        {statusLabel}
                       </span>
                     </div>
                     <div className="cursos-page__card-tutor">

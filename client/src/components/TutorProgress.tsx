@@ -1,8 +1,8 @@
 import type { StudentVideoStats } from '../types/progress';
 import type { Appointment } from '../types/appointments';
-import type { User } from '../types/auth';
 import type { ApiResponse } from '../types/api';
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import apiClient from '../utils/axiosConfig';
 import './Dashboard.css';
 import './VideoProgress.css';
@@ -24,26 +24,15 @@ const TutorProgress = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [selectedSubject, setSelectedSubject] = useState('all');
-  const [userRole, setUserRole] = useState('tutor');
 
   useEffect(() => {
-    fetchUserRole();
     fetchStudentsProgress();
   }, []);
-
-  const fetchUserRole = async () => {
-    try {
-      const response = await apiClient.get<ApiResponse<User>>('/auth/profile');
-      const userData = response.data.data;
-      setUserRole(userData.role);
-    } catch (error) {
-      console.error('Error fetching user role:', error);
-    }
-  };
 
   const fetchStudentsProgress = async () => {
     try {
       setLoading(true);
+      setError('');
       
       // Obtener todas las citas del tutor/asesor
       const appointmentsResponse = await apiClient.get<ApiResponse<Appointment[]>>('/appointments');
@@ -206,7 +195,7 @@ const TutorProgress = () => {
 
   if (loading) {
     return (
-      <div className="progreso-page progreso-page--loading">
+      <div className="progreso-page progreso-page--loading" role="status">
         <div className="progreso-page__spinner" />
         <p>Cargando progreso...</p>
       </div>
@@ -223,6 +212,7 @@ const TutorProgress = () => {
           {error && (
             <div className="progreso-page__alert" role="alert">
               {error}
+              <button type="button" onClick={fetchStudentsProgress}>Reintentar</button>
             </div>
           )}
 
@@ -250,9 +240,8 @@ const TutorProgress = () => {
             </div>
           )}
 
-          {filteredStudents.length === 0 ? (
+          {error ? null : filteredStudents.length === 0 ? (
             <div className="progreso-page__empty">
-              <span className="progreso-page__empty-icon" aria-hidden>📊</span>
               <h3>
                 {students.length === 0
                   ? 'No hay progreso registrado'
@@ -279,7 +268,7 @@ const TutorProgress = () => {
               {filteredStudents.map((student) => (
                 <article key={student.id} className="progreso-page__card">
                   <div className="progreso-page__card-header">
-                    <h3 className="progreso-page__card-name">👨‍🎓 {student.name}</h3>
+                    <h3 className="progreso-page__card-name">{student.name}</h3>
                     <div className="progreso-page__card-badges">
                       {student.subjects.map(subject => (
                         <span key={subject.subject} className="progreso-page__card-badge">
@@ -305,6 +294,11 @@ const TutorProgress = () => {
                         <div
                           className="progreso-page__card-progress-fill"
                           style={{ width: `${student.attendance}%` }}
+                          role="progressbar"
+                          aria-label={`Asistencia de ${student.name}`}
+                          aria-valuemin={0}
+                          aria-valuemax={100}
+                          aria-valuenow={student.attendance}
                         />
                       </div>
                       <span className="progreso-page__card-metric-detail">{student.attendance}%</span>
@@ -323,6 +317,11 @@ const TutorProgress = () => {
                           <div
                             className="progreso-page__subject-fill"
                             style={{ width: `${subject.progress}%` }}
+                            role="progressbar"
+                            aria-label={`Progreso de ${subject.subject} para ${student.name}`}
+                            aria-valuemin={0}
+                            aria-valuemax={100}
+                            aria-valuenow={subject.progress}
                           />
                         </div>
                         <div className="progreso-page__subject-meta">
@@ -338,6 +337,11 @@ const TutorProgress = () => {
                               <div
                                 className="progreso-page__subject-fill progreso-page__subject-fill--alt"
                                 style={{ width: `${subject.videoProgress.completionRate}%` }}
+                                  role="progressbar"
+                                  aria-label={`Videos completados de ${subject.subject} para ${student.name}`}
+                                  aria-valuemin={0}
+                                  aria-valuemax={100}
+                                  aria-valuenow={subject.videoProgress.completionRate}
                               />
                             </div>
                           </div>
@@ -361,20 +365,18 @@ const TutorProgress = () => {
                       Última actividad: {student.lastActivityFormatted}
                     </span>
                     <div className="progreso-page__card-actions">
-                      <button
-                        type="button"
+                      <Link
                         className="progreso-page__btn"
-                        onClick={() => window.location.href = '/dashboard/estudiantes'}
+                        to="/dashboard/estudiantes"
                       >
-                        Ver detalles
-                      </button>
-                      <button
-                        type="button"
+                        Ver estudiantes
+                      </Link>
+                      <Link
                         className="progreso-page__btn progreso-page__btn--outline"
-                        onClick={() => window.location.href = '/dashboard/videos-tutor'}
+                        to="/dashboard/videos-tutor"
                       >
-                        Subir material
-                      </button>
+                        Gestionar videos
+                      </Link>
                     </div>
                   </div>
                 </article>

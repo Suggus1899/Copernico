@@ -1,58 +1,55 @@
-import axios from 'axios';
 import type { ApiResponse } from '../types/api';
 import type { Notification } from '../types/communication';
 import React, { Component } from 'react';
+import { Link } from 'react-router-dom';
 import apiClient from '../utils/axiosConfig';
 import { getApiErrorMessage } from '../utils/apiError';
 import './Dashboard.css';
 import './TutorNotifications.css';
-interface TutorNotificationsState { notifications: Notification[]; loading: boolean; error: string | null; filter: string }
+interface TutorNotificationsState {
+  notifications: Notification[]; loading: boolean; error: string | null; filter: string;
+  feedback: string | null; decliningNotificationId: string | null; declineReason: string; actionPending: boolean;
+}
 
 class TutorNotifications extends Component<Record<string, never>, TutorNotificationsState> {
   state: TutorNotificationsState = {
     notifications: [],
     loading: true,
     error: null,
-    filter: 'all'
+    filter: 'all',
+    feedback: null,
+    decliningNotificationId: null,
+    declineReason: '',
+    actionPending: false
   };
 
   notificationInterval: ReturnType<typeof setInterval> | undefined;
 
   componentDidMount() {
     this.fetchNotifications();
-    
-    // Configurar actualización automática cada 30 segundos
     this.notificationInterval = setInterval(() => {
-      this.fetchNotifications();
+      this.fetchNotifications(false);
     }, 30000);
   }
 
   componentWillUnmount() {
-    // Limpiar el intervalo cuando el componente se desmonte
     if (this.notificationInterval) {
       clearInterval(this.notificationInterval);
     }
   }
 
-  fetchNotifications = async () => {
+  fetchNotifications = async (showLoading = true) => {
     try {
-      this.setState({ loading: true, error: null });
-      console.log('Obteniendo notificaciones...');
-      
+      this.setState({ loading: showLoading, error: null });
       const response = await apiClient.get<ApiResponse<Notification[]>>('/notifications');
-      console.log('Notificaciones obtenidas:', response.data.data?.length || 0);
-      console.log('Datos de notificaciones:', response.data.data);
-      
       this.setState({
         notifications: response.data.data || [],
         loading: false
       });
     } catch (error) {
       console.error('Error fetching notifications:', error);
-      console.error('Error response:', axios.isAxiosError(error) ? error.response?.data : undefined);
-      
       this.setState({
-        error: 'Error al cargar las notificaciones',
+        error: getApiErrorMessage(error, 'Error al cargar las notificaciones.'),
         loading: false
       });
     }
@@ -64,10 +61,12 @@ class TutorNotifications extends Component<Record<string, never>, TutorNotificat
       this.setState(prevState => ({
         notifications: prevState.notifications.map(notif =>
           notif._id === id ? { ...notif, read: true } : notif
-        )
+        ),
+        feedback: 'Notificación marcada como leída.'
       }));
     } catch (error) {
       console.error('Error marking notification as read:', error);
+      this.setState({ feedback: getApiErrorMessage(error, 'No se pudo actualizar la notificación.') });
     }
   };
 
@@ -75,10 +74,12 @@ class TutorNotifications extends Component<Record<string, never>, TutorNotificat
     try {
       await apiClient.patch('/notifications/read-all');
       this.setState(prevState => ({
-        notifications: prevState.notifications.map(notif => ({ ...notif, read: true }))
+        notifications: prevState.notifications.map(notif => ({ ...notif, read: true })),
+        feedback: 'Todas las notificaciones están marcadas como leídas.'
       }));
     } catch (error) {
       console.error('Error marking all notifications as read:', error);
+      this.setState({ feedback: getApiErrorMessage(error, 'No se pudieron actualizar las notificaciones.') });
     }
   };
 
@@ -87,56 +88,6 @@ class TutorNotifications extends Component<Record<string, never>, TutorNotificat
     if (filter === 'all') return notifications;
     if (filter === 'unread') return notifications.filter(n => !n.read);
     return notifications.filter(n => n.type === filter);
-  };
-
-  getNotificationIcon = (type: string) => {
-    const icons: Record<string, string> = {
-      'appointment_reminder': '📅',
-      'assignment_due': '📝',
-      'new_material': '📚',
-      'grade_posted': '⭐',
-      'progress_update': '📊',
-      'system_alert': '⚠️',
-      'message_received': '💬',
-      'appointment_confirmed': '✅',
-      'appointment_cancelled': '❌',
-      'extension_approved': '⏰',
-      'report_ready': '📋',
-      'welcome': '👋',
-      'announcement': '📢',
-      'custom': 'ℹ️'
-    };
-    return icons[type] || 'ℹ️';
-  };
-
-  respondToNotification = async (notificationId: string, response: string) => {
-    try {
-      await apiClient.post(`/notifications/${notificationId}/respond`, {
-        response: response
-      });
-      
-      // Actualizar la notificación localmente
-      this.setState(prevState => ({
-        notifications: prevState.notifications.map(notif =>
-          notif._id === notificationId 
-            ? { ...notif, userResponse: response, respondedAt: new Date().toISOString() }
-            : notif
-        )
-      }));
-
-      // Mostrar mensaje de éxito
-      if (response === 'confirm') {
-        alert('Solicitud de asesoría aceptada exitosamente');
-      } else if (response === 'decline') {
-        alert('Solicitud de asesoría rechazada');
-      }
-
-      // Refrescar notificaciones
-      this.fetchNotifications();
-    } catch (error) {
-      console.error('Error responding to notification:', error);
-      alert('Error al procesar la respuesta. Inténtalo nuevamente.');
-    }
   };
 
   // Registra la elección en la notificación. La cita ya cambió de estado en /appointments,
@@ -159,38 +110,42 @@ class TutorNotifications extends Component<Record<string, never>, TutorNotificat
   confirmAppointment = async (appointment: Notification['relatedAppointment'], notificationId: string) => {
     const appointmentId = typeof appointment === 'string' ? appointment : appointment?._id;
     if (!appointmentId) return;
+    this.setState({ actionPending: true, feedback: null });
     try {
       await apiClient.post(`/appointments/${appointmentId}/confirm`, {});
     } catch (error) {
-      alert(getApiErrorMessage(error, 'Error al confirmar la cita. Inténtalo nuevamente.'));
+      this.setState({ actionPending: false, feedback: getApiErrorMessage(error, 'Error al confirmar la cita. Inténtalo nuevamente.') });
       return;
     }
 
     await this.recordNotificationChoice(notificationId, 'confirm');
-    alert('Solicitud de asesoría aceptada exitosamente');
-    this.fetchNotifications();
+    this.setState({ actionPending: false, feedback: 'Solicitud de asesoría aceptada.' });
+    this.fetchNotifications(false);
   };
 
   declineAppointment = async (appointment: Notification['relatedAppointment'], notificationId: string) => {
     const appointmentId = typeof appointment === 'string' ? appointment : appointment?._id;
     if (!appointmentId) return;
-    const reason = prompt('¿Por qué rechazas esta solicitud? (opcional)');
-    if (reason === null) return;
-
-    const trimmedReason = reason.trim();
+    const trimmedReason = this.state.declineReason.trim();
+    this.setState({ actionPending: true, feedback: null });
     try {
       await apiClient.post(
         `/appointments/${appointmentId}/reject`,
         trimmedReason ? { reason: trimmedReason } : {}
       );
     } catch (error) {
-      alert(getApiErrorMessage(error, 'Error al rechazar la cita. Inténtalo nuevamente.'));
+      this.setState({ actionPending: false, feedback: getApiErrorMessage(error, 'Error al rechazar la cita. Inténtalo nuevamente.') });
       return;
     }
 
     await this.recordNotificationChoice(notificationId, 'decline');
-    alert('Solicitud rechazada exitosamente');
-    this.fetchNotifications();
+    this.setState({
+      actionPending: false,
+      declineReason: '',
+      decliningNotificationId: null,
+      feedback: 'Solicitud rechazada.'
+    });
+    this.fetchNotifications(false);
   };
 
   formatDate = (dateString: string) => {
@@ -213,9 +168,11 @@ class TutorNotifications extends Component<Record<string, never>, TutorNotificat
   };
 
   render() {
-    const { filter, loading, error } = this.state;
+    const { filter, loading, error, feedback, decliningNotificationId, declineReason, actionPending } = this.state;
     const filteredNotifications = this.getFilteredNotifications();
     const unreadCount = this.state.notifications.filter(n => !n.read).length;
+    const getActionLabel = (notification: Notification) =>
+      notification.type === 'message_received' ? 'Responder' : notification.actionLabel || 'Ver detalles';
 
     return (
       <div className={loading ? 'notificaciones-page notificaciones-page--loading' : 'notificaciones-page'}>
@@ -227,8 +184,10 @@ class TutorNotifications extends Component<Record<string, never>, TutorNotificat
             {error && (
               <div className="notificaciones-page__alert" role="alert">
                 {error}
+                <button type="button" onClick={() => this.fetchNotifications()}>Reintentar</button>
               </div>
             )}
+            {feedback && <p className="notificaciones-page__feedback" role="status">{feedback}</p>}
 
             {loading ? (
               <>
@@ -277,9 +236,6 @@ class TutorNotifications extends Component<Record<string, never>, TutorNotificat
                         key={notification._id}
                         className={`notificaciones-page__card ${!notification.read ? 'notificaciones-page__card--unread' : ''}`}
                       >
-                        <span className="notificaciones-page__card-icon" aria-hidden>
-                          {this.getNotificationIcon(notification.type)}
-                        </span>
                         <div className="notificaciones-page__card-content">
                           <div className="notificaciones-page__card-header">
                             <h3 className="notificaciones-page__card-title">{notification.title}</h3>
@@ -313,6 +269,30 @@ class TutorNotifications extends Component<Record<string, never>, TutorNotificat
                            notification.relatedAppointment &&
                            !notification.userResponse && (
                             <div className="notificaciones-page__appointment-actions">
+                              {decliningNotificationId === notification._id ? (
+                                <form
+                                  className="notificaciones-page__decline-form"
+                                  onSubmit={(event) => {
+                                    event.preventDefault();
+                                    this.declineAppointment(notification.relatedAppointment, notification._id);
+                                  }}
+                                >
+                                  <label htmlFor={`decline-reason-${notification._id}`}>Motivo del rechazo (opcional)</label>
+                                  <textarea
+                                    id={`decline-reason-${notification._id}`}
+                                    value={declineReason}
+                                    onChange={(event) => this.setState({ declineReason: event.target.value })}
+                                    rows={3}
+                                  />
+                                  <button type="submit" className="notificaciones-page__btn notificaciones-page__btn--danger" disabled={actionPending}>
+                                    {actionPending ? 'Enviando…' : 'Confirmar rechazo'}
+                                  </button>
+                                  <button type="button" className="notificaciones-page__btn notificaciones-page__btn--outline" onClick={() => this.setState({ decliningNotificationId: null, declineReason: '' })} disabled={actionPending}>
+                                    Cancelar
+                                  </button>
+                                </form>
+                              ) : (
+                                <>
                               <button
                                 type="button"
                                 className="notificaciones-page__btn notificaciones-page__btn--success"
@@ -320,19 +300,20 @@ class TutorNotifications extends Component<Record<string, never>, TutorNotificat
                                   notification.relatedAppointment,
                                   notification._id
                                 )}
+                                disabled={actionPending}
                               >
                                 Aceptar solicitud
                               </button>
                               <button
                                 type="button"
                                 className="notificaciones-page__btn notificaciones-page__btn--danger"
-                                onClick={() => this.declineAppointment(
-                                  notification.relatedAppointment,
-                                  notification._id
-                                )}
+                                onClick={() => this.setState({ decliningNotificationId: notification._id, declineReason: '' })}
+                                disabled={actionPending}
                               >
                                 Rechazar
                               </button>
+                                </>
+                              )}
                             </div>
                           )}
 
@@ -344,25 +325,29 @@ class TutorNotifications extends Component<Record<string, never>, TutorNotificat
                           )}
 
                           {notification.actionUrl && !notification.userResponse && (
-                            <button 
-                              type="button" 
-                              className="notificaciones-page__btn notificaciones-page__btn--outline"
-                              onClick={() => {
-                                this.markAsRead(notification._id);
-                                if (notification.actionUrl) window.location.href = notification.actionUrl;
-                              }}
-                            >
-                              {notification.type === 'message_received' 
-                                ? '↩️ Responder' 
-                                : (notification.actionLabel || 'Ver detalles')}
-                            </button>
+                            notification.actionUrl.startsWith('/') && !notification.actionUrl.startsWith('//') ? (
+                              <Link
+                                className="notificaciones-page__btn notificaciones-page__btn--outline"
+                                to={notification.actionUrl}
+                                onClick={() => this.markAsRead(notification._id)}
+                              >
+                                {getActionLabel(notification)}
+                              </Link>
+                            ) : (
+                              <a
+                                className="notificaciones-page__btn notificaciones-page__btn--outline"
+                                href={notification.actionUrl}
+                                onClick={() => this.markAsRead(notification._id)}
+                              >
+                                {getActionLabel(notification)}
+                              </a>
+                            )
                           )}
                         </div>
                       </article>
                     ))
-                  ) : (
+                  ) : error ? null : (
                     <div className="notificaciones-page__empty">
-                      <span className="notificaciones-page__empty-icon" aria-hidden>🔔</span>
                       <h3>No hay notificaciones</h3>
                       <p>No tienes notificaciones con los filtros seleccionados</p>
                     </div>
