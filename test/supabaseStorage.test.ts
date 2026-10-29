@@ -1,3 +1,4 @@
+type FetchInit = RequestInit & { headers: Record<string, string>; body?: string };
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { createSupabaseStorage } from '../src/services/storage/supabaseStorage.js';
@@ -6,16 +7,16 @@ const PROJECT_URL = 'https://proyecto.supabase.co';
 const BUCKET = 'copernico-private';
 
 /** fetch falso: registra cada petición y responde con lo que devuelva `respond`. */
-const recordingFetch = (respond = () => new Response('{}', { status: 200 })) => {
-  const calls = [];
-  const fetchImpl = async (url, init) => {
-    calls.push({ url, init });
+const recordingFetch = (respond: (url: string | URL | Request, init: RequestInit) => Response = () => new Response('{}', { status: 200 })) => {
+  const calls: { url: string | URL | Request; init: FetchInit }[] = [];
+  const fetchImpl = async (url: string | URL | Request, init: RequestInit = {}) => {
+    calls.push({ url, init: init as FetchInit });
     return respond(url, init);
   };
   return { calls, fetchImpl };
 };
 
-const storageWith = (fetchImpl) =>
+const storageWith = (fetchImpl: typeof fetch) =>
   createSupabaseStorage({ url: PROJECT_URL, serviceKey: 'service-key', bucket: BUCKET, fetchImpl });
 
 describe('almacenamiento Supabase: cliente REST', () => {
@@ -38,7 +39,7 @@ describe('almacenamiento Supabase: cliente REST', () => {
     const storage = storageWith(fetchImpl);
 
     const url = new URL(await storage.createSignedUrl('documents/u1/a.pdf', { downloadName: 'Tema 1.pdf' }));
-    assert.equal(JSON.parse(calls[0].init.body).expiresIn, 300);
+    assert.equal(JSON.parse(calls[0].init.body as string).expiresIn, 300);
     assert.equal(url.origin, PROJECT_URL);
     assert.equal(url.pathname, `/storage/v1/object/sign/${BUCKET}/documents/u1/a.pdf`);
     assert.equal(url.searchParams.get('token'), 'abc');
@@ -59,7 +60,7 @@ describe('almacenamiento Supabase: cliente REST', () => {
     assert.equal(calls.length, 1);
     assert.equal(calls[0].url, `${PROJECT_URL}/storage/v1/object/${BUCKET}`);
     assert.equal(calls[0].init.method, 'DELETE');
-    assert.deepEqual(JSON.parse(calls[0].init.body), { prefixes: ['avatars/u1/a.png', 'avatars/u1/b.png'] });
+    assert.deepEqual(JSON.parse(calls[0].init.body as string), { prefixes: ['avatars/u1/a.png', 'avatars/u1/b.png'] });
   });
 
   it('traduce respuestas de error del proveedor a 502 STORAGE_ERROR', async () => {
@@ -83,4 +84,8 @@ describe('almacenamiento Supabase: cliente REST', () => {
       details: { action: 'remove' },
     });
   });
+  it('traduce timeout de fetch a 502 STORAGE_ERROR', async () => {
+    await assert.rejects(storageWith(async () => { throw new DOMException('timeout', 'TimeoutError'); }).remove(['a']), { status: 502, code: 'STORAGE_ERROR', details: { action: 'remove' } });
+  });
+
 });

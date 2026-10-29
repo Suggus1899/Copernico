@@ -1,12 +1,13 @@
+import type { RequestHandler } from 'express';
 import multer from 'multer';
 import { AVATAR_MAX_BYTES, DOCUMENT_MAX_BYTES, MATERIAL_MAX_BYTES } from '../config.js';
 import { AppError } from '../utils/AppError.js';
 
 export const MAX_DOCUMENTS_PER_REQUEST = 5;
 
-const toMb = (bytes) => Math.round(bytes / (1024 * 1024));
+const toMb = (bytes: number) => Math.round(bytes / (1024 * 1024));
 
-const toUploadError = (error, maxBytes) => {
+const toUploadError = (error: unknown, maxBytes: number) => {
   if (!(error instanceof multer.MulterError)) return error;
   if (error.code === 'LIMIT_FILE_SIZE') {
     return new AppError(413, 'FILE_TOO_LARGE', `El archivo supera el tamaño máximo de ${toMb(maxBytes)} MB`);
@@ -16,7 +17,7 @@ const toUploadError = (error, maxBytes) => {
 
 // Los archivos se mantienen en memoria, se validan por firma y se suben a Storage.
 // Nunca se escriben en el disco del servidor.
-const withUploadErrors = (middleware, maxBytes) => (req, res, next) => {
+const withUploadErrors = (middleware: RequestHandler, maxBytes: number): RequestHandler => (req, res, next) => {
   middleware(req, res, (error) => next(error ? toUploadError(error, maxBytes) : undefined));
 };
 

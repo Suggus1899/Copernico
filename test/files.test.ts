@@ -1,3 +1,4 @@
+type Actor = { id: string; cookie: string };
 import { after, before, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import request from 'supertest';
@@ -15,27 +16,27 @@ const TXT = Buffer.from('Apuntes de la clase de hoy\n');
 const ZIP = Buffer.concat([Buffer.from([0x50, 0x4b, 0x03, 0x04]), Buffer.alloc(64)]);
 const EXE = Buffer.from('MZ programa de prueba');
 
-const cookieOf = (res) => {
-  const cookie = (res.headers['set-cookie'] ?? []).find((c) => c.startsWith(`${SESSION}=`));
-  return cookie?.split(';')[0];
+const cookieOf = (res: request.Response) => {
+  const cookie = [res.headers['set-cookie']].flat().filter((c): c is string => typeof c === 'string').find((c) => c.startsWith(`${SESSION}=`));
+  assert.ok(cookie); return cookie.split(';')[0];
 };
 
 describe('archivos privados: avatares, documentos y materiales', () => {
-  let env;
-  let User;
-  let EducationalMaterial;
-  let setStorage;
-  let tutor;
-  let otherTutor;
-  let ana;
-  let bruno;
+  let env: Awaited<ReturnType<typeof startIntegrationEnv>>;
+  let User: typeof import('../src/models/User.js').default;
+  let EducationalMaterial: typeof import('../src/models/EducationalMaterial.js').default;
+  let setStorage: typeof import('../src/services/storage/index.js').setStorage;
+  let tutor: Actor;
+  let otherTutor: Actor;
+  let ana: Actor;
+  let bruno: Actor;
 
   /** Petición autenticada; los tests la encadenan con .attach, .field o .send. */
-  const authed = (method, url, as) =>
+  const authed = (method: 'get' | 'post' | 'delete' | 'patch' | 'put', url: string, as: Actor) =>
     request(env.app)[method](url).set('Origin', ORIGIN).set('Cookie', as.cookie);
 
   /** Claves guardadas en el almacenamiento de test que empiezan por el prefijo dado. */
-  const keysUnder = (prefix) => [...env.storage.objects.keys()].filter((key) => key.startsWith(prefix));
+  const keysUnder = (prefix: string) => [...env.storage.objects.keys()].filter((key) => key.startsWith(prefix));
 
   before(async () => {
     env = await startIntegrationEnv();
@@ -43,13 +44,14 @@ describe('archivos privados: avatares, documentos y materiales', () => {
     ({ default: EducationalMaterial } = await import('../src/models/EducationalMaterial.js'));
     ({ setStorage } = await import('../src/services/storage/index.js'));
 
-    const signup = async (body) => {
+    const signup = async (body: { email: string; role: string; personalInfo: { firstName: string; lastName: string }; tutorProfile?: { specialties: string[] }; studentProfile?: { studentId: string } }) => {
       const res = await request(env.app)
         .post('/api/auth/signup')
         .set('Origin', ORIGIN)
         .send({ password: PASSWORD, ...body });
       assert.equal(res.status, 201, JSON.stringify(res.body));
       const user = await User.findOne({ email: body.email }).lean();
+      assert.ok(user);
       return { id: String(user._id), cookie: cookieOf(res) };
     };
 
@@ -143,7 +145,7 @@ describe('archivos privados: avatares, documentos y materiales', () => {
         .attach('documents', TXT, 'notas.txt');
       assert.equal(res.status, 201, JSON.stringify(res.body));
 
-      const docs = res.body.data.documents;
+      const docs: { _id: string; name: string; mimeType: string; key?: string }[] = res.body.data.documents;
       assert.deepEqual(docs.map((doc) => doc.name), ['Tema 1.pdf', 'notas.txt']);
       assert.deepEqual(docs.map((doc) => doc.mimeType), ['application/pdf', 'text/plain; charset=utf-8']);
       assert.ok(docs.every((doc) => doc.key === undefined), 'la clave de almacenamiento no sale en la API');
@@ -165,7 +167,7 @@ describe('archivos privados: avatares, documentos y materiales', () => {
 
       const removed = await authed('delete', `/api/users/profile/documents/${pdf._id}`, ana);
       assert.equal(removed.status, 200, JSON.stringify(removed.body));
-      assert.deepEqual(removed.body.data.documents.map((doc) => doc._id), [txt._id]);
+      assert.deepEqual(removed.body.data.documents.map((doc: { _id: string }) => doc._id), [txt._id]);
       assert.equal(keysUnder(`documents/${ana.id}/`).length, 1);
     });
 
@@ -205,7 +207,7 @@ describe('archivos privados: avatares, documentos y materiales', () => {
   });
 
   describe('materiales', () => {
-    let material;
+    let material: { _id: string; type: string; originalFileName: string; tags: string[]; fileKey?: string };
 
     it('un tutor sube un material con archivo privado y etiquetas normalizadas', async () => {
       const res = await authed('post', '/api/materials', tutor)
@@ -240,19 +242,19 @@ describe('archivos privados: avatares, documentos y materiales', () => {
 
     it('los estudiantes solo ven materiales publicados; los borradores son del autor', async () => {
       const asStudent = await authed('get', '/api/materials', ana);
-      assert.ok(asStudent.body.data.some((item) => item._id === material._id));
+      assert.ok(asStudent.body.data.some((item: { _id: string }) => item._id === material._id));
 
       const draft = await authed('patch', `/api/materials/${material._id}/status`, tutor).send({ status: 'draft' });
       assert.equal(draft.status, 200, JSON.stringify(draft.body));
 
       const studentList = await authed('get', '/api/materials', ana);
-      assert.equal(studentList.body.data.some((item) => item._id === material._id), false);
+      assert.equal(studentList.body.data.some((item: { _id: string }) => item._id === material._id), false);
       assert.equal((await authed('get', `/api/materials/${material._id}`, ana)).status, 403);
       assert.equal((await authed('get', `/api/materials/${material._id}/download`, ana)).status, 403);
 
       assert.equal((await authed('get', `/api/materials/${material._id}`, otherTutor)).status, 403);
       const otherList = await authed('get', '/api/materials?status=draft', otherTutor);
-      assert.equal(otherList.body.data.some((item) => item._id === material._id), false);
+      assert.equal(otherList.body.data.some((item: { _id: string }) => item._id === material._id), false);
 
       const owner = await authed('get', `/api/materials/${material._id}`, tutor);
       assert.equal(owner.status, 200);
@@ -271,11 +273,14 @@ describe('archivos privados: avatares, documentos y materiales', () => {
       assert.equal(new URL(res.headers.location).searchParams.get('download'), 'diagrama.png');
 
       const stored = await EducationalMaterial.findById(material._id).lean();
+      assert.ok(stored);
       assert.equal(stored.downloads, 1);
     });
 
     it('solo el autor o un administrador puede borrar y el borrado elimina el archivo', async () => {
-      const { fileKey } = await EducationalMaterial.findById(material._id).select('+fileKey').lean();
+      const stored = await EducationalMaterial.findById(material._id).select('+fileKey').lean();
+      assert.ok(stored?.fileKey);
+      const { fileKey } = stored;
 
       const denied = await authed('delete', `/api/materials/${material._id}`, otherTutor);
       assert.equal(denied.status, 403);
@@ -287,4 +292,14 @@ describe('archivos privados: avatares, documentos y materiales', () => {
       assert.equal(await EducationalMaterial.countDocuments({ _id: material._id }), 0);
     });
   });
+  it('un fallo de borrado posterior a persistencia conserva el avatar actualizado', async () => {
+    await authed('post', '/api/users/profile/avatar', bruno).attach('avatar', PNG, 'before.png').expect(200);
+    env.storage.failOn('remove');
+    const replaced = await authed('post', '/api/users/profile/avatar', bruno).attach('avatar', PNG, 'after.png').expect(200);
+    assert.equal(replaced.body.data.avatar, `/api/users/${bruno.id}/avatar`);
+    const saved = await User.findById(bruno.id).select('+avatarKey');
+    assert.ok(env.storage.objects.has(saved!.avatarKey!));
+    await authed('get', `/api/users/${bruno.id}/avatar`, bruno).expect(302);
+  });
+
 });

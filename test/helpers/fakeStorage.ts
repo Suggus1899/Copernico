@@ -1,3 +1,5 @@
+import type { Storage } from '../../src/types/storage.js';
+export interface FakeStorage extends Storage { objects: Map<string, { body: Buffer; contentType: string }>; failOn(action: string): void }
 import { randomUUID } from 'node:crypto';
 
 /**
@@ -5,11 +7,11 @@ import { randomUUID } from 'node:crypto';
  * Las URLs firmadas apuntan a un host ficticio; los tests comprueban `objects`
  * para verificar qué se guardó o borró realmente.
  */
-export const createFakeStorage = () => {
-  const objects = new Map();
-  const failing = new Set();
+export const createFakeStorage = (): FakeStorage => {
+  const objects = new Map<string, { body: Buffer; contentType: string }>();
+  const failing = new Set<string>();
 
-  const maybeFail = (action) => {
+  const maybeFail = (action: string) => {
     if (failing.has(action)) throw new Error(`fallo simulado en ${action}`);
   };
 

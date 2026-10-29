@@ -1,3 +1,5 @@
+import type { Handler, BodyOf } from '../types/http.js';
+import type { updateUserDocumentSchema } from '../schemas/userFile.schema.js';
 import { AppError } from '../utils/AppError.js';
 import User from '../models/User.js';
 import { getStorage, removeQuietly } from '../services/storage/index.js';
@@ -13,15 +15,15 @@ import { MAX_DOCUMENTS_PER_REQUEST } from '../middlewares/upload.middleware.js';
 const MAX_DOCUMENTS_PER_USER = 20;
 
 // Ruta estable: el avatar se sirve con una redirección a una URL firmada de vida corta.
-const avatarPath = (userId) => `/api/users/${userId}/avatar`;
+const avatarPath = (userId: string) => `/api/users/${userId}/avatar`;
 
-const findOwnUser = async (userId, select) => {
-  const user = await User.findById(userId).select(select);
+const findOwnUser = async (userId: string, select?: string) => {
+  const user = await User.findById(userId).select(select!);
   if (!user) throw new AppError(404, 'NOT_FOUND', 'Usuario no encontrado');
   return user;
 };
 
-const findOwnDocument = async (userId, docId) => {
+const findOwnDocument = async (userId: string, docId: string) => {
   const user = await User.findOne({ _id: userId, 'documents._id': docId }).select('+documents');
   const document = user?.documents.id(docId);
   if (!document) throw new AppError(404, 'NOT_FOUND', 'Documento no encontrado');
@@ -30,12 +32,12 @@ const findOwnDocument = async (userId, docId) => {
 
 // ---- Avatar del usuario autenticado ----
 
-export const uploadAvatar = async (req, res, next) => {
+export const uploadAvatar: Handler<Record<string, string>, unknown, BodyOf<typeof updateUserDocumentSchema>> = async (req, res, next) => {
   try {
     if (!req.file) throw new AppError(400, 'BAD_REQUEST', 'No se proporcionó ninguna imagen');
     const kind = identifyUpload(req.file, IMAGE_EXTENSIONS);
     const storage = getStorage();
-    const userId = req.user.id;
+    const userId = req.user!.id;
     const current = await findOwnUser(userId, '+avatarKey');
 
     const key = buildObjectKey('avatars', kind.ext, userId);
@@ -62,7 +64,7 @@ export const uploadAvatar = async (req, res, next) => {
   }
 };
 
-export const getUserAvatar = async (req, res, next) => {
+export const getUserAvatar: Handler<Record<string, string>, unknown, BodyOf<typeof updateUserDocumentSchema>> = async (req, res, next) => {
   try {
     const user = await User.findById(req.params.id).select('+avatarKey');
     if (!user?.avatarKey || user.status === 'deleted') {
@@ -75,10 +77,10 @@ export const getUserAvatar = async (req, res, next) => {
   }
 };
 
-export const deleteUserAvatar = async (req, res, next) => {
+export const deleteUserAvatar: Handler<Record<string, string>, unknown, BodyOf<typeof updateUserDocumentSchema>> = async (req, res, next) => {
   try {
     const storage = getStorage();
-    const userId = req.user.id;
+    const userId = req.user!.id;
     const current = await findOwnUser(userId, '+avatarKey');
     if (!current.avatarKey) {
       throw new AppError(404, 'NOT_FOUND', 'El usuario no tiene avatar para eliminar');
@@ -100,20 +102,20 @@ export const deleteUserAvatar = async (req, res, next) => {
 // ---- Documentos privados del usuario autenticado ----
 // Todas las respuestas que cambian documentos devuelven la lista completa.
 
-export const listDocuments = async (req, res, next) => {
+export const listDocuments: Handler<Record<string, string>, unknown, BodyOf<typeof updateUserDocumentSchema>> = async (req, res, next) => {
   try {
-    const user = await findOwnUser(req.user.id, '+documents');
+    const user = await findOwnUser(req.user!.id, '+documents');
     res.json({ success: true, data: { documents: user.documents } });
   } catch (error) {
     next(error);
   }
 };
 
-export const uploadDocuments = async (req, res, next) => {
+export const uploadDocuments: Handler<Record<string, string>, unknown, BodyOf<typeof updateUserDocumentSchema>> = async (req, res, next) => {
   try {
-    const files = req.files ?? [];
+    const files = (req.files as Express.Multer.File[] | undefined) ?? [];
     if (files.length === 0) throw new AppError(400, 'BAD_REQUEST', 'No se proporcionó ningún documento');
-    const userId = req.user.id;
+    const userId = req.user!.id;
 
     // Se valida todo antes de subir nada: un archivo inválido no deja subidas a medias.
     const items = files.map((file) => {
@@ -122,7 +124,7 @@ export const uploadDocuments = async (req, res, next) => {
     });
 
     const storage = getStorage();
-    const uploadedKeys = [];
+    const uploadedKeys: string[] = [];
     try {
       const entries = [];
       for (const { file, kind, key } of items) {
@@ -160,13 +162,13 @@ export const uploadDocuments = async (req, res, next) => {
   }
 };
 
-export const updateDocument = async (req, res, next) => {
+export const updateDocument: Handler<Record<string, string>, unknown, BodyOf<typeof updateUserDocumentSchema>> = async (req, res, next) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user!.id;
     const { docId } = req.params;
     const { name, tags } = req.body;
 
-    const set = { updatedBy: userId };
+    const set: Record<string, unknown> = { updatedBy: userId };
     if (name !== undefined) set['documents.$.name'] = name;
     if (tags !== undefined) set['documents.$.tags'] = tags;
 
@@ -180,10 +182,10 @@ export const updateDocument = async (req, res, next) => {
   }
 };
 
-export const deleteDocument = async (req, res, next) => {
+export const deleteDocument: Handler<Record<string, string>, unknown, BodyOf<typeof updateUserDocumentSchema>> = async (req, res, next) => {
   try {
     const storage = getStorage();
-    const userId = req.user.id;
+    const userId = req.user!.id;
     const document = await findOwnDocument(userId, req.params.docId);
 
     await User.updateOne(
@@ -199,9 +201,9 @@ export const deleteDocument = async (req, res, next) => {
   }
 };
 
-export const downloadDocument = async (req, res, next) => {
+export const downloadDocument: Handler<Record<string, string>, unknown, BodyOf<typeof updateUserDocumentSchema>> = async (req, res, next) => {
   try {
-    const document = await findOwnDocument(req.user.id, req.params.docId);
+    const document = await findOwnDocument(req.user!.id, req.params.docId);
     const url = await getStorage().createSignedUrl(document.key, { downloadName: document.name });
     res.redirect(302, url);
   } catch (error) {

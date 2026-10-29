@@ -1,9 +1,10 @@
+import type { Storage } from '../../types/storage.js';
 import { config } from '../../config.js';
 import { AppError } from '../../utils/AppError.js';
 import { createSupabaseStorage } from './supabaseStorage.js';
 
-let override = null;
-let configured;
+let override: Storage | null = null;
+let configured: Storage | null | undefined;
 
 const createFromConfig = () => {
   if (!config.SUPABASE_URL || !config.SUPABASE_SERVICE_ROLE_KEY) return null;
@@ -15,7 +16,7 @@ const createFromConfig = () => {
 };
 
 // Almacenamiento privado activo. Sin credenciales responde 503 en lugar de fallar en silencio.
-export const getStorage = () => {
+export const getStorage = (): Storage => {
   if (override) return override;
   if (configured === undefined) configured = createFromConfig();
   if (!configured) {
@@ -25,15 +26,15 @@ export const getStorage = () => {
 };
 
 // Solo para tests: sustituye el almacenamiento por una implementación en memoria.
-export const setStorage = (storage) => {
+export const setStorage = (storage: Storage | null) => {
   override = storage;
 };
 
 // Limpieza posterior a un cambio ya guardado en BD: un fallo aquí solo deja un objeto huérfano.
-export const removeQuietly = async (storage, keys) => {
+export const removeQuietly = async (storage: Storage, keys: string[]) => {
   try {
     await storage.remove(keys);
   } catch (error) {
-    console.warn('No se pudo eliminar un archivo del almacenamiento:', error.message);
+    console.warn('No se pudo eliminar un archivo del almacenamiento:', error instanceof Error ? error.message : String(error));
   }
 };

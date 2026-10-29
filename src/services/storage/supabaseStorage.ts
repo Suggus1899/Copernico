@@ -1,20 +1,21 @@
+import type { Storage } from '../../types/storage.js';
 import { AppError } from '../../utils/AppError.js';
 
 const REQUEST_TIMEOUT_MS = 15_000;
 export const SIGNED_URL_TTL_SECONDS = 300;
 
-const encodeObjectKey = (key) => key.split('/').map(encodeURIComponent).join('/');
+const encodeObjectKey = (key: string) => key.split('/').map(encodeURIComponent).join('/');
 
-const storageError = (action, response) =>
+const storageError = (action: string, response: Response) =>
   new AppError(502, 'STORAGE_ERROR', 'Error del servicio de almacenamiento', { action, status: response.status });
 
 // Cliente mínimo de la API REST de Supabase Storage. Usa la clave de servicio solo en el
 // backend; el bucket es privado y los clientes reciben únicamente URLs firmadas temporales.
-export const createSupabaseStorage = ({ url, serviceKey, bucket, fetchImpl = fetch }) => {
+export const createSupabaseStorage = ({ url, serviceKey, bucket, fetchImpl = fetch }: { url: string; serviceKey: string; bucket: string; fetchImpl?: typeof fetch }): Storage => {
   const apiBase = `${url}/storage/v1`;
   const headers = { Authorization: `Bearer ${serviceKey}`, apikey: serviceKey };
 
-  const send = async (action, path, init) => {
+  const send = async (action: string, path: string, init: RequestInit & { headers?: Record<string, string> }) => {
     let response;
     try {
       response = await fetchImpl(`${apiBase}${path}`, {
@@ -34,7 +35,7 @@ export const createSupabaseStorage = ({ url, serviceKey, bucket, fetchImpl = fet
       await send('upload', `/object/${bucket}/${encodeObjectKey(key)}`, {
         method: 'POST',
         headers: { 'Content-Type': contentType, 'x-upsert': 'false' },
-        body,
+        body: body as Uint8Array<ArrayBuffer>,
       });
     },
 
@@ -44,7 +45,7 @@ export const createSupabaseStorage = ({ url, serviceKey, bucket, fetchImpl = fet
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ expiresIn }),
       });
-      const { signedURL } = await response.json();
+      const { signedURL } = await response.json() as { signedURL: string };
       const signed = new URL(`${apiBase}${signedURL}`);
       if (downloadName) signed.searchParams.set('download', downloadName);
       return signed.toString();
