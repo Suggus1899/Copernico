@@ -53,6 +53,8 @@ flowchart LR
 
 `render.yaml` ya fija `NODE_VERSION=24`, `NODE_ENV=production` y `TRUST_PROXY=2`. No definas `PORT`: Render lo inyecta.
 
+El build instala primero las dependencias de compilación: `npm ci --include=dev && npm run build && npm prune --omit=dev`. El arranque es `npm start`, que ejecuta `node dist/src/index.js`. No omitas las dependencias de desarrollo antes de compilar: incluyen TypeScript. La imagen de Docker también compila en una etapa independiente y copia el artefacto y las dependencias de ejecución a la imagen final.
+
 ## 4. Vercel (cliente)
 
 1. *Add New → Project* e importa el mismo repositorio.
@@ -86,7 +88,7 @@ Hazlas contra el dominio de Vercel, no contra Render directamente.
 
 - **No hay pantalla para crear cursos todavía.** Para reservar citas, inserta en la colección `courses` (Atlas → Data Explorer) al menos un documento con `title`, `instructor` (ObjectId de un usuario con `role: "tutor"`), `isPublished: true` y `level` (`beginner`, `intermediate` o `advanced`).
 - Los usuarios se crean con el registro. Para hacer administrador a alguien, cambia su `role` a `"admin"` en la colección `users`.
-- `npm run migrate:advisors` y `npm run migrate:courses` solo sirven para datos de la versión anterior. Haz una copia de seguridad de Atlas antes de ejecutarlos y no los ejecutes sobre una base nueva.
+- `npm run migrate:advisors` y `npm run migrate:courses` ejecutan scripts compilados de `dist/scripts/`: requieren haber ejecutado `npm run build`. Solo sirven para datos de la versión anterior. Haz una copia de seguridad de Atlas antes de ejecutarlos y no los ejecutes sobre una base nueva.
 
 ## 8. Operación
 

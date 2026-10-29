@@ -12,6 +12,8 @@ Reserva citas con tutores, sigue cursos con vídeos de YouTube y gestiona docume
 
 ## 🛠️ Tech Stack
 
+La API y el cliente usan TypeScript con comprobación estricta de tipos. La API conserva Express y Mongoose; el cliente conserva React y Vite. En producción, Node.js 24 ejecuta el JavaScript compilado en `dist/`.
+
 <table align="center">
   <tr>
     <td align="center" width="120">
@@ -152,7 +154,7 @@ Copernico/
 ├── test/                       Tests de integración (node:test + MongoDB en memoria)
 ├── scripts/                    Migraciones de la versión anterior (ver DEPLOY.md)
 ├── client/                     Cliente React + Vite (vercel.json: build y reescritura /api)
-├── .github/workflows/ci.yml    Tests de la API y build del cliente
+├── .github/workflows/ci.yml    Tipos, tests, builds e imagen de producción
 ├── docker-compose.yml          Desarrollo local: MongoDB replica set, API y cliente
 ├── Dockerfile.dev              Imagen de desarrollo de la API
 ├── render.yaml                 Blueprint de Render para la API
@@ -285,14 +287,24 @@ SUPABASE_STORAGE_BUCKET=copernico-private
 ## 🧪 Testing & CI
 
 ```bash
-npm test                      # API: tests de integración (la primera vez descarga MongoDB en memoria)
-cd client && npm run build    # cliente: build de producción
+npm run typecheck             # API, scripts y pruebas
+npm run build                 # genera dist/src y dist/scripts
+npm test                      # MongoDB efímero; la primera ejecución descarga el binario
+npm run test:compiled         # arranque de dist/src/index.js en un proceso separado
+npm --prefix client run typecheck
+npm --prefix client test      # pruebas de utilidades sin llamadas de red reales
+npm --prefix client run build # comprobación de tipos y build de Vite
 ```
+
+Las pruebas de la API usan un replica set efímero y almacenamiento simulado; no necesitan acceso a MongoDB Atlas ni a un bucket de Supabase real. Ejecuta `npm run build` antes de `npm run test:compiled`: este smoke inicia `dist/src/index.js` en otro proceso, comprueba `/ready` y envía SIGTERM. No forma parte de `npm test`, para que nunca use un artefacto anterior por accidente.
+
+Para ejecutar la API compilada localmente, configura las variables de entorno y ejecuta `npm run build` y después `npm start`. `npm run dev` usa `tsx` para desarrollo. Los scripts operativos se compilan a `dist/scripts/`; no ejecutes las migraciones de datos sobre una base nueva.
 
 | Job de CI | Qué hace |
 |---|---|
-| `API (tests)` | `npm ci` y `npm test` con la versión de Node de `.nvmrc` |
-| `Cliente (build)` | `npm ci` y `npm run build` en `client/` |
+| `API (tests)` | Instalación limpia, comprobación de tipos, compilación, suite API y smoke de inicio compilado con Node 24 |
+| `API (imagen de producción)` | Configuración de Compose, build de Docker e importación de la API compilada sin dependencias de desarrollo |
+| `Cliente (build)` | Instalación limpia, pruebas de utilidades y build con comprobación de tipos |
 
 CI se ejecuta en cada `push` y `pull_request` (`.github/workflows/ci.yml`).
 
