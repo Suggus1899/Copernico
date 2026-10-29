@@ -231,20 +231,20 @@ progressTrackingSchema.index({ subject: 1, competencyLevel: 1 });
 // Middleware para validaciones
 progressTrackingSchema.pre('save', function(next) {
   // Validar que la fecha de fin sea después de la fecha de inicio
-  if (this.trackingPeriod.endDate <= this.trackingPeriod.startDate) {
+  if (this.trackingPeriod!.endDate <= this.trackingPeriod!.startDate) {
     return next(new Error('End date must be after start date'));
   }
   
   // Calcular promedio automático si hay métricas
-  if (this.metrics.assignmentGrades || this.metrics.examScores || this.metrics.participation) {
+  if (this.metrics!.assignmentGrades || this.metrics!.examScores || this.metrics!.participation) {
     const metrics = [];
-    if (this.metrics.assignmentGrades) metrics.push(this.metrics.assignmentGrades);
-    if (this.metrics.examScores) metrics.push(this.metrics.examScores);
-    if (this.metrics.participation) metrics.push(this.metrics.participation);
+    if (this.metrics!.assignmentGrades) metrics.push(this.metrics!.assignmentGrades);
+    if (this.metrics!.examScores) metrics.push(this.metrics!.examScores);
+    if (this.metrics!.participation) metrics.push(this.metrics!.participation);
     
     if (metrics.length > 0) {
       const average = metrics.reduce((sum, metric) => sum + metric, 0) / metrics.length;
-      this.metrics.understandingLevel = Math.round(average / 20); // Convertir a escala 1-5
+      this.metrics!.understandingLevel = Math.round(average / 20); // Convertir a escala 1-5
     }
   }
   
@@ -252,7 +252,7 @@ progressTrackingSchema.pre('save', function(next) {
 });
 
 // Método para agregar entrada al historial
-progressTrackingSchema.methods.addProgressHistory = function(metricsSnapshot, notes, recordedBy) {
+progressTrackingSchema.methods.addProgressHistory = function(this: ProgressTrackingDocument, metricsSnapshot: unknown, notes: string, recordedBy: mongoose.Types.ObjectId): Promise<ProgressTrackingDocument> {
   this.progressHistory.push({
     date: new Date(),
     metricsSnapshot,
@@ -263,8 +263,8 @@ progressTrackingSchema.methods.addProgressHistory = function(metricsSnapshot, no
 };
 
 // Método para actualizar nivel de competencia basado en métricas
-progressTrackingSchema.methods.updateCompetencyLevel = function() {
-  const avgScore = (this.metrics.assignmentGrades + this.metrics.examScores) / 2;
+progressTrackingSchema.methods.updateCompetencyLevel = function(this: ProgressTrackingDocument): Promise<ProgressTrackingDocument> {
+  const avgScore = (this.metrics!.assignmentGrades! + this.metrics!.examScores!) / 2;
   
   if (avgScore >= 90) {
     this.competencyLevel = 'expert';
@@ -280,12 +280,12 @@ progressTrackingSchema.methods.updateCompetencyLevel = function() {
 };
 
 // Método para calcular progreso general
-progressTrackingSchema.methods.calculateOverallProgress = function() {
+progressTrackingSchema.methods.calculateOverallProgress = function(this: ProgressTrackingDocument): number {
   const metrics = [
-    this.metrics.assignmentGrades || 0,
-    this.metrics.examScores || 0,
-    this.metrics.participation || 0,
-    this.metrics.completionRate || 0
+    this.metrics!.assignmentGrades || 0,
+    this.metrics!.examScores || 0,
+    this.metrics!.participation || 0,
+    this.metrics!.completionRate || 0
   ];
   
   const validMetrics = metrics.filter(metric => metric > 0);
@@ -302,4 +302,12 @@ progressTrackingSchema.statics.getStudentProgress = function(studentId, subject)
   }).sort({ createdAt: -1 });
 };
 
-export default mongoose.model('ProgressTracking', progressTrackingSchema);
+
+export type ProgressTrackingRecord = mongoose.InferSchemaType<typeof progressTrackingSchema>;
+export type ProgressTrackingDocument = mongoose.HydratedDocument<ProgressTrackingRecord, ProgressTrackingMethods>;
+export interface ProgressTrackingMethods {
+  addProgressHistory(metricsSnapshot: unknown, notes: string, recordedBy: mongoose.Types.ObjectId): Promise<ProgressTrackingDocument>;
+  updateCompetencyLevel(): Promise<ProgressTrackingDocument>;
+  calculateOverallProgress(): number;
+}
+export default mongoose.model<ProgressTrackingRecord, mongoose.Model<ProgressTrackingRecord, {}, ProgressTrackingMethods>>('ProgressTracking', progressTrackingSchema);

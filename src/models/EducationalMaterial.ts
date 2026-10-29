@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 
 // Acepta un ObjectId, un documento o un documento poblado.
-const idOf = (value) => String(value?._id ?? value);
+const idOf = (value: unknown) => String(value && typeof value === 'object' && '_id' in value ? value._id : value);
 
 const educationalMaterialSchema = new mongoose.Schema({
   // Información del material
@@ -248,21 +248,21 @@ educationalMaterialSchema.pre('save', function(next) {
 });
 
 // Método para incrementar vistas
-educationalMaterialSchema.methods.incrementViews = function() {
+educationalMaterialSchema.methods.incrementViews = function(this: EducationalMaterialDocument): Promise<EducationalMaterialDocument> {
   this.views += 1;
   return this.save();
 };
 
 // Método para incrementar descargas
-educationalMaterialSchema.methods.incrementDownloads = function() {
+educationalMaterialSchema.methods.incrementDownloads = function(this: EducationalMaterialDocument): Promise<EducationalMaterialDocument> {
   this.downloads += 1;
   return this.save();
 };
 
 // Método para calificar material
-educationalMaterialSchema.methods.addRating = function(userId, rating, comment = '') {
+educationalMaterialSchema.methods.addRating = function(this: EducationalMaterialDocument, userId: mongoose.Types.ObjectId, rating: number, comment: string = ''): Promise<EducationalMaterialDocument> {
   // Verificar si el usuario ya calificó
-  const existingRatingIndex = this.ratings.findIndex(r => r.userId.toString() === userId.toString());
+  const existingRatingIndex = this.ratings.findIndex(r => r.userId!.toString() === userId.toString());
   
   if (existingRatingIndex > -1) {
     // Actualizar rating existente
@@ -288,7 +288,7 @@ educationalMaterialSchema.methods.addRating = function(userId, rating, comment =
 };
 
 // Método para verificar si un usuario puede acceder al material
-educationalMaterialSchema.methods.canAccess = function(user) {
+educationalMaterialSchema.methods.canAccess = function(this: EducationalMaterialDocument, user: { _id: unknown; role: string; studentProfile?: { enrolledCourses?: string[] } | null }): boolean {
   const userId = String(user._id);
   if (user.role === 'admin') return true;
   if (idOf(this.createdBy) === userId) return true;
@@ -314,4 +314,13 @@ educationalMaterialSchema.set('toJSON', {
   }
 });
 
-export default mongoose.model('EducationalMaterial', educationalMaterialSchema);
+
+export type EducationalMaterialRecord = mongoose.InferSchemaType<typeof educationalMaterialSchema>;
+export type EducationalMaterialDocument = mongoose.HydratedDocument<EducationalMaterialRecord, EducationalMaterialMethods>;
+export interface EducationalMaterialMethods {
+  incrementViews(): Promise<EducationalMaterialDocument>;
+  incrementDownloads(): Promise<EducationalMaterialDocument>;
+  addRating(userId: mongoose.Types.ObjectId, rating: number, comment?: string): Promise<EducationalMaterialDocument>;
+  canAccess(user: { _id: unknown; role: string; studentProfile?: { enrolledCourses?: string[] } | null }): boolean;
+}
+export default mongoose.model<EducationalMaterialRecord, mongoose.Model<EducationalMaterialRecord, {}, EducationalMaterialMethods>>('EducationalMaterial', educationalMaterialSchema);

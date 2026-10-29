@@ -136,7 +136,7 @@ videoProgressSchema.pre('save', function(next) {
 });
 
 // Método para agregar una nueva sesión de visualización
-videoProgressSchema.methods.addViewingSession = function(watchedSeconds, lastPosition) {
+videoProgressSchema.methods.addViewingSession = function(this: VideoProgressDocument, watchedSeconds: number, lastPosition: number): Promise<VideoProgressDocument> {
   const session = {
     startTime: new Date(),
     endTime: new Date(),
@@ -153,7 +153,7 @@ videoProgressSchema.methods.addViewingSession = function(watchedSeconds, lastPos
 };
 
 // Método para actualizar el progreso de visualización
-videoProgressSchema.methods.updateProgress = function(currentTime, watchedSeconds) {
+videoProgressSchema.methods.updateProgress = function(this: VideoProgressDocument, currentTime: number, watchedSeconds?: number): Promise<VideoProgressDocument> {
   // Actualizar tiempo total visto
   if (watchedSeconds) {
     this.watchTime += watchedSeconds;
@@ -229,4 +229,11 @@ videoProgressSchema.statics.getMostWatchedVideos = function(studentId, limit = 1
     .limit(limit);
 };
 
-export default mongoose.model('VideoProgress', videoProgressSchema);
+
+export type VideoProgressRecord = mongoose.InferSchemaType<typeof videoProgressSchema>;
+export type VideoProgressDocument = mongoose.HydratedDocument<VideoProgressRecord, VideoProgressMethods>;
+export interface VideoProgressMethods {
+  addViewingSession(watchedSeconds: number, lastPosition: number): Promise<VideoProgressDocument>;
+  updateProgress(currentTime: number, watchedSeconds?: number): Promise<VideoProgressDocument>;
+}
+export default mongoose.model<VideoProgressRecord, mongoose.Model<VideoProgressRecord, {}, VideoProgressMethods>>('VideoProgress', videoProgressSchema);

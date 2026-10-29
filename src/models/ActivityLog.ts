@@ -8,4 +8,9 @@ const activityLogSchema = new mongoose.Schema({
   metadata: { type: Object },
 }, { timestamps: { createdAt: true, updatedAt: false } });
 
-export default mongoose.model('ActivityLog', activityLogSchema);
+
+export type ActivityLogRecord = mongoose.InferSchemaType<typeof activityLogSchema>;
+export type ActivityLogDocument = mongoose.HydratedDocument<ActivityLogRecord, ActivityLogMethods>;
+export interface ActivityLogMethods {
+}
+export default mongoose.model<ActivityLogRecord, mongoose.Model<ActivityLogRecord, {}, ActivityLogMethods>>('ActivityLog', activityLogSchema);

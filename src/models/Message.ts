@@ -35,5 +35,10 @@ const messageSchema = new mongoose.Schema({
 messageSchema.index({ sender: 1, receiver: 1, createdAt: 1 });
 messageSchema.index({ receiver: 1, read: 1 });
 
-export default mongoose.model('Message', messageSchema);
+
+export type MessageRecord = mongoose.InferSchemaType<typeof messageSchema>;
+export type MessageDocument = mongoose.HydratedDocument<MessageRecord, MessageMethods>;
+export interface MessageMethods {
+}
+export default mongoose.model<MessageRecord, mongoose.Model<MessageRecord, {}, MessageMethods>>('Message', messageSchema);
 

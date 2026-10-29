@@ -248,7 +248,7 @@ notificationSchema.pre('save', function(next) {
 });
 
 // Método para marcar como leída
-notificationSchema.methods.markAsRead = function() {
+notificationSchema.methods.markAsRead = function(this: NotificationDocument): Promise<NotificationDocument> {
   this.read = true;
   this.interactionLog.push({
     action: 'viewed',
@@ -258,7 +258,7 @@ notificationSchema.methods.markAsRead = function() {
 };
 
 // Método para registrar clic
-notificationSchema.methods.recordClick = function() {
+notificationSchema.methods.recordClick = function(this: NotificationDocument): Promise<NotificationDocument> {
   this.interactionLog.push({
     action: 'clicked',
     timestamp: new Date()
@@ -267,7 +267,7 @@ notificationSchema.methods.recordClick = function() {
 };
 
 // Método para enviar respuesta
-notificationSchema.methods.recordResponse = function(response, data = null) {
+notificationSchema.methods.recordResponse = function(this: NotificationDocument, response: string, data: unknown = null): Promise<NotificationDocument> {
   this.userResponse = response;
   this.respondedAt = new Date();
   this.responseData = data;
@@ -280,7 +280,7 @@ notificationSchema.methods.recordResponse = function(response, data = null) {
 };
 
 // Método para registrar entrega
-notificationSchema.methods.recordDelivery = function(method, status = 'sent', error = null) {
+notificationSchema.methods.recordDelivery = function(this: NotificationDocument, method: string, status: string = 'sent', error: string | null = null): Promise<NotificationDocument> {
   this.deliveryLog.push({
     method,
     sentAt: new Date(),
@@ -301,17 +301,17 @@ notificationSchema.methods.recordDelivery = function(method, status = 'sent', er
 };
 
 // Método para crear recordatorio
-notificationSchema.methods.createReminder = function() {
+notificationSchema.methods.createReminder = function(this: NotificationDocument): NotificationDocument | null {
   if (this.reminderCount >= this.maxReminders) {
     return null;
   }
   
-  const reminder = new this.constructor({
+  const reminder = new (this.constructor as mongoose.Model<NotificationRecord, {}, NotificationMethods>)({
     ...this.toObject(),
     _id: undefined,
     isReminder: true,
     reminderFor: this._id,
-    reminderCount: this.remarkCount + 1,
+    reminderCount: (this as NotificationDocument & { remarkCount?: number }).remarkCount! + 1,
     scheduledFor: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 horas después
     read: false,
     sent: false,
@@ -343,4 +343,14 @@ notificationSchema.statics.cleanupExpired = function() {
   });
 };
 
-export default mongoose.model('Notification', notificationSchema);
+
+export type NotificationRecord = mongoose.InferSchemaType<typeof notificationSchema>;
+export type NotificationDocument = mongoose.HydratedDocument<NotificationRecord, NotificationMethods>;
+export interface NotificationMethods {
+  markAsRead(): Promise<NotificationDocument>;
+  recordClick(): Promise<NotificationDocument>;
+  recordResponse(response: string, data?: unknown): Promise<NotificationDocument>;
+  recordDelivery(method: string, status?: string, error?: string | null): Promise<NotificationDocument>;
+  createReminder(): NotificationDocument | null;
+}
+export default mongoose.model<NotificationRecord, mongoose.Model<NotificationRecord, {}, NotificationMethods>>('Notification', notificationSchema);

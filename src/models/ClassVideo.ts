@@ -59,7 +59,7 @@ classVideoSchema.pre('save', function(next) {
 });
 
 /** Alterna el like del usuario. `likes` siempre refleja `likedBy`. */
-classVideoSchema.methods.toggleLike = function toggleLike(userId) {
+classVideoSchema.methods.toggleLike = function(this: ClassVideoDocument, userId: mongoose.Types.ObjectId): Promise<ClassVideoDocument> {
   const key = String(userId);
   const index = this.likedBy.findIndex((id) => String(id) === key);
 
@@ -74,7 +74,7 @@ classVideoSchema.methods.toggleLike = function toggleLike(userId) {
  * Reglas de acceso: admin y propietario siempre; el resto solo si el vídeo está
  * publicado y su visibilidad o la lista `allowedStudents` lo permiten.
  */
-classVideoSchema.methods.canAccess = function canAccess(user) {
+classVideoSchema.methods.canAccess = function(this: ClassVideoDocument, user: { id: string; role: string } | null): boolean {
   if (!user) return false;
   if (user.role === 'admin') return true;
 
@@ -88,4 +88,11 @@ classVideoSchema.methods.canAccess = function canAccess(user) {
   return false;
 };
 
-export default mongoose.model('ClassVideo', classVideoSchema);
+
+export type ClassVideoRecord = mongoose.InferSchemaType<typeof classVideoSchema>;
+export type ClassVideoDocument = mongoose.HydratedDocument<ClassVideoRecord, ClassVideoMethods>;
+export interface ClassVideoMethods {
+  toggleLike(userId: mongoose.Types.ObjectId): Promise<ClassVideoDocument>;
+  canAccess(user: { id: string; role: string } | null): boolean;
+}
+export default mongoose.model<ClassVideoRecord, mongoose.Model<ClassVideoRecord, {}, ClassVideoMethods>>('ClassVideo', classVideoSchema);

@@ -15,7 +15,7 @@ const UserDocumentSchema = new mongoose.Schema({
 });
 UserDocumentSchema.set('toJSON', {
   transform: (_doc, ret) => {
-    delete ret.key;
+    Reflect.deleteProperty(ret, 'key');
     return ret;
   },
 });
@@ -27,7 +27,7 @@ const UserSchema = new mongoose.Schema({
     required: true, 
     select: false,
     validate: {
-      validator: function(v) {
+      validator: function(this: mongoose.Document, v: string) {
         // Solo se valida el texto plano asignado; el hash generado en pre-save no pasa por aquí.
         return !this.isModified('password') || isStrongPassword(v);
       },
@@ -83,7 +83,7 @@ UserSchema.pre('save', async function () {
   }
 });
 
-UserSchema.methods.comparePassword = function (candidate) {
+UserSchema.methods.comparePassword = function(this: UserDocument, candidate: string): Promise<boolean> {
   return bcrypt.compare(candidate, this.password);
 };
 
@@ -91,9 +91,15 @@ UserSchema.methods.comparePassword = function (candidate) {
 const INTERNAL_FIELDS = ['password', 'loginAttempts', 'lockedUntil', 'sessionVersion', 'avatarKey', '__v'];
 UserSchema.set('toJSON', {
   transform: (_doc, ret) => {
-    for (const field of INTERNAL_FIELDS) delete ret[field];
+    for (const field of INTERNAL_FIELDS) Reflect.deleteProperty(ret, field);
     return ret;
   },
 });
 
-export default mongoose.model('User', UserSchema);
+
+export type UserRecord = mongoose.InferSchemaType<typeof UserSchema>;
+export type UserDocument = mongoose.HydratedDocument<UserRecord, UserMethods>;
+export interface UserMethods {
+  comparePassword(candidate: string): Promise<boolean>;
+}
+export default mongoose.model<UserRecord, mongoose.Model<UserRecord, {}, UserMethods>>('User', UserSchema);

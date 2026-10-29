@@ -109,4 +109,9 @@ availabilitySlotSchema.pre('save', function(next) {
   next();
 });
 
-export default mongoose.model('AvailabilitySlot', availabilitySlotSchema);
+
+export type AvailabilitySlotRecord = mongoose.InferSchemaType<typeof availabilitySlotSchema>;
+export type AvailabilitySlotDocument = mongoose.HydratedDocument<AvailabilitySlotRecord, AvailabilitySlotMethods>;
+export interface AvailabilitySlotMethods {
+}
+export default mongoose.model<AvailabilitySlotRecord, mongoose.Model<AvailabilitySlotRecord, {}, AvailabilitySlotMethods>>('AvailabilitySlot', availabilitySlotSchema);

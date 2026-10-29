@@ -99,4 +99,9 @@ const courseSchema = new mongoose.Schema({
 courseSchema.index({ title: 'text', description: 'text' });
 courseSchema.index({ category: 1, level: 1 });
 
-export default mongoose.model('Course', courseSchema);
+
+export type CourseRecord = mongoose.InferSchemaType<typeof courseSchema>;
+export type CourseDocument = mongoose.HydratedDocument<CourseRecord, CourseMethods>;
+export interface CourseMethods {
+}
+export default mongoose.model<CourseRecord, mongoose.Model<CourseRecord, {}, CourseMethods>>('Course', courseSchema);

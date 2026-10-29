@@ -297,18 +297,18 @@ reportSchema.index({ 'period.startDate': 1, 'period.endDate': 1 });
 // Middleware para validaciones
 reportSchema.pre('save', function(next) {
   // Validar que la fecha de fin sea después de la fecha de inicio
-  if (this.period.endDate <= this.period.startDate) {
+  if (this.period!.endDate <= this.period!.startDate) {
     return next(new Error('End date must be after start date'));
   }
   
   // Validar recurrencia
-  if (this.isRecurring && !this.recurrence.frequency) {
+  if (this.isRecurring && !this.recurrence!.frequency) {
     return next(new Error('Recurring reports must have a frequency'));
   }
   
   // Generar título si no se proporciona
   if (!this.title) {
-    const dateRange = `${this.period.startDate.toISOString().split('T')[0]} to ${this.period.endDate.toISOString().split('T')[0]}`;
+    const dateRange = `${this.period!.startDate.toISOString().split('T')[0]} to ${this.period!.endDate.toISOString().split('T')[0]}`;
     this.title = `${this.type.replace('_', ' ').toUpperCase()} Report - ${dateRange}`;
   }
   
@@ -316,7 +316,7 @@ reportSchema.pre('save', function(next) {
 });
 
 // Método para agregar log de generación
-reportSchema.methods.addGenerationLog = function(action, details, duration = 0) {
+reportSchema.methods.addGenerationLog = function(this: ReportDocument, action: string, details: string, duration: number = 0): Promise<ReportDocument> {
   this.generationLog.push({
     timestamp: new Date(),
     action,
@@ -327,21 +327,21 @@ reportSchema.methods.addGenerationLog = function(action, details, duration = 0) 
 };
 
 // Método para marcar como generado
-reportSchema.methods.markAsGenerated = function(fileUrl = null) {
+reportSchema.methods.markAsGenerated = function(this: ReportDocument, fileUrl: string | null = null): Promise<ReportDocument> {
   this.status = 'generated';
   if (fileUrl) this.fileUrl = fileUrl;
-  this.generatedAt = new Date();
+  (this as ReportDocument & { generatedAt?: Date }).generatedAt = new Date();
   return this.save();
 };
 
 // Método para programar próxima generación
-reportSchema.methods.scheduleNextGeneration = function() {
+reportSchema.methods.scheduleNextGeneration = function(this: ReportDocument): ReportDocument | Promise<ReportDocument> {
   if (!this.isRecurring) return this;
   
   const now = new Date();
-  let nextDate = new Date(this.recurrence.nextGeneration || now);
+  let nextDate = new Date(this.recurrence!.nextGeneration || now);
   
-  switch (this.recurrence.frequency) {
+  switch (this.recurrence!.frequency) {
     case 'daily':
       nextDate.setDate(nextDate.getDate() + 1);
       break;
@@ -360,13 +360,13 @@ reportSchema.methods.scheduleNextGeneration = function() {
   }
   
   // Verificar fecha de fin de recurrencia
-  if (this.recurrence.endDate && nextDate > this.recurrence.endDate) {
+  if (this.recurrence!.endDate && nextDate > this.recurrence!.endDate) {
     this.isRecurring = false;
   } else {
-    this.recurrence.nextGeneration = nextDate;
+    this.recurrence!.nextGeneration = nextDate;
   }
   
-  this.recurrence.lastGenerated = now;
+  this.recurrence!.lastGenerated = now;
   return this.save();
 };
 
@@ -384,7 +384,7 @@ reportSchema.statics.getPendingReports = function() {
 };
 
 // Método para generar datos del reporte (placeholder para lógica específica)
-reportSchema.methods.generateReportData = async function() {
+reportSchema.methods.generateReportData = async function(this: ReportDocument): Promise<ReportDocument> {
   // Esta función sería implementada con lógica específica para cada tipo de reporte
   // Por ahora es un placeholder
   this.addGenerationLog('data_generation', 'Starting data collection');
@@ -396,4 +396,13 @@ reportSchema.methods.generateReportData = async function() {
   return this;
 };
 
-export default mongoose.model('Report', reportSchema);
+
+export type ReportRecord = mongoose.InferSchemaType<typeof reportSchema>;
+export type ReportDocument = mongoose.HydratedDocument<ReportRecord, ReportMethods>;
+export interface ReportMethods {
+  addGenerationLog(action: string, details: string, duration?: number): Promise<ReportDocument>;
+  markAsGenerated(fileUrl?: string | null): Promise<ReportDocument>;
+  scheduleNextGeneration(): ReportDocument | Promise<ReportDocument>;
+  generateReportData(): Promise<ReportDocument>;
+}
+export default mongoose.model<ReportRecord, mongoose.Model<ReportRecord, {}, ReportMethods>>('Report', reportSchema);

@@ -6,7 +6,7 @@ export const ACTIVE_APPOINTMENT_STATUSES = ['pending', 'confirmed'];
 // La mensajería entre estudiante y tutor solo se habilita con una cita confirmada o completada.
 export const MESSAGING_APPOINTMENT_STATUSES = ['confirmed', 'completed'];
 
-export const computeEndsAt = (startsAt, durationMinutes) =>
+export const computeEndsAt = (startsAt: Date, durationMinutes: number) =>
   new Date(startsAt.getTime() + durationMinutes * 60 * 1000);
 
 const appointmentSchema = new mongoose.Schema({
@@ -54,4 +54,9 @@ appointmentSchema.pre('validate', function setEndsAt(next) {
   next();
 });
 
-export default mongoose.model('Appointment', appointmentSchema);
+
+export type AppointmentRecord = mongoose.InferSchemaType<typeof appointmentSchema>;
+export type AppointmentDocument = mongoose.HydratedDocument<AppointmentRecord, AppointmentMethods>;
+export interface AppointmentMethods {
+}
+export default mongoose.model<AppointmentRecord, mongoose.Model<AppointmentRecord, {}, AppointmentMethods>>('Appointment', appointmentSchema);

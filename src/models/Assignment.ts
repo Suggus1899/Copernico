@@ -246,7 +246,7 @@ assignmentSchema.pre('save', function(next) {
   
   // Actualizar estado basado en fechas y entregas
   if (this.submission?.submittedAt) {
-    this.status = this.submission.lateSubmission ? 'late' : 'submitted';
+    this.status = this.submission!.lateSubmission ? 'late' : 'submitted';
   } else if (this.dueDate && this.dueDate < new Date()) {
     this.status = 'missing';
   }
@@ -255,32 +255,32 @@ assignmentSchema.pre('save', function(next) {
 });
 
 // Método para enviar tarea
-assignmentSchema.methods.submitAssignment = function(submissionData) {
+assignmentSchema.methods.submitAssignment = function(this: AssignmentDocument, submissionData: Partial<NonNullable<AssignmentRecord['submission']>>): Promise<AssignmentDocument> {
   this.submission = {
     ...submissionData,
     submittedAt: new Date(),
     lateSubmission: new Date() > this.dueDate,
     submissionAttempts: (this.submission?.submissionAttempts || 0) + 1
-  };
+  } as NonNullable<AssignmentRecord['submission']>;
   
-  this.status = this.submission.lateSubmission ? 'late' : 'submitted';
+  this.status = this.submission!.lateSubmission ? 'late' : 'submitted';
   return this.save();
 };
 
 // Método para calificar tarea
-assignmentSchema.methods.gradeAssignment = function(graderId, gradeData) {
+assignmentSchema.methods.gradeAssignment = function(this: AssignmentDocument, graderId: mongoose.Types.ObjectId, gradeData: Partial<NonNullable<AssignmentRecord['grading']>>): Promise<AssignmentDocument> {
   this.grading = {
     ...gradeData,
     gradedBy: graderId,
     gradedAt: new Date()
-  };
+  } as NonNullable<AssignmentRecord['grading']>;
   
   this.status = 'graded';
   return this.save();
 };
 
 // Método para agregar comentario
-assignmentSchema.methods.addComment = function(authorId, comment, isPrivate = false) {
+assignmentSchema.methods.addComment = function(this: AssignmentDocument, authorId: mongoose.Types.ObjectId, comment: string, isPrivate: boolean = false): Promise<AssignmentDocument> {
   this.comments.push({
     authorId,
     comment,
@@ -291,7 +291,7 @@ assignmentSchema.methods.addComment = function(authorId, comment, isPrivate = fa
 };
 
 // Método para solicitar extensión
-assignmentSchema.methods.requestExtension = function(userId, reason, newDueDate) {
+assignmentSchema.methods.requestExtension = function(this: AssignmentDocument, userId: mongoose.Types.ObjectId, reason: string, newDueDate: Date): Promise<AssignmentDocument> {
   this.extensions.push({
     requestedBy: userId,
     reason,
@@ -312,4 +312,13 @@ assignmentSchema.statics.getPendingAssignments = function(studentId) {
     .sort({ dueDate: 1 });
 };
 
-export default mongoose.model('Assignment', assignmentSchema);
+
+export type AssignmentRecord = mongoose.InferSchemaType<typeof assignmentSchema>;
+export type AssignmentDocument = mongoose.HydratedDocument<AssignmentRecord, AssignmentMethods>;
+export interface AssignmentMethods {
+  submitAssignment(submissionData: Partial<NonNullable<AssignmentRecord['submission']>>): Promise<AssignmentDocument>;
+  gradeAssignment(graderId: mongoose.Types.ObjectId, gradeData: Partial<NonNullable<AssignmentRecord['grading']>>): Promise<AssignmentDocument>;
+  addComment(authorId: mongoose.Types.ObjectId, comment: string, isPrivate?: boolean): Promise<AssignmentDocument>;
+  requestExtension(userId: mongoose.Types.ObjectId, reason: string, newDueDate: Date): Promise<AssignmentDocument>;
+}
+export default mongoose.model<AssignmentRecord, mongoose.Model<AssignmentRecord, {}, AssignmentMethods>>('Assignment', assignmentSchema);
