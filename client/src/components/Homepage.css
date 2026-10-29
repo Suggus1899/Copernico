@@ -23,6 +23,8 @@
 .home-brand-card__rule { background: var(--gold); height: 1px; margin: 19px 0; width: 54px; }
 .home-brand-card__detail { color: var(--ink-muted); font-size: 0.88rem; line-height: 1.5; margin: 0; }
 .home-hero__seal { align-items: center; background: var(--gold); border: 6px solid var(--paper); border-radius: 50%; bottom: 48px; color: var(--ink); display: flex; font-family: Georgia, "Times New Roman", serif; font-size: 1.5rem; height: 62px; justify-content: center; position: absolute; right: calc(50% - 170px); width: 62px; }
+.home-photo { padding-bottom: 54px; }
+.home-photo img { aspect-ratio: 2.3 / 1; border-radius: 16px; display: block; object-fit: cover; width: 100%; }
 
 .home-features { background: var(--surface); border-top: 1px solid var(--line); padding: 72px 0 80px; }
 .home-features__intro { margin-bottom: 32px; max-width: 620px; }
@@ -43,6 +45,8 @@
   .home-brand-card__logo { height: 98px; width: 98px; }
   .home-hero__seal { bottom: 24px; right: calc(50% - 145px); }
   .home-features { padding: 52px 0 60px; }
+  .home-photo { padding-bottom: 40px; }
+  .home-photo img { aspect-ratio: 4 / 3; }
   .home-features__grid { grid-template-columns: 1fr; }
   .home-feature-card { min-height: 0; }
   .home-feature-card h3 { margin-top: 16px; }

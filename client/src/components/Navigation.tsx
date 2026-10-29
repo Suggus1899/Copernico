@@ -2,6 +2,7 @@ import type { KeyboardEvent } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import logo from '../assets/logo.jpg';
+import { ThemeToggle } from './Theme';
 import './Navigation.css';
 
 export const Navigation = () => {
@@ -71,6 +72,7 @@ export const Navigation = () => {
             </Link>
           </div>
           <div className="navbar-actions">
+            <ThemeToggle />
             <Link to="/login" className="btn-nav-login" onClick={closeMenu}>Acceder</Link>
             <Link to="/signup" className="btn-nav-signup" onClick={closeMenu}>Crear cuenta</Link>
           </div>

@@ -3,6 +3,7 @@ import { Link, Outlet, useLocation } from 'react-router-dom';
 import type { User } from '../types/auth';
 import { useSessionUser } from './ProtectedRoute';
 import SidebarMenu from './SidebarMenu';
+import { ThemeToggle } from './Theme';
 import './Dashboard.css';
 import '../tutor-pages.css';
 
@@ -80,6 +81,7 @@ const Dashboard = () => {
           </button>
           <div className="dashboard-breadcrumb"><span>Mi espacio</span><span aria-hidden="true">›</span><strong>{getPageLabel(location.pathname)}</strong></div>
           <div className="dashboard-topbar__actions">
+            <ThemeToggle />
             <time dateTime={new Date().toISOString()}>{new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'short' })}</time>
             <Link className="dashboard-user-initials" to={profilePath} aria-label={`Ver perfil de ${displayName}`}>{initials || 'C'}</Link>
           </div>

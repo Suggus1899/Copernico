@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { ThemeToggle } from './Theme';
 import apiClient from '../utils/axiosConfig';
 import { getApiErrorMessage } from '../utils/apiError';
 import './Account.css';
@@ -53,6 +54,7 @@ const ChangePassword = () => {
 
   return (
     <main className="change-password-container">
+      <ThemeToggle />
       <Link className="account-back" to="/dashboard">Volver al panel</Link>
       <h1>Cambiar contraseña</h1>
       {error && <div className="alert alert-danger" role="alert">{error}</div>}

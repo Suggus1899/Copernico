@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import logo from '../assets/logo.jpg';
+import tutoria from '../assets/tutoria-academica.webp';
 import './Homepage.css';
 
 const Homepage = () => (
@@ -8,7 +9,7 @@ const Homepage = () => (
       <div className="home-container home-hero__layout">
         <div className="home-hero__copy">
           <p className="home-eyebrow">Aprendizaje con propósito</p>
-          <h1 id="home-title">Crece con el acompañamiento académico que necesitas.</h1>
+          <h1 id="home-title">Aprende con el apoyo académico que necesitas.</h1>
           <p className="home-hero__summary">
             Encuentra tutores, organiza tus sesiones y mantén tus clases y materiales en un solo espacio.
           </p>
@@ -34,6 +35,9 @@ const Homepage = () => (
       </div>
     </section>
 
+    <div className="home-container home-photo">
+      <img src={tutoria} alt="Una estudiante y un tutor trabajan juntos en una biblioteca" loading="lazy" />
+    </div>
     <section className="home-features" aria-labelledby="home-features-title">
       <div className="home-container">
         <div className="home-features__intro">

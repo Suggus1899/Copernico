@@ -24,6 +24,7 @@ import TutorProfile from './components/TutorProfile';
 import VideoProgressDashboard from './components/VideoProgressDashboard';
 import Messages from './components/Messages';
 import './App.css';
+import { ThemeToggle } from './components/Theme';
 
 const DashboardHome = () => {
   const user = useSessionUser();
@@ -34,6 +35,7 @@ const DashboardHome = () => {
 
 const NotFound = () => (
   <main className="not-found">
+    <ThemeToggle />
     <p className="eyebrow">COPÉRNICO</p>
     <h1>No encontramos esta página</h1>
     <p>La dirección puede haber cambiado o no estar disponible.</p>
