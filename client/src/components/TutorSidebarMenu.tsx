@@ -4,8 +4,6 @@ import apiClient from '../utils/axiosConfig';
 import usePolling from '../utils/usePolling';
 import logo from '../assets/logo.jpg';
 import './SidebarMenu.css';
-
-// Importar iconos (usando los mismos del estudiante donde sea posible)
 import iconCursos from '../assets/course.png';
 import iconVideos from '../assets/videos.png';
 import iconTutores from '../assets/tutors.png';
@@ -14,15 +12,16 @@ import iconNotas from '../assets/notas.png';
 import iconPerfil from '../assets/profile.png';
 import iconConfig from '../assets/settings.png';
 import iconLogout from '../assets/logout.png';
+// Importar iconos (usando los mismos del estudiante donde sea posible)
 
-const TutorSidebarMenu = ({ userRole = 'tutor' }) => {
+const TutorSidebarMenu = ({ userRole = 'tutor' }: { userRole?: string }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const [unreadCount, setUnreadCount] = useState(0);
 
   const fetchUnreadCount = async () => {
     try {
-      const response = await apiClient.get('/notifications/unread-count');
+      const response = await apiClient.get<{ success: boolean; data: { unreadCount: number } }>('/notifications/unread-count');
       setUnreadCount(response.data.data?.unreadCount || 0);
     } catch {
       // El contador es informativo: un fallo puntual no debe interrumpir la navegación.
@@ -31,7 +30,7 @@ const TutorSidebarMenu = ({ userRole = 'tutor' }) => {
 
   usePolling(fetchUnreadCount, 30000);
 
-  const handleLogout = async (e) => {
+  const handleLogout = async (e: React.MouseEvent<HTMLAnchorElement>) => {
     e.preventDefault();
     try {
       await apiClient.post('/auth/signout');
@@ -61,7 +60,7 @@ const TutorSidebarMenu = ({ userRole = 'tutor' }) => {
     { path: '#', icon: iconLogout, label: 'Salir', isLogout: true }
   ];
 
-  const isActive = (path) => location.pathname === path;
+  const isActive = (path: string) => location.pathname === path;
 
   return (
     <nav className="sidebar-menu">
@@ -76,7 +75,7 @@ const TutorSidebarMenu = ({ userRole = 'tutor' }) => {
           <li key={item.label}>
             <Link
               to={item.path}
-              onClick={item.isLogout ? handleLogout : null}
+              onClick={item.isLogout ? handleLogout : undefined}
               className={`menu-link ${isActive(item.path) ? 'active' : ''} ${item.isLogout ? 'logout' : ''}`}
             >
               <img src={item.icon} alt={item.label} className="menu-icon-img" />

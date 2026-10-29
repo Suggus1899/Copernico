@@ -1,7 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import logo from "../assets/logo.jpg";
 import "./Navigation.css";
-
 export const Navigation = () => {
   const location = useLocation();
   const isHomePage = location.pathname === "/" || location.pathname === "/home";

@@ -1,10 +1,9 @@
+import type { Pagination } from '../types/api';
 import React, { useCallback, useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import apiClient from '../utils/axiosConfig';
 import usePolling from '../utils/usePolling';
 import './SidebarMenu.css';
-
-// Importación de activos (Asegúrate de que los nombres de archivo sean correctos)
 import logo from '../assets/logo.jpg';
 import iconCursos from '../assets/course.png';
 import iconVideos from '../assets/videos.png';
@@ -13,6 +12,7 @@ import iconAsesoria from '../assets/asesorias.png';
 import iconNotas from '../assets/notas.png';
 import iconPerfil from '../assets/profile.png';
 import iconLogout from '../assets/logout.png';
+// Importación de activos (Asegúrate de que los nombres de archivo sean correctos)
 
 
 const SidebarMenu = () => {
@@ -23,7 +23,7 @@ const SidebarMenu = () => {
   const fetchUnreadMessagesCount = useCallback(async () => {
     try {
       // Solo necesitamos el total: limit 1 evita descargar notificaciones.
-      const response = await apiClient.get('/notifications', {
+      const response = await apiClient.get<{ success: boolean; unreadCount: number; pagination: Pagination }>('/notifications', {
         params: { type: 'message_received', read: false, limit: 1 },
       });
       setUnreadMessagesCount(response.data?.pagination?.total ?? 0);
@@ -47,7 +47,7 @@ const SidebarMenu = () => {
     }
   }, [location.pathname, fetchUnreadMessagesCount]);
 
-  const handleLogout = async (e) => {
+  const handleLogout = async (e: React.MouseEvent<HTMLAnchorElement>) => {
     e.preventDefault();
     try {
       await apiClient.post('/auth/signout');
@@ -68,7 +68,7 @@ const SidebarMenu = () => {
     { path: '#', icon: iconLogout, label: 'Salir', isLogout: true }
   ];
 
-  const isActive = (path) => location.pathname === path;
+  const isActive = (path: string) => location.pathname === path;
 
   return (
     <nav className="sidebar-menu">
@@ -83,7 +83,7 @@ const SidebarMenu = () => {
           <li key={item.label}>
             <Link
               to={item.path}
-              onClick={item.isLogout ? handleLogout : null}
+              onClick={item.isLogout ? handleLogout : undefined}
               className={`menu-link ${isActive(item.path) ? 'active' : ''} ${item.isLogout ? 'logout' : ''}`}
             >
               <img src={item.icon} alt={item.label} className="menu-icon-img" />

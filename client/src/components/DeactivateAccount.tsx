@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import apiClient from '../utils/axiosConfig';
 import { getApiErrorMessage } from '../utils/apiError';
-
 // Desactiva la cuenta en el servidor: se cierra la sesión y no se puede volver a iniciar sesión.
 const DeactivateAccount = () => {
   const navigate = useNavigate();
@@ -11,7 +10,7 @@ const DeactivateAccount = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const onSubmit = async (e) => {
+  const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError('');
 

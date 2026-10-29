@@ -1,12 +1,13 @@
+import type { User } from '../types/auth';
+import type { ApiResponse } from '../types/api';
 import React, { Component } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import apiClient from '../utils/axiosConfig';
 import TutorSidebarMenu from './TutorSidebarMenu';
 import TutorHome from './TutorHome';
 import './Dashboard.css';
-
-class TutorDashboard extends Component {
-  state = {
+class TutorDashboard extends Component<Record<string, never>, { user: User | null; loading: boolean; error: string | null }> {
+  state: { user: User | null; loading: boolean; error: string | null } = {
     user: null,
     loading: true,
     error: null
@@ -18,7 +19,7 @@ class TutorDashboard extends Component {
 
   loadUserProfile = async () => {
     try {
-      const response = await apiClient.get('/auth/profile');
+      const response = await apiClient.get<ApiResponse<User>>('/auth/profile');
       this.setState({
         user: response.data.data,
         loading: false

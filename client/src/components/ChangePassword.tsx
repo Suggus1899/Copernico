@@ -2,12 +2,11 @@ import React, { useState } from 'react';
 import apiClient from '../utils/axiosConfig';
 import { getApiErrorMessage } from '../utils/apiError';
 import './Account.css';
-
 // Misma política que la API (src/utils/passwordPolicy.js): 8-72 bytes con minúscula, mayúscula y número.
 const PASSWORD_POLICY_MESSAGE =
   'La contraseña debe tener entre 8 y 72 caracteres e incluir una minúscula, una mayúscula y un número.';
 
-const isStrongPassword = (value) =>
+const isStrongPassword = (value: string) =>
   value.length >= 8 &&
   new TextEncoder().encode(value).length <= 72 &&
   /[a-z]/.test(value) &&
@@ -22,7 +21,7 @@ const ChangePassword = () => {
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const onSubmit = async (e) => {
+  const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError('');
     setSuccess('');

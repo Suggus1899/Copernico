@@ -1,12 +1,12 @@
+import type { SignupRequest } from '../types/auth';
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import apiClient from '../utils/axiosConfig';
 import { getApiErrorMessage } from '../utils/apiError';
-
 // Misma política mínima que la API; el servidor valida también el límite de 72 bytes.
 const PASSWORD_RULE = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
 
-const ACCOUNT_TYPES = [
+const ACCOUNT_TYPES: { role: SignupRequest['role']; icon: string; title: string; description: string }[] = [
   {
     role: 'student',
     icon: '🎓',
@@ -21,7 +21,7 @@ const ACCOUNT_TYPES = [
   },
 ];
 
-const splitList = (value) =>
+const splitList = (value: string) =>
   value
     .split(',')
     .map((item) => item.trim())
@@ -29,7 +29,7 @@ const splitList = (value) =>
 
 function CreateUser() {
   const navigate = useNavigate();
-  const [role, setRole] = useState('');
+  const [role, setRole] = useState<SignupRequest['role'] | ''>('');
   const [fullname, setFullname] = useState('');
   const [studentId, setStudentId] = useState('');
   const [specialties, setSpecialties] = useState('');
@@ -43,7 +43,7 @@ function CreateUser() {
   const emailMismatch = confirmEmail !== '' && email !== confirmEmail;
   const passwordMismatch = confirmPassword !== '' && password !== confirmPassword;
 
-  const onSubmit = async (e) => {
+  const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError('');
 
@@ -66,7 +66,7 @@ function CreateUser() {
 
     // Nombre y apellido se separan por el primer espacio; la API exige al menos 2 caracteres en cada uno.
     const [firstName = '', ...rest] = fullname.trim().replace(/\s+/g, ' ').split(' ');
-    const payload = {
+    const payload: SignupRequest = {
       email: email.trim(),
       password,
       role,
@@ -236,7 +236,7 @@ function CreateUser() {
                 onChange={(e) => setPassword(e.target.value)}
                 value={password}
                 required
-                minLength="8"
+                minLength={8}
                 disabled={loading}
               />
               <div className="password-requirements">
@@ -265,7 +265,7 @@ function CreateUser() {
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 value={confirmPassword}
                 required
-                minLength="8"
+                minLength={8}
                 disabled={loading}
                 className={passwordMismatch ? 'input-error' : ''}
               />

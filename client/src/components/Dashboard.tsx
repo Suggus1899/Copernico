@@ -1,3 +1,5 @@
+import type { ApiResponse } from '../types/api';
+import type { User } from '../types/auth';
 import React, { Component } from 'react';
 import { Outlet, Navigate } from 'react-router-dom';
 import SidebarMenu from './SidebarMenu';
@@ -5,9 +7,8 @@ import TutorDashboard from './TutorDashboard';
 import StudentHome from './StudentHome';
 import apiClient from '../utils/axiosConfig';
 import './Dashboard.css';
-
-class Dashboard extends Component {
-  state = {
+class Dashboard extends Component<Record<string, never>, { user: User | null; loading: boolean; error: string | null }> {
+  state: { user: User | null; loading: boolean; error: string | null } = {
     user: null,
     loading: true,
     error: null
@@ -19,7 +20,7 @@ class Dashboard extends Component {
 
   loadUserProfile = async () => {
     try {
-      const response = await apiClient.get('/auth/profile');
+      const response = await apiClient.get<ApiResponse<User>>('/auth/profile');
       this.setState({
         user: response.data.data,
         loading: false
@@ -57,7 +58,7 @@ class Dashboard extends Component {
     }
 
     // Redirigir según el rol del usuario
-    if (user?.role === 'tutor' || user?.role === 'advisor') {
+    if (user?.role === 'tutor' || String(user?.role) === 'advisor') {
       return <TutorDashboard />;
     }
 
