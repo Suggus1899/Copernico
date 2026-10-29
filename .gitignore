@@ -40,3 +40,10 @@ pnpm-lock.yaml
 *.njsproj
 *.sln
 *.sw?
+
+# Herramientas locales y análisis
+.agent/
+.agents/
+.kiro/
+graphify-out/
+.superpowers/
