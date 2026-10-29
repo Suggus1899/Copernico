@@ -1,10 +1,10 @@
 import mongoose from 'mongoose';
 
 /** Estados de una cita. `pending` y `confirmed` ocupan el horario del tutor. */
-export const APPOINTMENT_STATUSES = ['pending', 'confirmed', 'rejected', 'cancelled', 'completed'];
+export const APPOINTMENT_STATUSES = ['pending', 'confirmed', 'rejected', 'cancelled', 'completed'] as const;
 export const ACTIVE_APPOINTMENT_STATUSES = ['pending', 'confirmed'];
 // La mensajería entre estudiante y tutor solo se habilita con una cita confirmada o completada.
-export const MESSAGING_APPOINTMENT_STATUSES = ['confirmed', 'completed'];
+export const MESSAGING_APPOINTMENT_STATUSES = ['confirmed', 'completed'] as const;
 
 export const computeEndsAt = (startsAt: Date, durationMinutes: number) =>
   new Date(startsAt.getTime() + durationMinutes * 60 * 1000);

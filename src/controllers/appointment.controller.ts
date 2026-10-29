@@ -1,3 +1,11 @@
+import type { Response } from 'express';
+import type { AuthenticatedUser } from '../types/auth.js';
+import type { AppointmentRecord } from '../models/Appointment.js';
+import type { BodyOf } from '../types/http.js';
+import type { z } from 'zod';
+import type * as schemas from '../schemas/appointment.schema.js';
+type AppointmentView = Awaited<ReturnType<typeof loadAppointment>>;
+type NotificationInput = { userId: string | mongoose.Types.ObjectId; appointmentId: mongoose.Types.ObjectId; type: string; title: string; message: string };
 import mongoose from 'mongoose';
 import Appointment, { ACTIVE_APPOINTMENT_STATUSES, computeEndsAt } from '../models/Appointment.js';
 import Course from '../models/Course.js';
@@ -27,54 +35,54 @@ const invalidTransition = () =>
   new AppError(409, 'INVALID_TRANSITION', 'La cita no admite esta acción en su estado actual');
 
 /** Id de un campo que puede venir poblado (documento) o como ObjectId. */
-const refId = (value) => String(value?._id ?? value);
-const isTutorOf = (appointment, user) => refId(appointment.tutorId) === String(user._id);
-const isStudentOf = (appointment, user) => refId(appointment.studentId) === String(user._id);
-const canView = (appointment, user) =>
+const refId = (value: unknown) => String(value && typeof value === 'object' && '_id' in value ? value._id : value);
+const isTutorOf = (appointment: AppointmentView, user: AuthenticatedUser) => refId(appointment.tutorId) === String(user._id);
+const isStudentOf = (appointment: AppointmentView, user: AuthenticatedUser) => refId(appointment.studentId) === String(user._id);
+const canView = (appointment: AppointmentView, user: AuthenticatedUser) =>
   user.role === 'admin' || isStudentOf(appointment, user) || isTutorOf(appointment, user);
 
-const scopeFor = (user) => {
+const scopeFor = (user: AuthenticatedUser): mongoose.FilterQuery<AppointmentRecord> => {
   if (user.role === 'admin') return {};
   if (user.role === 'tutor') return { tutorId: user._id };
   return { studentId: user._id };
 };
 
 /** Las notas internas solo las ven el tutor de la cita y los administradores. */
-const toResponse = (appointment, user) => {
+const toResponse = (appointment: AppointmentView, user: AuthenticatedUser) => {
   const canSeeNotes = user.role === 'admin' || isTutorOf(appointment, user);
   if (canSeeNotes) return appointment;
   const { internalNotes, ...publicFields } = appointment;
   return publicFields;
 };
 
-const loadAppointment = async (id) => {
+const loadAppointment = async (id: unknown) => {
   const appointment = await Appointment.findById(id).populate(APPOINTMENT_POPULATE).lean();
   if (!appointment) throw notFound();
   return appointment;
 };
 
 /** Cita visible para el usuario; si no lo es, responde 404 para no revelar su existencia. */
-const loadVisible = async (id, user) => {
+const loadVisible = async (id: unknown, user: AuthenticatedUser) => {
   const appointment = await loadAppointment(id);
   if (!canView(appointment, user)) throw notFound();
   return appointment;
 };
 
-const loadOwnedByTutor = async (id, user) => {
+const loadOwnedByTutor = async (id: unknown, user: AuthenticatedUser) => {
   const appointment = await loadAppointment(id);
   if (!isTutorOf(appointment, user)) throw notFound();
   return appointment;
 };
 
-const sendAppointment = async (res, status, id, user) => {
+const sendAppointment = async (res: Response, status: number, id: unknown, user: AuthenticatedUser) => {
   const appointment = await loadAppointment(id);
   res.status(status).json({ success: true, data: toResponse(appointment, user) });
 };
 
-const runInTransaction = async (work) => {
+const runInTransaction = async <T>(work: (session: mongoose.ClientSession) => Promise<T>): Promise<T> => {
   const session = await mongoose.startSession();
   try {
-    let result;
+    let result!: T;
     await session.withTransaction(async () => {
       result = await work(session);
     });
@@ -84,14 +92,14 @@ const runInTransaction = async (work) => {
   }
 };
 
-const notify = (session, { userId, appointmentId, type, title, message }) =>
+const notify = (session: mongoose.ClientSession, { userId, appointmentId, type, title, message }: NotificationInput) =>
   Notification.create(
     [{ userId, relatedAppointment: appointmentId, category: 'appointment', type, title, message }],
     { session }
   );
 
 /** Cierra una cita desde `from` hacia `to` y notifica a la otra parte, en una transacción. */
-const closeAppointment = ({ appointment, actor, from, to, reason, notify: notification }) =>
+const closeAppointment = ({ appointment, actor, from, to, reason, notify: notification }: { appointment: AppointmentView; actor: AuthenticatedUser; from: string[]; to: string; reason?: string; notify: Omit<NotificationInput, "appointmentId"> }) =>
   runInTransaction(async (session) => {
     const updated = await Appointment.findOneAndUpdate(
       { _id: appointment._id, status: { $in: from } },
@@ -102,7 +110,7 @@ const closeAppointment = ({ appointment, actor, from, to, reason, notify: notifi
     await notify(session, { ...notification, appointmentId: updated._id });
   });
 
-export const createAppointment = asyncHandler(async (req, res) => {
+export const createAppointment = asyncHandler<Record<string, string>, unknown, BodyOf<typeof schemas.createAppointmentSchema>>(async (req, res) => {
   const { tutorId, courseId, startsAt, location, topic } = req.body;
 
   const tutor = await User.findOne({ _id: tutorId, role: 'tutor', status: 'active' })
@@ -145,7 +153,7 @@ export const createAppointment = asyncHandler(async (req, res) => {
     }
 
     const [created] = await Appointment.create(
-      [{ studentId: req.user._id, tutorId, courseId, topic, startsAt, durationMinutes, location }],
+      [{ studentId: req.user!._id, tutorId, courseId, topic, startsAt, durationMinutes, location }],
       { session }
     );
     await notify(session, {
@@ -158,12 +166,12 @@ export const createAppointment = asyncHandler(async (req, res) => {
     return created;
   });
 
-  return sendAppointment(res, 201, appointment._id, req.user);
+  return sendAppointment(res, 201, appointment._id, req.user!);
 });
 
 export const listAppointments = asyncHandler(async (req, res) => {
-  const { status, from, to, limit } = req.query;
-  const filter = scopeFor(req.user);
+  const { status, from, to, limit } = req.query as unknown as z.output<typeof schemas.listAppointmentsSchema>['query'];
+  const filter = scopeFor(req.user!);
   if (status) filter.status = status;
   if (from || to) {
     filter.startsAt = {};
@@ -176,12 +184,12 @@ export const listAppointments = asyncHandler(async (req, res) => {
     .limit(limit)
     .populate(APPOINTMENT_POPULATE)
     .lean();
-  res.json({ success: true, data: appointments.map((a) => toResponse(a, req.user)) });
+  res.json({ success: true, data: appointments.map((a) => toResponse(a, req.user!)) });
 });
 
 export const getUpcomingAppointments = asyncHandler(async (req, res) => {
   const appointments = await Appointment.find({
-    ...scopeFor(req.user),
+    ...scopeFor(req.user!),
     status: { $in: ACTIVE_APPOINTMENT_STATUSES },
     startsAt: { $gte: new Date() },
   })
@@ -189,16 +197,16 @@ export const getUpcomingAppointments = asyncHandler(async (req, res) => {
     .limit(UPCOMING_LIMIT)
     .populate(APPOINTMENT_POPULATE)
     .lean();
-  res.json({ success: true, data: appointments.map((a) => toResponse(a, req.user)) });
+  res.json({ success: true, data: appointments.map((a) => toResponse(a, req.user!)) });
 });
 
 export const getAppointmentById = asyncHandler(async (req, res) => {
-  const appointment = await loadVisible(req.params.id, req.user);
-  res.json({ success: true, data: toResponse(appointment, req.user) });
+  const appointment = await loadVisible(req.params.id, req.user!);
+  res.json({ success: true, data: toResponse(appointment, req.user!) });
 });
 
-export const confirmAppointment = asyncHandler(async (req, res) => {
-  const appointment = await loadOwnedByTutor(req.params.id, req.user);
+export const confirmAppointment = asyncHandler<Record<string, string>, unknown, BodyOf<typeof schemas.confirmAppointmentSchema>>(async (req, res) => {
+  const appointment = await loadOwnedByTutor(req.params.id, req.user!);
   const { meetingLink } = req.body;
 
   await runInTransaction(async (session) => {
@@ -230,14 +238,14 @@ export const confirmAppointment = asyncHandler(async (req, res) => {
     });
   });
 
-  return sendAppointment(res, 200, appointment._id, req.user);
+  return sendAppointment(res, 200, appointment._id, req.user!);
 });
 
-export const rejectAppointment = asyncHandler(async (req, res) => {
-  const appointment = await loadOwnedByTutor(req.params.id, req.user);
+export const rejectAppointment = asyncHandler<Record<string, string>, unknown, BodyOf<typeof schemas.closeAppointmentSchema>>(async (req, res) => {
+  const appointment = await loadOwnedByTutor(req.params.id, req.user!);
   await closeAppointment({
     appointment,
-    actor: req.user,
+    actor: req.user!,
     from: ['pending'],
     to: 'rejected',
     reason: req.body.reason,
@@ -248,15 +256,15 @@ export const rejectAppointment = asyncHandler(async (req, res) => {
       message: 'Tu solicitud de cita fue rechazada.',
     },
   });
-  return sendAppointment(res, 200, appointment._id, req.user);
+  return sendAppointment(res, 200, appointment._id, req.user!);
 });
 
-export const cancelAppointment = asyncHandler(async (req, res) => {
-  const appointment = await loadVisible(req.params.id, req.user);
-  const byStudent = isStudentOf(appointment, req.user);
+export const cancelAppointment = asyncHandler<Record<string, string>, unknown, BodyOf<typeof schemas.closeAppointmentSchema>>(async (req, res) => {
+  const appointment = await loadVisible(req.params.id, req.user!);
+  const byStudent = isStudentOf(appointment, req.user!);
   await closeAppointment({
     appointment,
-    actor: req.user,
+    actor: req.user!,
     from: ACTIVE_APPOINTMENT_STATUSES,
     to: 'cancelled',
     reason: req.body.reason,
@@ -267,11 +275,11 @@ export const cancelAppointment = asyncHandler(async (req, res) => {
       message: 'Una de tus citas fue cancelada.',
     },
   });
-  return sendAppointment(res, 200, appointment._id, req.user);
+  return sendAppointment(res, 200, appointment._id, req.user!);
 });
 
 export const completeAppointment = asyncHandler(async (req, res) => {
-  const appointment = await loadOwnedByTutor(req.params.id, req.user);
+  const appointment = await loadOwnedByTutor(req.params.id, req.user!);
   const now = new Date();
   if (appointment.status !== 'confirmed') throw invalidTransition();
   if (new Date(appointment.startsAt) > now) {
@@ -283,26 +291,26 @@ export const completeAppointment = asyncHandler(async (req, res) => {
     { $set: { status: 'completed', completedAt: now } }
   );
   if (!updated) throw invalidTransition();
-  return sendAppointment(res, 200, appointment._id, req.user);
+  return sendAppointment(res, 200, appointment._id, req.user!);
 });
 
-export const addInternalNote = asyncHandler(async (req, res) => {
-  const appointment = await loadVisible(req.params.id, req.user);
+export const addInternalNote = asyncHandler<Record<string, string>, unknown, BodyOf<typeof schemas.addInternalNoteSchema>>(async (req, res) => {
+  const appointment = await loadVisible(req.params.id, req.user!);
   await Appointment.updateOne(
     { _id: appointment._id },
-    { $push: { internalNotes: { authorId: req.user._id, note: req.body.note } } }
+    { $push: { internalNotes: { authorId: req.user!._id, note: req.body.note } } }
   );
-  return sendAppointment(res, 201, appointment._id, req.user);
+  return sendAppointment(res, 201, appointment._id, req.user!);
 });
 
-export const rateAppointment = asyncHandler(async (req, res) => {
-  const appointment = await loadVisible(req.params.id, req.user);
+export const rateAppointment = asyncHandler<Record<string, string>, unknown, BodyOf<typeof schemas.rateAppointmentSchema>>(async (req, res) => {
+  const appointment = await loadVisible(req.params.id, req.user!);
   if (appointment.status !== 'completed') {
     throw new AppError(409, 'NOT_COMPLETED', 'Solo puedes calificar citas completadas');
   }
 
   // Cada parte califica una sola vez; el filtro lo garantiza aunque haya peticiones simultáneas.
-  const prefix = isStudentOf(appointment, req.user) ? 'student' : 'tutor';
+  const prefix = isStudentOf(appointment, req.user!) ? 'student' : 'tutor';
   const { rating, feedback } = req.body;
   const result = await Appointment.updateOne(
     { _id: appointment._id, status: 'completed', [`${prefix}Rating`]: { $exists: false } },
@@ -311,7 +319,7 @@ export const rateAppointment = asyncHandler(async (req, res) => {
   if (result.matchedCount === 0) {
     throw new AppError(409, 'ALREADY_RATED', 'Ya calificaste esta cita');
   }
-  return sendAppointment(res, 200, appointment._id, req.user);
+  return sendAppointment(res, 200, appointment._id, req.user!);
 });
 
 /** Cursos publicados de un tutor: el estudiante elige uno al proponer la cita. */
@@ -326,7 +334,7 @@ export const getTutorCourses = asyncHandler(async (req, res) => {
 
 export const getTutorStudents = asyncHandler(async (req, res) => {
   const studentIds = await Appointment.distinct('studentId', {
-    tutorId: req.user._id,
+    tutorId: req.user!._id,
     status: { $in: ['confirmed', 'completed'] },
   });
   const students = await User.find({ _id: { $in: studentIds }, status: 'active' })

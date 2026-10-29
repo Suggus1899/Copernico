@@ -1,3 +1,4 @@
+type Actor = { id: string; cookie: string };
 import { after, before, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import mongoose from 'mongoose';
@@ -10,34 +11,35 @@ const HOUR = 60 * 60 * 1000;
 const SESSION = 'copernico_session';
 
 /** Fecha ISO a `hours` horas desde ahora, para construir horarios futuros. */
-const inHours = (hours) => new Date(Date.now() + hours * HOUR).toISOString();
+const inHours = (hours: number) => new Date(Date.now() + hours * HOUR).toISOString();
 
-const cookieOf = (res) => {
-  const cookie = (res.headers['set-cookie'] ?? []).find((c) => c.startsWith(`${SESSION}=`));
-  return cookie?.split(';')[0];
+const cookieOf = (res: request.Response) => {
+  const cookie = [res.headers['set-cookie']].flat().filter((c): c is string => typeof c === 'string').find((c) => c.startsWith(`${SESSION}=`));
+  assert.ok(cookie);
+  return cookie.split(';')[0];
 };
 
 describe('citas: propuesta, confirmación y reservas', () => {
-  let env;
-  let User;
-  let Course;
-  let Appointment;
-  let Notification;
+  let env: Awaited<ReturnType<typeof startIntegrationEnv>>;
+  let User: typeof import('../src/models/User.js').default;
+  let Course: typeof import('../src/models/Course.js').default;
+  let Appointment: typeof import('../src/models/Appointment.js').default;
+  let Notification: typeof import('../src/models/Notification.js').default;
 
-  let tutor;
-  let otherTutor;
-  let ana;
-  let bruno;
-  let admin;
-  let course;
-  let otherCourse;
-  let unpublishedCourse;
+  let tutor: Actor;
+  let otherTutor: Actor;
+  let ana: Actor;
+  let bruno: Actor;
+  let admin: Actor;
+  let course: import('../src/models/Course.js').CourseDocument;
+  let otherCourse: import('../src/models/Course.js').CourseDocument;
+  let unpublishedCourse: import('../src/models/Course.js').CourseDocument;
 
   // Citas que van pasando por el flujo a lo largo de los tests (se ejecutan en orden).
-  let proposed;
-  let rejectable;
-  let cancellable;
-  let rebooked;
+  let proposed: string;
+  let rejectable: string;
+  let cancellable: string;
+  let rebooked: string;
 
   before(async () => {
     env = await startIntegrationEnv();
@@ -46,13 +48,14 @@ describe('citas: propuesta, confirmación y reservas', () => {
     ({ default: Appointment } = await import('../src/models/Appointment.js'));
     ({ default: Notification } = await import('../src/models/Notification.js'));
 
-    const signup = async (body) => {
+    const signup = async (body: { email: string; role: string; personalInfo: { firstName: string; lastName: string }; tutorProfile?: { specialties: string[] }; studentProfile?: { studentId: string } }) => {
       const res = await request(env.app)
         .post('/api/auth/signup')
         .set('Origin', ORIGIN)
         .send({ password: PASSWORD, ...body });
       assert.equal(res.status, 201, JSON.stringify(res.body));
       const user = await User.findOne({ email: body.email }).lean();
+      assert.ok(user);
       return { id: String(user._id), cookie: cookieOf(res) };
     };
 
@@ -103,13 +106,13 @@ describe('citas: propuesta, confirmación y reservas', () => {
     await env.stop();
   });
 
-  const call = (method, path, who, body) => {
+  const call = (method: 'get' | 'post', path: string, who: Actor, body?: object) => {
     const req = request(env.app)[method](path).set('Origin', ORIGIN);
     if (who) req.set('Cookie', who.cookie);
     return body === undefined ? req : req.send(body);
   };
 
-  const notificationsFor = (user, type) => Notification.find({ userId: user.id, type }).lean();
+  const notificationsFor = (user: Actor, type: string) => Notification.find({ userId: user.id, type }).lean();
 
   it('un estudiante propone una cita pendiente en UTC y notifica al tutor', async () => {
     const startsAt = inHours(48);
@@ -129,6 +132,13 @@ describe('citas: propuesta, confirmación y reservas', () => {
       HOUR
     );
     assert.equal(res.body.data.studentId.personalInfo.email, undefined);
+    for (const field of ['startsAt', 'endsAt']) {
+      assert.equal(typeof res.body.data[field], 'string');
+      assert.ok(Number.isFinite(Date.parse(res.body.data[field])));
+    }
+    assert.equal(typeof res.body.data._id, 'string');
+    assert.equal(typeof res.body.data.studentId._id, 'string');
+    assert.equal(typeof res.body.data.tutorId._id, 'string');
     proposed = res.body.data._id;
 
     const notes = await notificationsFor(tutor, 'appointment_requested');
@@ -184,7 +194,7 @@ describe('citas: propuesta, confirmación y reservas', () => {
   it('el estudiante ve solo los cursos publicados del tutor elegido', async () => {
     const res = await call('get', `/api/appointments/tutors/${tutor.id}/courses`, ana);
     assert.equal(res.status, 200, JSON.stringify(res.body));
-    assert.deepEqual(res.body.data.map((c) => c.title), ['Cálculo I']);
+    assert.deepEqual(res.body.data.map((c: { _id: string; title: string }) => c.title), ['Cálculo I']);
     assert.equal(res.body.data[0].instructor, undefined);
 
     const asTutor = await call('get', `/api/appointments/tutors/${tutor.id}/courses`, tutor);
@@ -240,9 +250,9 @@ describe('citas: propuesta, confirmación y reservas', () => {
     assert.equal(res.body.data.meetingLink, 'https://meet.example.com/cita');
 
     const freshCourse = await Course.findById(course._id).lean();
-    assert.ok(freshCourse.enrolledStudents.some((e) => String(e.student) === ana.id));
+    assert.ok(freshCourse!.enrolledStudents.some((e) => String(e.student) === ana.id));
     const freshAna = await User.findById(ana.id).lean();
-    assert.ok(freshAna.studentProfile.enrolledCourses.includes(String(course._id)));
+    assert.ok(freshAna!.studentProfile!.enrolledCourses.includes(String(course._id)));
     assert.equal((await notificationsFor(ana, 'appointment_confirmed')).length, 1);
 
     const again = await call('post', `/api/appointments/${proposed}/confirm`, tutor, {});
@@ -360,7 +370,7 @@ describe('citas: propuesta, confirmación y reservas', () => {
     const anaList = await call('get', '/api/appointments', ana);
     assert.equal(anaList.status, 200);
     assert.ok(anaList.body.data.length > 0);
-    assert.ok(anaList.body.data.every((a) => a.studentId._id === ana.id));
+    assert.ok(anaList.body.data.every((a: { studentId: { _id: string } }) => a.studentId._id === ana.id));
 
     const hidden = await call('get', `/api/appointments/${rebooked}`, bruno);
     assert.equal(hidden.status, 404);
@@ -374,14 +384,14 @@ describe('citas: propuesta, confirmación y reservas', () => {
 
     const upcoming = await call('get', '/api/appointments/upcoming', tutor);
     assert.equal(upcoming.status, 200);
-    assert.ok(upcoming.body.data.every((a) => ['pending', 'confirmed'].includes(a.status)));
+    assert.ok(upcoming.body.data.every((a: { status: string }) => ['pending', 'confirmed'].includes(a.status)));
   });
 
   it('el tutor ve a sus estudiantes con cita confirmada o completada', async () => {
     const students = await call('get', '/api/appointments/my-students', tutor);
     assert.equal(students.status, 200);
-    assert.ok(students.body.data.some((s) => s._id === ana.id));
-    assert.ok(!students.body.data.some((s) => s._id === bruno.id));
+    assert.ok(students.body.data.some((s: { _id: string }) => s._id === ana.id));
+    assert.ok(!students.body.data.some((s: { _id: string }) => s._id === bruno.id));
 
     const asStudent = await call('get', '/api/appointments/my-students', ana);
     assert.equal(asStudent.status, 403);
