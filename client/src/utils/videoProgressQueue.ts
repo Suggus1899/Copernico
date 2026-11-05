@@ -4,6 +4,7 @@ import type { VideoProgress } from '../types/progress';
 import apiClient from './axiosConfig';
 
 export const VIDEO_PROGRESS_SYNC_EVENT = 'copernico:video-progress-sync';
+export const VIDEO_PROGRESS_CLEAR_EVENT = 'copernico:video-progress-clear';
 export const MAX_PENDING_PROGRESS_AGE_MS = 24 * 60 * 60 * 1000;
 
 export interface VideoProgressPayload {
@@ -165,5 +166,6 @@ export const syncPendingVideoProgress = (userId: string): Promise<VideoProgressS
 };
 
 export const clearPendingVideoProgress = (userId: string) => {
+  if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent(VIDEO_PROGRESS_CLEAR_EVENT, { detail: { userId } }));
   localStorage.removeItem(storageKey(userId));
 };

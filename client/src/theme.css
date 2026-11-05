@@ -19,6 +19,7 @@
 }
 .theme-toggle { background: transparent; border: 1px solid var(--line-strong); border-radius: 8px; color: var(--ink); cursor: pointer; font-size: 0.8rem; font-weight: 650; min-height: 40px; padding: 8px 12px; white-space: nowrap; }
 .theme-toggle:hover { background: var(--gold-pale); }
+input::placeholder, textarea::placeholder { color: var(--ink-muted); opacity: 1; }
 :root :is(.login-container, .signup-container) { background: radial-gradient(ellipse at 80% 20%, rgb(196 154 60 / 10%), transparent 35%), var(--paper); }
 .dashboard-content { grid-template-columns: minmax(0, 1fr); min-width: 0; }
 .dashboard-topbar, .dashboard-main { min-width: 0; }

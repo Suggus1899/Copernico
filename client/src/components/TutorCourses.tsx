@@ -168,7 +168,7 @@ const TutorCourses = () => {
     return (
       <div className="loading-container" role="status">
         <div className="loading-spinner"></div>
-        <p>Cargando tus cursos...</p>
+        <p>Cargando tus tutorías...</p>
       </div>
     );
   }
@@ -176,8 +176,8 @@ const TutorCourses = () => {
   return (
     <div className="cursos-page">
           <header className="cursos-page__header">
-            <h1 className="cursos-page__title">Mis Cursos</h1>
-            <p className="cursos-page__subtitle">Cursos en progreso con tus estudiantes</p>
+            <h1 className="cursos-page__title">Mis tutorías</h1>
+            <p className="cursos-page__subtitle">Sesiones agrupadas por estudiante y materia</p>
           </header>
 
           {error && (
@@ -196,7 +196,7 @@ const TutorCourses = () => {
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="cursos-page__search"
-                  aria-label="Buscar cursos"
+                  aria-label="Buscar tutorías"
                 />
                 <div className="cursos-page__filter-btns">
                   <button
@@ -250,20 +250,20 @@ const TutorCourses = () => {
             <div className="cursos-page__empty">
               <h3>
                 {courses.length === 0
-                  ? 'Aún no tienes cursos'
+                  ? 'Aún no tienes tutorías confirmadas'
                   : 'No hay resultados con los filtros aplicados'}
               </h3>
               <p>
                 {courses.length === 0
-                  ? 'Los cursos se crean cuando aceptas solicitudes de asesoría de los estudiantes.'
+                  ? 'Las sesiones aparecen aquí cuando aceptas solicitudes de tutoría.'
                   : 'Prueba con otra búsqueda o quita filtros.'}
               </p>
               {courses.length === 0 && (
                 <div className="cursos-page__help">
-                  <h4>¿Cómo funcionan los cursos?</h4>
+                  <h4>¿Cómo funcionan las tutorías?</h4>
                   <ul>
                     <li>Los estudiantes te solicitan asesorías desde la sección Tutores</li>
-                    <li>Cuando aceptas una solicitud, se crea un curso por materia y estudiante</li>
+                    <li>Cuando aceptas una solicitud, la sesión se agrupa por materia y estudiante</li>
                     <li>Aquí ves el progreso de las sesiones con cada estudiante</li>
                   </ul>
                 </div>

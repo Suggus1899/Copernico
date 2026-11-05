@@ -94,8 +94,10 @@ Hazlas contra el dominio de Vercel, no contra Render directamente.
 
 ## 7. Datos iniciales
 
+- Para una base nueva de pruebas, configura `MONGODB_URI` con un nombre terminado en `_demo` o `_test` (por ejemplo, `copernico_demo`) y `DEMO_PASSWORD` en el `.env` ignorado por Git. Ejecuta `npm run seed:demo` con Node 24. Se crean dos estudiantes, dos tutores, una cuenta administrativa y dos cursos publicados. El script rechaza `NODE_ENV=production` y bases sin ese sufijo; no lo ejecutes contra usuarios reales.
+- Las cuentas de prueba son `ana@copernico.example`, `bruno@copernico.example`, `luis@copernico.example`, `marta@copernico.example` y `admin@copernico.example`. La contraseña se toma de `DEMO_PASSWORD` al crear cada cuenta; repetir el comando conserva las cuentas y sus contraseñas y no duplica cursos. Elimina `DEMO_PASSWORD` del entorno cuando termines.
 - **No hay pantalla para crear cursos todavía.** Para reservar citas, inserta en la colección `courses` (Atlas → Data Explorer) al menos un documento con `title`, `instructor` (ObjectId de un usuario con `role: "tutor"`), `isPublished: true` y `level` (`beginner`, `intermediate` o `advanced`).
-- En una base de pruebas, registra dos estudiantes y dos tutores; cambia el `role` de dos cuentas a `"tutor"` en `users` y usa una como `instructor` del curso publicado. No reutilices cuentas reales.
+- Las vistas «Mis tutorías» agrupan sesiones confirmadas o completadas por tutor, estudiante y materia; no son un catálogo de cursos publicados. El administrador dispone de una consulta de cuentas con filtros y paginación.
 - Los usuarios se crean con el registro. Para hacer administrador a alguien, cambia su `role` a `"admin"` en la colección `users`.
 - `npm run migrate:advisors` y `npm run migrate:courses` ejecutan scripts compilados de `dist/scripts/`: requieren haber ejecutado `npm run build`. Solo sirven para datos de la versión anterior. Haz una copia de seguridad de Atlas antes de ejecutarlos y no los ejecutes sobre una base nueva.
 

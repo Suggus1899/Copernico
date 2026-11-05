@@ -6,6 +6,7 @@ import {
   enqueueVideoProgress,
   syncPendingVideoProgress,
   VIDEO_PROGRESS_SYNC_EVENT,
+  VIDEO_PROGRESS_CLEAR_EVENT,
   type VideoProgressSyncResult,
 } from '../utils/videoProgressQueue';
 import './VideoProgress.css';
@@ -55,6 +56,9 @@ class VideoProgressTracker extends Component<VideoProgressTrackerProps, VideoPro
   componentDidMount() {
     this.mounted = true;
     window.addEventListener(VIDEO_PROGRESS_SYNC_EVENT, this.handleProgressSync);
+    window.addEventListener(VIDEO_PROGRESS_CLEAR_EVENT, this.handleProgressClear);
+    window.addEventListener('pagehide', this.handlePageHide);
+    document.addEventListener('visibilitychange', this.handleVisibilityChange);
     if (this.props.videoId) {
       this.loadVideoProgress();
     }
@@ -66,7 +70,26 @@ class VideoProgressTracker extends Component<VideoProgressTrackerProps, VideoPro
     this.endSession();
     this.mounted = false;
     window.removeEventListener(VIDEO_PROGRESS_SYNC_EVENT, this.handleProgressSync);
+    window.removeEventListener(VIDEO_PROGRESS_CLEAR_EVENT, this.handleProgressClear);
+    window.removeEventListener('pagehide', this.handlePageHide);
+    document.removeEventListener('visibilitychange', this.handleVisibilityChange);
   }
+
+  handlePageHide = () => this.handleVideoPause();
+
+  handleProgressClear = (event: Event) => {
+    if ((event as CustomEvent<{ userId: string }>).detail.userId !== this.props.userId) return;
+    this.playing = false;
+    this.generation += 1;
+    if (this.updateInterval) clearInterval(this.updateInterval);
+    this.updateInterval = null;
+    this.lastUpdateTime = null;
+    this.pendingSeconds = 0;
+  };
+
+  handleVisibilityChange = () => {
+    if (document.visibilityState === 'hidden') this.updateProgress(true);
+  };
 
   handleProgressSync = (event: Event) => {
     const { userId, result } = (event as CustomEvent<{ userId: string; result: VideoProgressSyncResult }>).detail;
@@ -104,24 +127,23 @@ class VideoProgressTracker extends Component<VideoProgressTrackerProps, VideoPro
   };
 
   startSession = async (generation: number) => {
+    if (!this.playing || !this.mounted || generation !== this.generation) return;
+    this.lastUpdateTime ??= Date.now();
     try {
-      if (!this.playing || !this.mounted || generation !== this.generation) return;
-      const response = await apiClient.post<ApiResponse<{ lastPosition: number }>>(`/video-progress/videos/${this.props.videoId}/start`);
+      const response = await apiClient.post<ApiResponse<{ lastPosition: number }>>(`/video-progress/videos/${this.props.videoId}/start`, {}, { timeout: 10000 });
       if (!this.resumeApplied && this.resumePosition === null) this.resumePosition = response.data.data.lastPosition;
-      if (!this.playing || !this.mounted || generation !== this.generation) return;
-      if (!this.resumeApplied) {
-        this.resumeApplied = true;
-        if (this.resumePosition !== null && this.resumePosition > 0) this.props.onResume?.(this.resumePosition);
-      }
-      if (!this.playing || !this.mounted || generation !== this.generation) return;
-      this.lastUpdateTime = Date.now();
-      const interval = setInterval(this.updateProgress, 5000);
-      this.updateInterval = interval;
-      this.setState({ sessionActive: true, sessionStartTime: this.lastUpdateTime });
-      this.props.onSessionStart?.();
     } catch (error) {
+      if (this.mounted) this.setState({ syncMessage: 'No se pudo recuperar la posición anterior. El progreso nuevo se guardará en este dispositivo.' });
       console.error('Error starting video session:', error);
     }
+    if (!this.playing || !this.mounted || generation !== this.generation) return;
+    if (!this.resumeApplied && this.resumePosition !== null) {
+      this.resumeApplied = true;
+      if (this.resumePosition > 0) this.props.onResume?.(this.resumePosition);
+    }
+    this.updateInterval = setInterval(this.updateProgress, 5000);
+    this.setState({ sessionActive: true, sessionStartTime: this.lastUpdateTime });
+    this.props.onSessionStart?.();
   };
 
   endSession = () => {
@@ -142,28 +164,26 @@ class VideoProgressTracker extends Component<VideoProgressTrackerProps, VideoPro
     const { currentTime, totalDuration } = this.props.getVideoTime();
     if (!this.pendingSeconds && !isFinalUpdate) return;
 
-    this.sendQueue = this.sendQueue.then(async () => {
-      const watchedSeconds = this.pendingSeconds;
+    const watchedSeconds = this.pendingSeconds;
+    try {
+      // Persistir antes de cualquier promesa: pagehide puede ser la última ejecución de la página.
+      enqueueVideoProgress(this.props.userId, this.props.videoId, {
+        currentTime,
+        watchedSeconds,
+        totalDuration: totalDuration || undefined,
+      });
       this.pendingSeconds = 0;
-      if (!watchedSeconds && !isFinalUpdate) return;
-      try {
-        enqueueVideoProgress(this.props.userId, this.props.videoId, {
-          currentTime,
-          watchedSeconds,
-          totalDuration: totalDuration || undefined,
-        });
-        await syncPendingVideoProgress(this.props.userId);
-      } catch (error) {
-        this.pendingSeconds += watchedSeconds;
-        if (this.mounted) this.setState({ syncMessage: 'No se pudo guardar el progreso en este dispositivo.' });
-        console.error('Error updating video progress:', error);
-      }
-    });
+      this.sendQueue = syncPendingVideoProgress(this.props.userId).then(() => {});
+    } catch (error) {
+      if (this.mounted) this.setState({ syncMessage: 'No se pudo guardar el progreso en este dispositivo.' });
+      console.error('Error updating video progress:', error);
+    }
   };
 
   handleVideoPlay = () => {
     if (this.playing) return;
     this.playing = true;
+    this.lastUpdateTime = Date.now();
     const generation = ++this.generation;
     this.startQueue = this.startQueue.then(() => this.startSession(generation));
   };

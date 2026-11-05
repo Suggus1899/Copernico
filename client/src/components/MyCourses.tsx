@@ -167,7 +167,7 @@ const MyCourses = () => {
     return (
       <div className="cursos-page cursos-page--loading">
         <div className="cursos-page__spinner" />
-        <p>Cargando tus cursos...</p>
+        <p>Cargando tus tutorías...</p>
       </div>
     );
   }
@@ -175,7 +175,7 @@ const MyCourses = () => {
   return (
     <div className="cursos-page">
       <header className="cursos-page__header">
-        <h1 className="cursos-page__title">Cursos</h1>
+        <h1 className="cursos-page__title">Mis tutorías</h1>
         <p className="cursos-page__subtitle">Sesiones coordinadas con tus tutores</p>
       </header>
 
@@ -195,7 +195,7 @@ const MyCourses = () => {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="cursos-page__search"
-              aria-label="Buscar cursos"
+              aria-label="Buscar tutorías"
             />
             <div className="cursos-page__filter-btns">
               <button
@@ -249,12 +249,12 @@ const MyCourses = () => {
         <div className="cursos-page__empty">
           <h3>
             {courses.length === 0
-              ? 'Aún no tienes cursos'
+              ? 'Aún no tienes tutorías confirmadas'
               : 'No hay resultados con los filtros aplicados'}
           </h3>
           <p>
             {courses.length === 0
-              ? 'Los cursos se crean cuando tienes citas confirmadas con tutores.'
+              ? 'Aquí se agrupan tus sesiones confirmadas por tutor y materia.'
               : 'Prueba con otra búsqueda o quita filtros.'}
           </p>
           {courses.length === 0 && (
@@ -266,10 +266,10 @@ const MyCourses = () => {
                 Ir a Tutores
               </Link>
               <div className="cursos-page__help">
-                <h4>¿Cómo funcionan los cursos?</h4>
+                <h4>¿Cómo funcionan las tutorías?</h4>
                 <ul>
                   <li>Solicita asesorías con tutores en la sección Tutores</li>
-                  <li>Cuando el tutor acepta, se crea un curso por materia</li>
+                  <li>Cuando el tutor acepta, la sesión aparece agrupada por materia</li>
                   <li>Aquí ves el progreso de tus sesiones con cada tutor</li>
                 </ul>
               </div>

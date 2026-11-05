@@ -94,7 +94,10 @@ const runInTransaction = async <T>(work: (session: mongoose.ClientSession) => Pr
 
 const notify = (session: mongoose.ClientSession, { userId, appointmentId, type, title, message }: NotificationInput) =>
   Notification.create(
-    [{ userId, relatedAppointment: appointmentId, category: 'appointment', type, title, message }],
+    [{ userId, relatedAppointment: appointmentId, category: 'appointment', type, title, message,
+      allowResponse: type === 'appointment_requested',
+      responseOptions: type === 'appointment_requested' ? ['confirm', 'decline'] : [],
+    }],
     { session }
   );
 

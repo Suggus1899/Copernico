@@ -23,11 +23,13 @@ import TutorNotifications from './components/TutorNotifications';
 import TutorProfile from './components/TutorProfile';
 import VideoProgressDashboard from './components/VideoProgressDashboard';
 import Messages from './components/Messages';
+import AdminHome from './components/AdminHome';
 import './App.css';
 import { ThemeToggle } from './components/Theme';
 
 const DashboardHome = () => {
   const user = useSessionUser();
+  if (user.role === 'admin') return <AdminHome />;
   return user.role === 'tutor' || user.role === 'advisor'
     ? <TutorHome user={user} />
     : <StudentHome />;

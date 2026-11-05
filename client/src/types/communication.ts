@@ -15,8 +15,8 @@ export interface Note {
 }
 export interface Notification {
   _id: string; title: string; message: string; type: string; priority: string; category: string;
-  read: boolean; createdAt: string; actionUrl?: string; actionLabel?: string;
-  relatedAppointment?: string | { _id: string; topic?: string; startsAt: string } | null;
+  read: boolean; createdAt: string; actionUrl?: string; actionLabel?: string; allowResponse?: boolean;
+  relatedAppointment?: string | { _id: string; topic?: string; startsAt: string; status: string; studentId?: UserSummary | null } | null;
   relatedUser?: UserSummary | null;
   userResponse?: string; respondedAt?: string | null;
 }

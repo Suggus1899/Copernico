@@ -298,7 +298,9 @@ npm --prefix client run build # comprobación de tipos y build de Vite
 
 Las pruebas de la API usan un replica set efímero y almacenamiento simulado; no necesitan acceso a MongoDB Atlas ni a un bucket de Supabase real. Ejecuta `npm run build` antes de `npm run test:compiled`: este smoke inicia `dist/src/index.js` en otro proceso, comprueba `/ready` y envía SIGTERM. No forma parte de `npm test`, para que nunca use un artefacto anterior por accidente.
 
-Para ejecutar la API compilada localmente, configura las variables de entorno y ejecuta `npm run build` y después `npm start`. `npm run dev` usa `tsx` para desarrollo. Los scripts operativos se compilan a `dist/scripts/`; no ejecutes las migraciones de datos sobre una base nueva.
+Las suites limitan su concurrencia para evitar conflictos de puertos y consumo excesivo en el equipo local. No requieren Docker ni instalar MongoDB como servicio; `mongodb-memory-server` usa un ejecutable efímero, descargado en la primera ejecución o reutilizado desde caché.
+
+Para ejecutar la API compilada localmente, configura las variables de entorno y ejecuta `npm run build` y después `npm start`. `npm run dev` usa `tsx` para desarrollo. Los scripts operativos se compilan a `dist/scripts/`; no ejecutes las migraciones de datos sobre una base nueva. Para crear las cuentas y los cursos de una base demo aislada, configura `DEMO_PASSWORD` y ejecuta `npm run seed:demo`; consulta las restricciones de seguridad en [DEPLOY.md](DEPLOY.md).
 
 | Job de CI | Qué hace |
 |---|---|
@@ -312,7 +314,9 @@ CI se ejecuta en cada `push` y `pull_request` (`.github/workflows/ci.yml`).
 
 - **Tareas, informes y disponibilidad recurrente:** sus rutas no están montadas en la API. Los archivos existen en el repositorio, pero no forman parte de la versión publicada.
 - **SQLite y envío de correo:** no se usan.
-- **Creación de cursos y panel de administración en el cliente:** todavía no existen. Para el alta inicial, ver [DEPLOY.md](DEPLOY.md).
+- **Cursos:** la publicación de cursos se prepara con datos iniciales; las pantallas «Mis tutorías» agrupan las sesiones confirmadas por estudiante y materia. No existe un editor de cursos en el cliente.
+- **Administración:** el panel permite consultar cuentas, filtrarlas por rol/estado y recorrer páginas. Las operaciones de alta y modificación administrativas siguen disponibles en la API.
+- **Recuperación de contraseña por correo:** requiere configurar un proveedor y completar ese flujo antes de abrir el servicio a usuarios reales.
 
 ## 🌍 Despliegue
 

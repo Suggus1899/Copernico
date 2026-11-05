@@ -8,6 +8,7 @@ import User from "../models/User.js";
 import Appointment from "../models/Appointment.js";
 import Assignment from "../models/Assignment.js";
 import EducationalMaterial from "../models/EducationalMaterial.js";
+import { parsePagination } from '../utils/pagination.js';
 
 export const getNotifications: Handler<Record<string, string>, unknown, unknown> = async (req, res, next) => {
   try {
@@ -15,10 +16,9 @@ export const getNotifications: Handler<Record<string, string>, unknown, unknown>
       read,
       type,
       priority,
-      category,
-      page = 1,
-      limit = 20
+      category
     } = req.query;
+    const { page, limit } = parsePagination(req.query, 20, 100);
 
     const filter: FilterQuery<NotificationRecord> = { userId: req.user!.id };
 
@@ -29,13 +29,13 @@ export const getNotifications: Handler<Record<string, string>, unknown, unknown>
     if (category) filter.category = category;
 
     const options = {
-      page: parseInt(String(page)),
-      limit: parseInt(String(limit)),
+      page,
+      limit,
       sort: { createdAt: -1 as const }
     };
 
     const notifications = await Notification.find(filter)
-      .populate('relatedAppointment', 'topic startsAt')
+      .populate({ path: 'relatedAppointment', select: 'topic startsAt status studentId', populate: { path: 'studentId', select: 'personalInfo.firstName personalInfo.lastName' } })
       .populate('relatedAssignment', 'title dueDate')
       .populate('relatedMaterial', 'title type')
       .populate('relatedReport', 'title type')
@@ -70,7 +70,7 @@ export const getNotifications: Handler<Record<string, string>, unknown, unknown>
 export const getNotificationById: Handler<Record<string, string>, unknown, unknown> = async (req, res, next) => {
   try {
     const notification = await Notification.findById(req.params.id)
-      .populate('relatedAppointment', 'topic startsAt')
+      .populate({ path: 'relatedAppointment', select: 'topic startsAt status studentId', populate: { path: 'studentId', select: 'personalInfo.firstName personalInfo.lastName' } })
       .populate('relatedAssignment', 'title dueDate')
       .populate('relatedMaterial', 'title type')
       .populate('relatedReport', 'title type')
@@ -271,6 +271,7 @@ export const respondToNotification: Handler<Record<string, string>, unknown, Bod
 
     // La respuesta solo registra la elección del destinatario. El estado de las citas
     // se cambia únicamente desde /api/appointments (reglas de rol y transiciones).
+    notification.read = true;
     await notification.recordResponse(response, data);
 
     res.json({

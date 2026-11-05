@@ -163,6 +163,14 @@ describe('citas: propuesta, confirmación y reservas', () => {
 
     const notes = await notificationsFor(tutor, 'appointment_requested');
     assert.equal(notes.length, 1);
+    assert.equal(notes[0].allowResponse, true);
+    assert.deepEqual([...notes[0].responseOptions], ['confirm', 'decline']);
+    const notifications = await call('get', '/api/notifications', tutor);
+    const requestNotification = notifications.body.data.find((item: { type: string }) => item.type === 'appointment_requested');
+    assert.equal(requestNotification.relatedAppointment._id, proposed);
+    assert.equal(requestNotification.relatedAppointment.status, 'pending');
+    assert.equal(requestNotification.relatedAppointment.studentId._id, ana.id);
+    assert.equal(requestNotification.relatedAppointment.studentId.email, undefined);
   });
 
   it('rechaza horarios pasados y fechas sin desfase horario', async () => {
@@ -274,6 +282,12 @@ describe('citas: propuesta, confirmación y reservas', () => {
     const freshAna = await User.findById(ana.id).lean();
     assert.ok(freshAna!.studentProfile!.enrolledCourses.includes(String(course._id)));
     assert.equal((await notificationsFor(ana, 'appointment_confirmed')).length, 1);
+    const requestNotification = (await notificationsFor(tutor, 'appointment_requested')).find(item => String(item.relatedAppointment) === proposed);
+    assert.ok(requestNotification);
+    const choice = await call('post', `/api/notifications/${requestNotification._id}/respond`, tutor, { response: 'confirm' });
+    assert.equal(choice.status, 200);
+    assert.equal(choice.body.data.userResponse, 'confirm');
+    assert.equal(choice.body.data.read, true);
 
     const again = await call('post', `/api/appointments/${proposed}/confirm`, tutor, {});
     assert.equal(again.status, 409);

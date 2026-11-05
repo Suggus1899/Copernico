@@ -21,6 +21,8 @@ test('messaging requires relationship, isolates conversations and preserves deli
   const read=await request(env.app).patch(`/api/messages/${student.id}/read`).set('Cookie',tutor.cookie).expect(200); assert.equal(read.body.updated,1);
   const after=await request(env.app).get('/api/messages/conversations').set('Cookie',tutor.cookie).expect(200); assert.equal(after.body.data[0].unreadCount,0);
   const notification=await Notification.findOne({userId:tutor.id});assert.ok(notification);
+  const bounded=await request(env.app).get('/api/notifications?limit=100000&page=-4').set('Cookie',tutor.cookie).expect(200);
+  assert.equal(bounded.body.pagination.limit,100);assert.equal(bounded.body.pagination.page,1);
   const notice=await request(env.app).patch(`/api/notifications/${notification._id}/read`).set('Cookie',tutor.cookie).expect(200);assert.equal(notice.body.unreadCount,0);
   const failing=mock.method(Notification,'create',async()=>{throw new Error('notification unavailable');});
   try {await request(env.app).post('/api/messages').set('Cookie',student.cookie).send({to:tutor.id,text:'Delivered despite notification error'}).expect(201);} finally {failing.mock.restore();}

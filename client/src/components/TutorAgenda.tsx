@@ -2,6 +2,7 @@ import type { UserSummary } from '../types/auth';
 import type { Appointment } from '../types/appointments';
 import type { ApiResponse } from '../types/api';
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import apiClient from '../utils/axiosConfig';
 import './Dashboard.css';
 import './TutorAgenda.css';
@@ -10,6 +11,7 @@ const toLocalDateInputValue = (date: Date) =>
 
 const TutorAgenda = () => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [pendingAppointments, setPendingAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [selectedDate, setSelectedDate] = useState(toLocalDateInputValue(new Date()));
@@ -24,6 +26,7 @@ const TutorAgenda = () => {
       setError('');
       const response = await apiClient.get<ApiResponse<Appointment[]>>('/appointments');
       const appointments = response.data.data || [];
+      setPendingAppointments(appointments.filter(appointment => appointment.status === 'pending'));
       
       // Filtrar solo citas confirmadas y programadas
       const confirmedAppointments = appointments.filter(apt => 
@@ -116,6 +119,16 @@ const TutorAgenda = () => {
               {error} <button type="button" onClick={fetchAppointments}>Reintentar</button>
             </div>
           )}
+
+          {!error && pendingAppointments.length > 0 && <section className="agenda-page__schedule" aria-labelledby="pending-title">
+            <h2 id="pending-title">Solicitudes pendientes ({pendingAppointments.length})</h2>
+            <ul className="agenda-page__list">
+              {pendingAppointments.map(appointment => <li key={appointment._id} className="agenda-page__item">
+                <div className="agenda-page__item-body"><h3>{appointment.courseId?.title || 'Tutoría'}</h3><p>{getStudentName(appointment.studentId)} · {formatDate(appointment.startsAt)} · {formatTime(appointment.startsAt)}</p></div>
+              </li>)}
+            </ul>
+            <Link className="btn btn-primary" to="/dashboard/notificaciones">Gestionar solicitudes</Link>
+          </section>}
 
           <div className="agenda-page__toolbar">
             <label className="agenda-page__date-wrap">

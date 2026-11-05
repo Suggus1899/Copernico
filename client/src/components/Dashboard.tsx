@@ -16,7 +16,7 @@ const getPageLabel = (pathname: string) => {
   if (pathname === '/dashboard' || pathname === '/dashboard/') return 'Inicio';
   if (pathname.includes('mensajes')) return 'Mensajes';
   if (pathname.includes('perfil')) return 'Perfil';
-  if (pathname.includes('cursos')) return 'Mis cursos';
+  if (pathname.includes('cursos')) return 'Mis tutorías';
   if (pathname.includes('videos')) return 'Clases';
   if (pathname.includes('tutores')) return 'Encontrar tutor';
   if (pathname.includes('estudiantes')) return 'Mis estudiantes';

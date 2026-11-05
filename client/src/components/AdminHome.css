@@ -1,0 +1,10 @@
+.admin-home { margin: 0 auto; max-width: 1100px; padding: 24px; }
+.admin-home__filters, .admin-home__pagination { align-items: end; display: flex; flex-wrap: wrap; gap: 16px; margin: 24px 0; }
+.admin-home__filters label { display: grid; gap: 6px; }
+.admin-home__filters select { background: var(--surface); border: 1px solid var(--line-strong); border-radius: 8px; color: var(--ink); min-height: 44px; padding: 8px 12px; }
+.admin-home__table { overflow-x: auto; }
+.admin-home table { background: var(--surface); border-collapse: collapse; color: var(--ink); width: 100%; }
+.admin-home caption { color: var(--ink-muted); }
+.admin-home th, .admin-home td { border-bottom: 1px solid var(--line); padding: 12px; text-align: left; overflow-wrap: anywhere; }
+.admin-home__pagination { align-items: center; }
+@media (max-width: 480px) { .admin-home { padding: 16px; } }

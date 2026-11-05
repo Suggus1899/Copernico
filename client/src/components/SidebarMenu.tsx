@@ -33,7 +33,7 @@ const studentItems: MenuItem[] = [
 const tutorItems: MenuItem[] = [
   { path: '/dashboard', icon: iconPerfil, label: 'Inicio' },
   { path: '/dashboard/agenda', icon: iconAsesoria, label: 'Agenda' },
-  { path: '/dashboard/cursos-tutor', icon: iconCursos, label: 'Mis cursos' },
+  { path: '/dashboard/cursos-tutor', icon: iconCursos, label: 'Mis tutorías' },
   { path: '/dashboard/estudiantes', icon: iconTutores, label: 'Mis estudiantes' },
   { path: '/dashboard/videos-tutor', icon: iconVideos, label: 'Videos de clases' },
   { path: '/dashboard/progreso', icon: iconConfig, label: 'Progreso' },
@@ -42,6 +42,12 @@ const tutorItems: MenuItem[] = [
 ];
 
 const profilePath = (role: UserRole) => role === 'tutor' || role === 'advisor' ? '/dashboard/perfil-tutor' : '/dashboard/perfil';
+
+const adminItems: MenuItem[] = [
+  { path: '/dashboard', icon: iconConfig, label: 'Administración' },
+  { path: '/dashboard/mensajes', icon: iconAsesoria, label: 'Mensajes' },
+  { path: '/dashboard/perfil', icon: iconPerfil, label: 'Mi perfil' },
+];
 
 const SidebarMenu = ({
   userRole = 'student',
@@ -60,7 +66,7 @@ const SidebarMenu = ({
   const navRef = useRef<HTMLElement>(null);
   const [unreadCount, setUnreadCount] = useState(0);
   const isTutor = userRole === 'tutor' || userRole === 'advisor';
-  const items = isTutor ? tutorItems : studentItems;
+  const items = userRole === 'admin' ? adminItems : isTutor ? tutorItems : studentItems;
   const roleLabel = userRole === 'advisor' ? 'Asesor' : isTutor ? 'Tutor' : userRole === 'admin' ? 'Administrador' : 'Estudiante';
   const initials = userName.split(/[\s@.]+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase();
 
