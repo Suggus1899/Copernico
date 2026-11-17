@@ -13,16 +13,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
-          cache: npm
-      - run: npm ci
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
       # Los tests levantan MongoDB en memoria (replica set) y descargan el binario en la primera ejecución.
-      - run: npm run typecheck
-      - run: npm run build
-      - run: npm test
-      - run: npm run test:compiled
+      - run: pnpm run typecheck
+      - run: pnpm run build
+      - run: pnpm test
+      - run: pnpm run test:compiled
 
   api-image:
     name: API (imagen de producción)
@@ -44,11 +45,14 @@ jobs:
         working-directory: client
     steps:
       - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: client/package.json
       - uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
-          cache: npm
-          cache-dependency-path: client/package-lock.json
-      - run: npm ci
-      - run: npm test
-      - run: npm run build
+          cache: pnpm
+          cache-dependency-path: client/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test
+      - run: pnpm run build

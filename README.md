@@ -170,6 +170,7 @@ Copernico/
 | Herramienta | Versión | Uso |
 |---|---|---|
 | Node.js | 24 (ver `.nvmrc`) | API y cliente |
+| pnpm | 11 (fijado en `packageManager`; `corepack enable`) | Único gestor de paquetes: no uses npm |
 | MongoDB | Replica set (local o Atlas) | Las citas usan transacciones |
 | Docker | Opcional | `docker compose` |
 
@@ -188,12 +189,12 @@ Para probar subidas de archivos, define `SUPABASE_URL` y `SUPABASE_SERVICE_ROLE_
 
 ```bash
 cp .env.example .env          # en Windows: copy .env.example .env
-npm ci
-npm run dev                   # API en http://localhost:4002
+pnpm install
+pnpm run dev                   # API en http://localhost:4002
 
 cd client
-npm ci
-npm run dev                   # cliente en http://localhost:5173
+pnpm install
+pnpm run dev                   # cliente en http://localhost:5173
 ```
 
 Necesitas MongoDB con replica set: un `mongod --replSet rs0` local (con `rs.initiate()` una vez) o un cluster de Atlas. El cliente llama a `/api` y Vite lo reenvía a `API_PROXY_TARGET` (por defecto `http://localhost:4002`).
@@ -287,20 +288,20 @@ SUPABASE_STORAGE_BUCKET=copernico-private
 ## 🧪 Testing & CI
 
 ```bash
-npm run typecheck             # API, scripts y pruebas
-npm run build                 # genera dist/src y dist/scripts
-npm test                      # MongoDB efímero; la primera ejecución descarga el binario
-npm run test:compiled         # arranque de dist/src/index.js en un proceso separado
-npm --prefix client run typecheck
-npm --prefix client test      # pruebas de utilidades sin llamadas de red reales
-npm --prefix client run build # comprobación de tipos y build de Vite
+pnpm run typecheck             # API, scripts y pruebas
+pnpm run build                 # genera dist/src y dist/scripts
+pnpm test                      # MongoDB efímero; la primera ejecución descarga el binario
+pnpm run test:compiled         # arranque de dist/src/index.js en un proceso separado
+pnpm -C client run typecheck
+pnpm -C client test      # pruebas de utilidades sin llamadas de red reales
+pnpm -C client run build # comprobación de tipos y build de Vite
 ```
 
-Las pruebas de la API usan un replica set efímero y almacenamiento simulado; no necesitan acceso a MongoDB Atlas ni a un bucket de Supabase real. Ejecuta `npm run build` antes de `npm run test:compiled`: este smoke inicia `dist/src/index.js` en otro proceso, comprueba `/ready` y envía SIGTERM. No forma parte de `npm test`, para que nunca use un artefacto anterior por accidente.
+Las pruebas de la API usan un replica set efímero y almacenamiento simulado; no necesitan acceso a MongoDB Atlas ni a un bucket de Supabase real. Ejecuta `pnpm run build` antes de `pnpm run test:compiled`: este smoke inicia `dist/src/index.js` en otro proceso, comprueba `/ready` y envía SIGTERM. No forma parte de `pnpm test`, para que nunca use un artefacto anterior por accidente.
 
 Las suites limitan su concurrencia para evitar conflictos de puertos y consumo excesivo en el equipo local. No requieren Docker ni instalar MongoDB como servicio; `mongodb-memory-server` usa un ejecutable efímero, descargado en la primera ejecución o reutilizado desde caché.
 
-Para ejecutar la API compilada localmente, configura las variables de entorno y ejecuta `npm run build` y después `npm start`. `npm run dev` usa `tsx` para desarrollo. Los scripts operativos se compilan a `dist/scripts/`; no ejecutes las migraciones de datos sobre una base nueva. Para crear las cuentas y los cursos de una base demo aislada, configura `DEMO_PASSWORD` y ejecuta `npm run seed:demo`; consulta las restricciones de seguridad en [DEPLOY.md](DEPLOY.md).
+Para ejecutar la API compilada localmente, configura las variables de entorno y ejecuta `pnpm run build` y después `pnpm start`. `pnpm run dev` usa `tsx` para desarrollo. Los scripts operativos se compilan a `dist/scripts/`; no ejecutes las migraciones de datos sobre una base nueva. Para crear las cuentas y los cursos de una base demo aislada, configura `DEMO_PASSWORD` y ejecuta `pnpm run seed:demo`; consulta las restricciones de seguridad en [DEPLOY.md](DEPLOY.md).
 
 | Job de CI | Qué hace |
 |---|---|

@@ -55,7 +55,7 @@ flowchart LR
 
 `render.yaml` ya fija `NODE_VERSION=24`, `NODE_ENV=production` y `TRUST_PROXY=2`. No definas `PORT`: Render lo inyecta.
 
-El build instala primero las dependencias de compilación: `npm ci --include=dev && npm run build && npm prune --omit=dev`. El arranque es `npm start`, que ejecuta `node dist/src/index.js`. No omitas las dependencias de desarrollo antes de compilar: incluyen TypeScript. La imagen de Docker también compila en una etapa independiente y copia el artefacto y las dependencias de ejecución a la imagen final.
+El build instala primero las dependencias de compilación: `pnpm install --frozen-lockfile && pnpm run build && pnpm prune --prod`. El arranque es `pnpm start`, que ejecuta `node dist/src/index.js`. No omitas las dependencias de desarrollo antes de compilar: incluyen TypeScript. La imagen de Docker también compila en una etapa independiente y copia el artefacto y las dependencias de ejecución a la imagen final.
 
 ## 4. Vercel (cliente)
 
@@ -94,12 +94,12 @@ Hazlas contra el dominio de Vercel, no contra Render directamente.
 
 ## 7. Datos iniciales
 
-- Para una base nueva de pruebas, configura `MONGODB_URI` con un nombre terminado en `_demo` o `_test` (por ejemplo, `copernico_demo`) y `DEMO_PASSWORD` en el `.env` ignorado por Git. Ejecuta `npm run seed:demo` con Node 24. Se crean dos estudiantes, dos tutores, una cuenta administrativa y dos cursos publicados. El script rechaza `NODE_ENV=production` y bases sin ese sufijo; no lo ejecutes contra usuarios reales.
+- Para una base nueva de pruebas, configura `MONGODB_URI` con un nombre terminado en `_demo` o `_test` (por ejemplo, `copernico_demo`) y `DEMO_PASSWORD` en el `.env` ignorado por Git. Ejecuta `pnpm run seed:demo` con Node 24. Se crean dos estudiantes, dos tutores, una cuenta administrativa y dos cursos publicados. El script rechaza `NODE_ENV=production` y bases sin ese sufijo; no lo ejecutes contra usuarios reales.
 - Las cuentas de prueba son `ana@copernico.example`, `bruno@copernico.example`, `luis@copernico.example`, `marta@copernico.example` y `admin@copernico.example`. La contraseña se toma de `DEMO_PASSWORD` al crear cada cuenta; repetir el comando conserva las cuentas y sus contraseñas y no duplica cursos. Elimina `DEMO_PASSWORD` del entorno cuando termines.
 - **No hay pantalla para crear cursos todavía.** Para reservar citas, inserta en la colección `courses` (Atlas → Data Explorer) al menos un documento con `title`, `instructor` (ObjectId de un usuario con `role: "tutor"`), `isPublished: true` y `level` (`beginner`, `intermediate` o `advanced`).
 - Las vistas «Mis tutorías» agrupan sesiones confirmadas o completadas por tutor, estudiante y materia; no son un catálogo de cursos publicados. El administrador dispone de una consulta de cuentas con filtros y paginación.
 - Los usuarios se crean con el registro. Para hacer administrador a alguien, cambia su `role` a `"admin"` en la colección `users`.
-- `npm run migrate:advisors` y `npm run migrate:courses` ejecutan scripts compilados de `dist/scripts/`: requieren haber ejecutado `npm run build`. Solo sirven para datos de la versión anterior. Haz una copia de seguridad de Atlas antes de ejecutarlos y no los ejecutes sobre una base nueva.
+- `pnpm run migrate:advisors` y `pnpm run migrate:courses` ejecutan scripts compilados de `dist/scripts/`: requieren haber ejecutado `pnpm run build`. Solo sirven para datos de la versión anterior. Haz una copia de seguridad de Atlas antes de ejecutarlos y no los ejecutes sobre una base nueva.
 
 ## 8. Operación
 
@@ -115,14 +115,14 @@ Usa Node 24 (versión de `.nvmrc`) y una base de pruebas MongoDB que admita repl
 En dos terminales, desde la raíz del repositorio:
 
 ```sh
-npm ci
-npm run dev
+pnpm install
+pnpm run dev
 ```
 
 ```sh
 cd client
-npm ci
-npm run dev
+pnpm install
+pnpm run dev
 ```
 
 Vite reenvía `/api` a `http://localhost:4002` de forma predeterminada. Para ejecutar el cliente local contra una API Render de pruebas, define `API_PROXY_TARGET=https://<api-render-de-pruebas>` en `client/.env.local` y permite `http://localhost:5173` en `FRONTEND_URL` de esa API de pruebas. No agregues el origen local a una API de producción.

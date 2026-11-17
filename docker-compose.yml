@@ -28,7 +28,7 @@ services:
   db-init:
     <<: *api-build
     container_name: copernico-db-init
-    command: ["npm", "run", "db:init"]
+    command: ["pnpm", "run", "db:init"]
     environment:
       - MONGODB_URI=mongodb://db:27017/?directConnection=true
       - RS_MEMBER_HOST=db:27017

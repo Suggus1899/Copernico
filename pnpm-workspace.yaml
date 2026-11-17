@@ -1,0 +1,4 @@
+allowBuilds:
+  esbuild: true
+  # The MongoDB binary is downloaded lazily on the first test run
+  mongodb-memory-server: false

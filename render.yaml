@@ -8,8 +8,8 @@ services:
     name: copernico-api
     region: oregon
     plan: free
-    buildCommand: npm ci --include=dev && npm run build && npm prune --omit=dev
-    startCommand: npm start
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm run build && pnpm prune --prod
+    startCommand: pnpm start
     healthCheckPath: /api/health/ready
     envVars:
       - key: NODE_VERSION

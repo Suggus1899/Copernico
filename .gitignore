@@ -24,10 +24,10 @@ pnpm-debug.log*
 # Archivos subidos en desarrollo (almacenamiento local)
 uploads/
 
-# Artefactos antiguos (SQLite, pnpm, timestamps de Vite)
+# Artefactos antiguos (SQLite, npm, timestamps de Vite). El proyecto usa solo pnpm.
 *.sqlite3
 *.sqlite
-pnpm-lock.yaml
+package-lock.json
 *.timestamp-*.mjs
 
 # Editores
