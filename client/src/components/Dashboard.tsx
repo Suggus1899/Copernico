@@ -42,7 +42,9 @@ const Dashboard = () => {
 
   useEffect(() => {
     setMobileMenuOpen(false);
-    requestAnimationFrame(() => document.getElementById('main-content')?.focus());
+    // Start each page at the top so the topbar (theme toggle) stays visible; focus without scrolling for screen readers
+    window.scrollTo({ top: 0, behavior: 'instant' });
+    requestAnimationFrame(() => document.getElementById('main-content')?.focus({ preventScroll: true }));
   }, [location.pathname]);
 
   useEffect(() => {

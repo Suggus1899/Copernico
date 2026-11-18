@@ -32,6 +32,8 @@ body {
   font-family: Inter, "Segoe UI", Arial, sans-serif;
   line-height: 1.55;
   letter-spacing: normal;
+  /* Georgia defaults to old-style figures, which make 0 look like a letter O in stats */
+  font-variant-numeric: lining-nums;
 }
 
 button,
